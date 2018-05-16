@@ -313,8 +313,15 @@ namespace stdx::templates
 
 		// Constrained typetuple, applies a trait to each element of a typetuple (which can be of type typepair), constructing a new typetuple with the elements of the old one (or the second types of the typepairs) for which bool(trait<element>::value) == true (or bool(trait<element::first>::value) == true)
 
-	template <template <class> class Trait, class Typetuple1, class Typetuple2>
-	struct _constrained_typetuple : _constrained_typetuple<Trait, typename Typetuple1::template pop<1>, std::conditional_t<bool(Trait<typename Typetuple1::first>::value), typename Typetuple2::template push<typename Typetuple1::first>, Typetuple2>>
+	template <template <class> class Trait, class, class Typetuple>
+	struct _constrained_typetuple : _constrained_typetuple<Trait, Typetuple, typetuple<>>
+	{
+		static_assert(is_same_as_v<Typetuple, typetuple>,
+					  "stdx::templates::constrained_typetuple<Trait, Typetuple>: Typetuple must be of type stdx::templates::typetuple<T ...>");
+	};
+
+	template <template <class> class Trait, class ... Types, class Typetuple>
+	struct _constrained_typetuple<Trait, typetuple<Types ...>, Typetuple> : _constrained_typetuple<Trait, typename typetuple<Types ...>::template pop<1>, std::conditional_t<bool(Trait<typename typetuple<Types ...>::first>::value), typename Typetuple::template push<typename typetuple<Types ...>::first>, Typetuple>>
 	{
 	};
 
@@ -324,40 +331,46 @@ namespace stdx::templates
 	};
 
 	template <template <class> class Trait, class Typetuple>
-	struct _constrained_typetuple<Trait, typetuple<>, Typetuple> : Typetuple
+	struct _constrained_typetuple<Trait, typetuple<>, Typetuple>
 	{
+		using type = Typetuple;
 	};
 
 	template <template <class> class Trait, class Typetuple>
-	struct constrained_typetuple : _constrained_typetuple<Trait, Typetuple, typetuple<>>
-	{
-		static_assert(is_same_as_v<Typetuple, typetuple>,
-					  "stdx::templates::constrained_typetuple<Trait, Typetuple>: Typetuple must be of type stdx::templates::typetuple<T ...>");
-	};
+	using constrained_typetuple = typename _constrained_typetuple<Trait, void, Typetuple>::type;
 
 		// Constrained valuetuple, applies a trait to each element of a valuetuple, constructing a new valuetuple with the elements of the old one for which bool(trait<element>::value) == true
 
-	template <template <auto> class Trait, class Valuetuple1, class Valuetuple2>
-	struct _constrained_valuetuple : _constrained_valuetuple<Trait, typename Valuetuple1::template pop<1>, std::conditional_t<bool(Trait<Valuetuple1::first>::value), typename Valuetuple2::template push<Valuetuple1::first>, Valuetuple2>>
-	{
-	};
 
-	template <template <auto> class Trait, class Valuetuple>
-	struct _constrained_valuetuple<Trait, valuetuple<>, Valuetuple> : Valuetuple
-	{
-	};
-
-	template <template <auto> class Trait, class Valuetuple>
-	struct constrained_valuetuple : _constrained_valuetuple<Trait, Valuetuple, valuetuple<>>
+	template <template <auto> class Trait, class, class Valuetuple>
+	struct _constrained_valuetuple : _constrained_valuetuple<Trait, Valuetuple, valuetuple<>>
 	{
 		static_assert(_is_same_as_v<Valuetuple, valuetuple>,
-					  "stdx::templates::constrained_valuetuple<Trait, Valuetuple>: Typetuple must be of type stdx::templates::valuetuple<T ...>");
+					  "stdx::templates::constrained_valuetuple<Trait, Valuetuple>: Typetuple must be of type stdx::templates::valuetuple<V ...>");
 	};
+
+	template <template <auto> class Trait, auto ... Values, class Valuetuple>
+	struct _constrained_valuetuple<Trait, valuetuple<Values ...>, Valuetuple> : _constrained_valuetuple<Trait, typename valuetuple<Values ...>::template pop<1>, std::conditional_t<bool(Trait<valuetuple<Values ...>::first>::value), typename Valuetuple::template push<valuetuple<Values ...>::first>, Valuetuple>>
+	{
+	};
+
+	template <template <auto> class Trait, class Valuetuple>
+	struct _constrained_valuetuple<Trait, valuetuple<>, Valuetuple>
+	{
+		using type = Valuetuple;
+	};
+
+	template <template <auto> class Trait, class Valuetuple>
+	using constrained_valuetuple = typename _constrained_valuetuple<Trait, void, Valuetuple>::type;
 
 		// Constrained typevaluetuple, applies a trait to each element of a typetuple (which must be of type typevalue), constructing a valuetuple with the elements for which bool(trait<element::first>::value) == true
 
-	template <template <class> class Trait, class Typetuple, class Valuetuple>
-	struct _constrained_typevaluetuple;
+	template <template <class> class Trait, class, class Typetuple>
+	struct _constrained_typevaluetuple : _constrained_typevaluetuple<Trait, Typetuple, valuetuple<>>
+	{
+		static_assert(is_same_as_v<Typetuple, typetuple>,
+					  "stdx::templates::constrained_typevaluetuple<Trait, Typetuple>: Typetuple must be of type stdx::templates::typetuple<TV ...> where TV is of type stdx::templates::typevalue<T, V>");
+	};
 
 	template <template <class> class Trait, class Type, auto Value, class ... Types, class Valuetuple>
 	struct _constrained_typevaluetuple<Trait, typetuple<typevalue<Type, Value>, Types ...>, Valuetuple> : _constrained_typevaluetuple<Trait, typetuple<Types ...>, std::conditional_t<bool(Trait<Type>::value), typename Valuetuple::template push<Value>, Valuetuple>>
@@ -365,16 +378,13 @@ namespace stdx::templates
 	};
 
 	template <template <class> class Trait, class Valuetuple>
-	struct _constrained_typevaluetuple<Trait, typetuple<>, Valuetuple> : Valuetuple
+	struct _constrained_typevaluetuple<Trait, typetuple<>, Valuetuple>
 	{
+		using type = Valuetuple;
 	};
 
 	template <template <class> class Trait, class Typetuple>
-	struct constrained_typevaluetuple : _constrained_typevaluetuple<Trait, Typetuple, valuetuple<>>
-	{
-		static_assert(is_same_as_v<Typetuple, typetuple>,
-					  "stdx::templates::constrained_typevaluetuple<Trait, Typetuple>: Typetuple must be of type stdx::templates::typetuple<T ...>");
-	};
+	using constrained_typevaluetuple = typename _constrained_typevaluetuple<Trait, void, Typetuple>::type;
 
 		// Reorder typetuple, reorders the parameters inside a typetuple based on a valuetuple with integral values in the interval [0, N) where N is the number of elements in the tuples
 
@@ -384,30 +394,36 @@ namespace stdx::templates
 	};
 
 	template <auto ... Values>
-	struct _check_valuetuple<valuetuple<Values ...>> : std::is_base_of<valuetuple<Values ...>, constrained_valuetuple<range<0, sizeof...(Values) - 1>::between, type_cast<valuetuple<Values ...>, constrained_typevaluetuple<std::is_integral, typetuple<typevalue<decltype(Values), Values> ...>>>>>
+	struct _check_valuetuple<valuetuple<Values ...>> : std::is_same<valuetuple<Values ...>, constrained_valuetuple<range<0, sizeof...(Values) - 1>::template between, constrained_typevaluetuple<std::is_integral, typetuple<typevalue<decltype(Values), Values> ...>>>>
 	{
 	};
 
-	template <class Tuple1, class Tuple2, class Valuetuple>
-	struct _reordered_tuple : _reordered_tuple<Tuple1, typename Tuple2::template push<typename Tuple1::template pop<Valuetuple::first>::first>, typename Valuetuple::template pop<1>>
+	template <class Tuple, class Valuetuple, class>
+	struct _reordered_tuple : _reordered_tuple<Tuple, typetuple<>, Valuetuple>
+	{
+		static_assert(is_same_as_v<Tuple, typetuple> || _is_same_as_v<Tuple, valuetuple>,
+					  "stdx::templates::reordered_typetuple<Tuple, Valuetuple>: Tuple must be either of type stdx::templates::typetuple<T ...> or stdx::templates::valuetuple<V ...>");
+		static_assert(_is_same_as_v<Valuetuple, valuetuple>,
+					  "stdx::templates::reordered_typetuple<Tuple, Valuetuple>: Valuetuple must be of type stdx::templates::valuetuple<V ...>");
+		static_assert(Tuple::size == Valuetuple::size,
+					  "stdx::templates::reordered_typetuple<Tuple, Valuetuple>: Tuple::size must be equal to Valuetuple::size");
+		static_assert(_check_valuetuple<Valuetuple>::value,
+					  "stdx::templates::reordered_typetuple<Tuple, Valuetuple>: Valuetuple must contain only integral types and these must be in the interval of [0, Valuetuple::size)");
+	};
+
+	template <class Tuple1, class Tuple2, auto ... Values>
+	struct _reordered_tuple<Tuple1, Tuple2, valuetuple<Values ...>> : _reordered_tuple<Tuple1, typename Tuple2::template push<typename Tuple1::template pop<valuetuple<Values ...>::first>::first>, typename valuetuple<Values ...>::template pop<1>>
 	{
 	};
 
 	template <class Tuple1, class Tuple2>
-	struct _reordered_tuple<Tuple1, Tuple2, valuetuple<>> : Tuple2
+	struct _reordered_tuple<Tuple1, Tuple2, valuetuple<>>
 	{
+		using type = Tuple2;
 	};
 
 	template <class Tuple, class Valuetuple>
-	struct reordered_tuple : _reordered_tuple<Tuple, typetuple<>, Valuetuple>
-	{
-		static_assert(is_same_as_v<Tuple, typetuple> || _is_same_as_v<Tuple, valuetuple>,
-					  "stdx::templates::reordered_typetuple<Tuple, Valuetuple>: Tuple must be either of type stdx::templates::typetuple<T ...> or stdx::templates::valuetuple<V ...>");
-		static_assert(Tuple::size == Valuetuple::size, 
-					  "stdx::templates::reordered_typetuple<Tuple, Valuetuple>: Tuple::size must be equal to Valuetuple::size");
-		static_assert(_check_valuetuple<Valuetuple>::value,
-					  "stdx::types::reordered_typetuple<Tuple, Valuetuple>: Valuetuple must contain only integral types and these must be in the interval of [0, Valuetuple::size)");
-	};
+	using reordered_tuple = typename _reordered_tuple<Tuple, Valuetuple, void>::type;
 }
 
 #endif
