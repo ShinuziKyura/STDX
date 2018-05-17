@@ -1,3 +1,3 @@
-## C++ Extended Library
+## C++ Standard Extended Library
 
 ***
