@@ -3,6 +3,8 @@
 
 // Macros
 
+// Note: check https://blogs.msdn.microsoft.com/vcblog/2018/04/09/intellisense-for-remote-linux-headers/?utm_source=vs_developer_news&utm_medium=referral
+
 #if defined(STDX_INCLUDE_MACROS)
 #include "macros.h"
 #endif
