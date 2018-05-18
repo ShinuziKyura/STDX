@@ -20,7 +20,7 @@ namespace stdx::templates
 	template <auto ...>
 	struct valuetuple;
 
-	// Class template traits
+	// Type traits
 
 		// Obtain template from class
 
@@ -148,6 +148,190 @@ namespace stdx::templates
 	template <template <class ...> class Template1, template <class ...> class Template2>
 	inline constexpr bool is_same_with_v = is_same_with<Template1, Template2>::value;
 
+		// Function signature
+
+	template <class>
+	struct function_signature;
+
+	template <class RetType, class ... ParamTypes>
+	struct function_signature<RetType(ParamTypes ...)>
+	{
+		using return_type = RetType;
+		using parameter_types = typetuple<ParamTypes ...>;
+	};
+
+	template <class RetType, class ... ParamTypes>
+	struct function_signature<RetType(ParamTypes ...) const>
+	{
+		using return_type = RetType;
+		using parameter_types = typetuple<ParamTypes ...>;
+	};
+
+	template <class RetType, class ... ParamTypes>
+	struct function_signature<RetType(ParamTypes ...) volatile>
+	{
+		using return_type = RetType;
+		using parameter_types = typetuple<ParamTypes ...>;
+	};
+
+	template <class RetType, class ... ParamTypes>
+	struct function_signature<RetType(ParamTypes ...) const volatile>
+	{
+		using return_type = RetType;
+		using parameter_types = typetuple<ParamTypes ...>;
+	};
+
+	template <class RetType, class ... ParamTypes>
+	struct function_signature<RetType(ParamTypes ...) &>
+	{
+		using return_type = RetType;
+		using parameter_types = typetuple<ParamTypes ...>;
+	};
+
+	template <class RetType, class ... ParamTypes>
+	struct function_signature<RetType(ParamTypes ...) const &>
+	{
+		using return_type = RetType;
+		using parameter_types = typetuple<ParamTypes ...>;
+	};
+
+	template <class RetType, class ... ParamTypes>
+	struct function_signature<RetType(ParamTypes ...) volatile &>
+	{
+		using return_type = RetType;
+		using parameter_types = typetuple<ParamTypes ...>;
+	};
+
+	template <class RetType, class ... ParamTypes>
+	struct function_signature<RetType(ParamTypes ...) const volatile &>
+	{
+		using return_type = RetType;
+		using parameter_types = typetuple<ParamTypes ...>;
+	};
+
+	template <class RetType, class ... ParamTypes>
+	struct function_signature<RetType(ParamTypes ...) &&>
+	{
+		using return_type = RetType;
+		using parameter_types = typetuple<ParamTypes ...>;
+	};
+
+	template <class RetType, class ... ParamTypes>
+	struct function_signature<RetType(ParamTypes ...) const &&>
+	{
+		using return_type = RetType;
+		using parameter_types = typetuple<ParamTypes ...>;
+	};
+
+	template <class RetType, class ... ParamTypes>
+	struct function_signature<RetType(ParamTypes ...) volatile &&>
+	{
+		using return_type = RetType;
+		using parameter_types = typetuple<ParamTypes ...>;
+	};
+
+	template <class RetType, class ... ParamTypes>
+	struct function_signature<RetType(ParamTypes ...) const volatile &&>
+	{
+		using return_type = RetType;
+		using parameter_types = typetuple<ParamTypes ...>;
+	};
+
+	template <class RetType, class ... ParamTypes>
+	struct function_signature<RetType(ParamTypes ...) noexcept>
+	{
+		using return_type = RetType;
+		using parameter_types = typetuple<ParamTypes ...>;
+	};
+
+	template <class RetType, class ... ParamTypes>
+	struct function_signature<RetType(ParamTypes ...) const noexcept>
+	{
+		using return_type = RetType;
+		using parameter_types = typetuple<ParamTypes ...>;
+	};
+
+	template <class RetType, class ... ParamTypes>
+	struct function_signature<RetType(ParamTypes ...) volatile noexcept>
+	{
+		using return_type = RetType;
+		using parameter_types = typetuple<ParamTypes ...>;
+	};
+
+	template <class RetType, class ... ParamTypes>
+	struct function_signature<RetType(ParamTypes ...) const volatile noexcept>
+	{
+		using return_type = RetType;
+		using parameter_types = typetuple<ParamTypes ...>;
+	};
+
+	template <class RetType, class ... ParamTypes>
+	struct function_signature<RetType(ParamTypes ...) & noexcept>
+	{
+		using return_type = RetType;
+		using parameter_types = typetuple<ParamTypes ...>;
+	};
+
+	template <class RetType, class ... ParamTypes>
+	struct function_signature<RetType(ParamTypes ...) const & noexcept>
+	{
+		using return_type = RetType;
+		using parameter_types = typetuple<ParamTypes ...>;
+	};
+
+	template <class RetType, class ... ParamTypes>
+	struct function_signature<RetType(ParamTypes ...) volatile & noexcept>
+	{
+		using return_type = RetType;
+		using parameter_types = typetuple<ParamTypes ...>;
+	};
+
+	template <class RetType, class ... ParamTypes>
+	struct function_signature<RetType(ParamTypes ...) const volatile & noexcept>
+	{
+		using return_type = RetType;
+		using parameter_types = typetuple<ParamTypes ...>;
+	};
+
+	template <class RetType, class ... ParamTypes>
+	struct function_signature<RetType(ParamTypes ...) && noexcept>
+	{
+		using return_type = RetType;
+		using parameter_types = typetuple<ParamTypes ...>;
+	};
+
+	template <class RetType, class ... ParamTypes>
+	struct function_signature<RetType(ParamTypes ...) const && noexcept>
+	{
+		using return_type = RetType;
+		using parameter_types = typetuple<ParamTypes ...>;
+	};
+
+	template <class RetType, class ... ParamTypes>
+	struct function_signature<RetType(ParamTypes ...) volatile && noexcept>
+	{
+		using return_type = RetType;
+		using parameter_types = typetuple<ParamTypes ...>;
+	};
+
+	template <class RetType, class ... ParamTypes>
+	struct function_signature<RetType(ParamTypes ...) const volatile && noexcept>
+	{
+		using return_type = RetType;
+		using parameter_types = typetuple<ParamTypes ...>;
+	};
+
+	template <class FuncType>
+	struct function_signature<FuncType *> : function_signature<FuncType>
+	{
+	};
+
+	template <class FuncType, class ObjType>
+	struct function_signature<FuncType ObjType::*> : function_signature<FuncType>
+	{
+		using object_type = ObjType;
+	};
+
 	// Numeric traits
 
 		// Addition
@@ -257,7 +441,7 @@ namespace stdx::templates
 
 /*	Note: (Potential bug)
 	
-	Cast any one of these to a integral type (or otherwise) and the compiler breaks
+	Cast any one of these to an integral type (or otherwise) and the compiler breaks
 
 */
 

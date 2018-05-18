@@ -3,29 +3,28 @@
 
 #include <functional>
 
-namespace stdx
-{	// Needs testing
-	template <class RetType, class ... ParamTypes, class ... ArgTypes>
-	auto bind(RetType(* func)(ParamTypes ...), ArgTypes && ... args)
+#include "templates.hpp"
+
+// https://stackoverflow.com/questions/27566894/how-to-check-if-a-type-is-defined-by-typedef-or-using-in-template-parameters?rq=1
+
+namespace stdx::binder
+{
+	template <class FuncType, class ... ArgTypes>
+	auto bind(FuncType func, ArgTypes && ... args)
 	{
+		static_assert(sizeof(stdx::templates::function_signature<FuncType>), 
+					  "FuncType must be a function, a pointer to function, or a pointer to member function");
 		return std::bind(func, bind_forward<ArgTypes>(args) ...);
 	}
-	template <class RetType, class ... ParamTypes, class ObjType, class ... ArgTypes>
-	auto bind(RetType(ObjType::* func)(ParamTypes ...), ObjType * obj, ArgTypes && ... args)
-	{
-		return std::bind(func, obj, bind_forward<ArgTypes>(args) ...);
-	}
-
-	// Why this works: std::bind saves its arguments by copy/move constructing them into member variables of the Binder class;
-	// std::move works because std::bind invokes any argument of type T for which std::is_bind_expression<T>::value == true, as described here:
-	// http://en.cppreference.com/w/cpp/utility/functional/bind, 
-	// requiring however the use of the std::move lvalue-reference overload, since the argument is passed by reference, as explained here:
-	// https://stackoverflow.com/questions/4871273/passing-rvalues-through-stdbind
 
 	template <class ValType>
-	auto bind_forward(std::remove_reference_t<ValType> & val) // TODO Add exception to placeholder types
+	auto bind_forward(std::remove_reference_t<ValType> & val)
 	{
-		if constexpr (std::is_lvalue_reference_v<ValType>)
+		if constexpr (std::is_placeholder_v<std::remove_cv_t<std::remove_reference_t<ValType>>>)
+		{
+			return val;
+		}
+		else if constexpr (std::is_lvalue_reference_v<ValType>)
 		{
 			return std::ref(val);
 		}
@@ -37,8 +36,15 @@ namespace stdx
 	template <class ValType>
 	auto bind_forward(std::remove_reference_t<ValType> && val)
 	{
-		return std::bind(std::move<ValType &>, std::move(val));
+		if constexpr (std::is_placeholder_v<std::remove_cv_t<std::remove_reference_t<ValType>>>)
+		{
+			return val;
+		}
+		else
+		{
+			return std::bind(std::move<ValType &>, std::move(val));
+		}
 	}
 }
 
-#endif//BINDER_HPP
+#endif

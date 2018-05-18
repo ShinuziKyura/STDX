@@ -10,7 +10,7 @@ struct pointer_type
 	using type = Type *;
 };
 
-int main()
+int main3()
 {
 	{
 	//	stdx::atomic_ptr<int> aptr(new int(3));
