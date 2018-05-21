@@ -15,7 +15,7 @@ namespace stdx::templates
 	struct typevalue;
 
 	template <class ...>
-	struct typetuple;
+	struct pack;
 
 	template <auto ...>
 	struct valuetuple;
@@ -50,7 +50,7 @@ namespace stdx::templates
 	struct class_parameter<Template<Parameters ...>>
 	{
 		template <size_t N>
-		using type = typename typetuple<Parameters ...>::template pop<N>::first;
+		using type = typename pack<Parameters ...>::template pop<N>::first;
 	};
 
 	template <template <auto ...> class Template, auto ... Parameters>
@@ -74,8 +74,8 @@ namespace stdx::templates
 
 /*	Note: (Potential bug)
 	
-	transformed_typevaluetuple <class_parameter, typetuple<stp::_placeholder<1>>> foo; 
-	_transformed_typevaluetuple <class_parameter, typetuple<stp::_placeholder<1>>, valuetuple<>> foo;
+	transformed_typevaluetuple <class_parameter, pack<stp::_placeholder<1>>> foo; 
+	_transformed_typevaluetuple <class_parameter, pack<stp::_placeholder<1>>, valuetuple<>> foo;
 
 	Does not compile unless specialization class_parameter<Template<Parameter>> is defined as such:
 
@@ -118,21 +118,6 @@ namespace stdx::templates
 	template <class Template1, template <class ...> class Template2>
 	inline constexpr bool is_same_as_v = is_same_as<Template1, Template2>::value;
 
-		// Class-template equality, alternative for templates that take non-type parameters (not for external use)
-
-	template <class, template <auto ...> class>
-	struct _is_same_as : std::false_type
-	{
-	};
-
-	template <template <auto ...> class Template1, auto ... Parameters, template <auto ...> class Template2>
-	struct _is_same_as<Template1<Parameters ...>, Template2> : std::is_same<Template1<Parameters ...>, Template2<Parameters ...>>
-	{
-	};
-
-	template <class Template1, template <auto ...> class Template2>
-	inline constexpr bool _is_same_as_v = _is_same_as<Template1, Template2>::value;
-
 		// Template-template equality
 
 	template <template <class ...> class, template <class ...> class>
@@ -157,168 +142,168 @@ namespace stdx::templates
 	struct function_signature<RetType(ParamTypes ...)>
 	{
 		using return_type = RetType;
-		using parameter_types = typetuple<ParamTypes ...>;
+		using parameter_types = pack<ParamTypes ...>;
 	};
 
 	template <class RetType, class ... ParamTypes>
 	struct function_signature<RetType(ParamTypes ...) const>
 	{
 		using return_type = RetType;
-		using parameter_types = typetuple<ParamTypes ...>;
+		using parameter_types = pack<ParamTypes ...>;
 	};
 
 	template <class RetType, class ... ParamTypes>
 	struct function_signature<RetType(ParamTypes ...) volatile>
 	{
 		using return_type = RetType;
-		using parameter_types = typetuple<ParamTypes ...>;
+		using parameter_types = pack<ParamTypes ...>;
 	};
 
 	template <class RetType, class ... ParamTypes>
 	struct function_signature<RetType(ParamTypes ...) const volatile>
 	{
 		using return_type = RetType;
-		using parameter_types = typetuple<ParamTypes ...>;
+		using parameter_types = pack<ParamTypes ...>;
 	};
 
 	template <class RetType, class ... ParamTypes>
 	struct function_signature<RetType(ParamTypes ...) &>
 	{
 		using return_type = RetType;
-		using parameter_types = typetuple<ParamTypes ...>;
+		using parameter_types = pack<ParamTypes ...>;
 	};
 
 	template <class RetType, class ... ParamTypes>
 	struct function_signature<RetType(ParamTypes ...) const &>
 	{
 		using return_type = RetType;
-		using parameter_types = typetuple<ParamTypes ...>;
+		using parameter_types = pack<ParamTypes ...>;
 	};
 
 	template <class RetType, class ... ParamTypes>
 	struct function_signature<RetType(ParamTypes ...) volatile &>
 	{
 		using return_type = RetType;
-		using parameter_types = typetuple<ParamTypes ...>;
+		using parameter_types = pack<ParamTypes ...>;
 	};
 
 	template <class RetType, class ... ParamTypes>
 	struct function_signature<RetType(ParamTypes ...) const volatile &>
 	{
 		using return_type = RetType;
-		using parameter_types = typetuple<ParamTypes ...>;
+		using parameter_types = pack<ParamTypes ...>;
 	};
 
 	template <class RetType, class ... ParamTypes>
 	struct function_signature<RetType(ParamTypes ...) &&>
 	{
 		using return_type = RetType;
-		using parameter_types = typetuple<ParamTypes ...>;
+		using parameter_types = pack<ParamTypes ...>;
 	};
 
 	template <class RetType, class ... ParamTypes>
 	struct function_signature<RetType(ParamTypes ...) const &&>
 	{
 		using return_type = RetType;
-		using parameter_types = typetuple<ParamTypes ...>;
+		using parameter_types = pack<ParamTypes ...>;
 	};
 
 	template <class RetType, class ... ParamTypes>
 	struct function_signature<RetType(ParamTypes ...) volatile &&>
 	{
 		using return_type = RetType;
-		using parameter_types = typetuple<ParamTypes ...>;
+		using parameter_types = pack<ParamTypes ...>;
 	};
 
 	template <class RetType, class ... ParamTypes>
 	struct function_signature<RetType(ParamTypes ...) const volatile &&>
 	{
 		using return_type = RetType;
-		using parameter_types = typetuple<ParamTypes ...>;
+		using parameter_types = pack<ParamTypes ...>;
 	};
 
 	template <class RetType, class ... ParamTypes>
 	struct function_signature<RetType(ParamTypes ...) noexcept>
 	{
 		using return_type = RetType;
-		using parameter_types = typetuple<ParamTypes ...>;
+		using parameter_types = pack<ParamTypes ...>;
 	};
 
 	template <class RetType, class ... ParamTypes>
 	struct function_signature<RetType(ParamTypes ...) const noexcept>
 	{
 		using return_type = RetType;
-		using parameter_types = typetuple<ParamTypes ...>;
+		using parameter_types = pack<ParamTypes ...>;
 	};
 
 	template <class RetType, class ... ParamTypes>
 	struct function_signature<RetType(ParamTypes ...) volatile noexcept>
 	{
 		using return_type = RetType;
-		using parameter_types = typetuple<ParamTypes ...>;
+		using parameter_types = pack<ParamTypes ...>;
 	};
 
 	template <class RetType, class ... ParamTypes>
 	struct function_signature<RetType(ParamTypes ...) const volatile noexcept>
 	{
 		using return_type = RetType;
-		using parameter_types = typetuple<ParamTypes ...>;
+		using parameter_types = pack<ParamTypes ...>;
 	};
 
 	template <class RetType, class ... ParamTypes>
 	struct function_signature<RetType(ParamTypes ...) & noexcept>
 	{
 		using return_type = RetType;
-		using parameter_types = typetuple<ParamTypes ...>;
+		using parameter_types = pack<ParamTypes ...>;
 	};
 
 	template <class RetType, class ... ParamTypes>
 	struct function_signature<RetType(ParamTypes ...) const & noexcept>
 	{
 		using return_type = RetType;
-		using parameter_types = typetuple<ParamTypes ...>;
+		using parameter_types = pack<ParamTypes ...>;
 	};
 
 	template <class RetType, class ... ParamTypes>
 	struct function_signature<RetType(ParamTypes ...) volatile & noexcept>
 	{
 		using return_type = RetType;
-		using parameter_types = typetuple<ParamTypes ...>;
+		using parameter_types = pack<ParamTypes ...>;
 	};
 
 	template <class RetType, class ... ParamTypes>
 	struct function_signature<RetType(ParamTypes ...) const volatile & noexcept>
 	{
 		using return_type = RetType;
-		using parameter_types = typetuple<ParamTypes ...>;
+		using parameter_types = pack<ParamTypes ...>;
 	};
 
 	template <class RetType, class ... ParamTypes>
 	struct function_signature<RetType(ParamTypes ...) && noexcept>
 	{
 		using return_type = RetType;
-		using parameter_types = typetuple<ParamTypes ...>;
+		using parameter_types = pack<ParamTypes ...>;
 	};
 
 	template <class RetType, class ... ParamTypes>
 	struct function_signature<RetType(ParamTypes ...) const && noexcept>
 	{
 		using return_type = RetType;
-		using parameter_types = typetuple<ParamTypes ...>;
+		using parameter_types = pack<ParamTypes ...>;
 	};
 
 	template <class RetType, class ... ParamTypes>
 	struct function_signature<RetType(ParamTypes ...) volatile && noexcept>
 	{
 		using return_type = RetType;
-		using parameter_types = typetuple<ParamTypes ...>;
+		using parameter_types = pack<ParamTypes ...>;
 	};
 
 	template <class RetType, class ... ParamTypes>
 	struct function_signature<RetType(ParamTypes ...) const volatile && noexcept>
 	{
 		using return_type = RetType;
-		using parameter_types = typetuple<ParamTypes ...>;
+		using parameter_types = pack<ParamTypes ...>;
 	};
 
 	template <class FuncType>
@@ -556,7 +541,7 @@ namespace stdx::templates
 
 		// Typepair
 
-	template <class Type1, class Type2>
+/*	template <class Type1, class Type2>
 	struct typepair
 	{
 		using first = Type1;
@@ -579,45 +564,51 @@ namespace stdx::templates
 	{
 		using first = Type;
 		static constexpr auto second = Value;
+	}; */
+
+	template <auto N>
+	struct value
+	{
+		static constexpr auto value = N;
 	};
 
-		// Typetuple
+		// OutPack
 
 	template <class ...>
-	struct typetuple
+	struct pack
 	{
 		static constexpr size_t size = 0;
 		template <class ... Types>
-		using push = typetuple<Types ...>;
+		using push = pack<Types ...>;
 		template <size_t N>
-		using pop = typetuple<>;
+		using pop = pack<>;
 	};
 
 	template <class Type>
-	struct typetuple<Type>
+	struct pack<Type>
 	{
 		using first = Type;
 		using last = Type;
 		static constexpr size_t size = 1;
 		template <class ... Types>
-		using push = typetuple<Type, Types ...>;
+		using push = pack<Type, Types ...>;
 		template <size_t N>
-		using pop = std::conditional_t<bool(N), typetuple<>, typetuple<Type>>;
+		using pop = std::conditional_t<bool(N), pack<>, pack<Type>>;
 	};
 
 	template <class Type, class ... Types>
-	struct typetuple<Type, Types ...>
+	struct pack<Type, Types ...>
 	{
 		using first = Type;
-		using last = typename typetuple<Types ...>::last;
+		using last = typename pack<Types ...>::last;
 		static constexpr size_t size = 1 + sizeof...(Types);
-		template <class ... Types1>
-		using push = typetuple<Type, Types ..., Types1 ...>;
+		template <class ... InPackFirstRest>
+		using push = pack<Type, Types ..., InPackFirstRest ...>;
 		template <size_t N>
-		using pop = std::conditional_t<bool(N), typename typetuple<Types ...>::template pop<N - 1>, typetuple<Type, Types ...>>;
+		using pop = std::conditional_t<bool(N), typename pack<Types ...>::template pop<N - 1>, pack<Type, Types ...>>;
 	};
 
-		// Valuetuple
+/*		// IndexPack
 
 	template <auto ...>
 	struct valuetuple
@@ -651,36 +642,36 @@ namespace stdx::templates
 		using push = valuetuple<Value, Values ..., Values1 ...>;
 		template <size_t N>
 		using pop = std::conditional_t<bool(N), typename valuetuple<Values ...>::template pop<N - 1>, valuetuple<Value, Values ...>>;
-	};
+	}; */
 
-		// Constrained typetuple, applies a trait to each element of a typetuple (which can be of type typepair), constructing a new typetuple with the elements of the old one (or the second types of the typepairs) for which bool(trait<element>::value) == true (or bool(trait<element::first>::value) == true)
+		// Constrained pack, applies a trait to each element of a pack (which can be of type typepair), constructing a new pack with the elements of the old one (or the second types of the typepairs) for which bool(trait<element>::value) == true (or bool(trait<element::first>::value) == true)
 
-	template <template <class> class Trait, class Typetuple1, class Typetuple2>
-	struct _constrained_typetuple : _constrained_typetuple<Trait, typename Typetuple1::template pop<1>, std::conditional_t<bool(Trait<typename Typetuple1::first>::value), typename Typetuple2::template push<typename Typetuple1::first>, Typetuple2>>
+	template <template <class> class Trait, class InPack, class OutPack>
+	struct _constrained_pack : _constrained_pack<Trait, typename InPack::template pop<1>, std::conditional_t<bool(Trait<typename InPack::first>::value), typename OutPack::template push<typename InPack::first>, OutPack>>
 	{
 	};
 
-	template <template <class> class Trait, class Type1, class Type2, class ... Types, class Typetuple> // Note: this feels inconsistent (Idea: create a unique constrained_typepairtuple)
-	struct _constrained_typetuple<Trait, typetuple<typepair<Type1, Type2>, Types ...>, Typetuple> : _constrained_typetuple<Trait, typetuple<Types ...>, std::conditional_t<bool(Trait<Type1>::value), typename Typetuple::template push<Type2>, Typetuple>>
+	template <template <class> class Trait, class InPackFirst, class ... InPackFirstRest, class ... InPackRest, class OutPack> // Note: this feels inconsistent (Idea: create a unique constrained_typepairtuple)
+	struct _constrained_pack<Trait, pack<pack<InPackFirst, InPackFirstRest ...>, InPackRest ...>, OutPack> : _constrained_pack<Trait, pack<InPackRest ...>, std::conditional_t<bool(Trait<InPackFirst>::value), typename OutPack::template push<pack<InPackFirst, InPackFirstRest ...>>, OutPack>>
 	{
 	};
 
-	template <template <class> class Trait, class Typetuple>
-	struct _constrained_typetuple<Trait, typetuple<>, Typetuple>
+	template <template <class> class Trait, class OutPack>
+	struct _constrained_pack<Trait, pack<>, OutPack>
 	{
-		using type = Typetuple;
+		using type = OutPack;
 	};
 
-	template <template <class> class Trait, class Typetuple>
-	struct _assert_constrained_typetuple : _constrained_typetuple<Trait, Typetuple, typetuple<>>
+	template <template <class> class Trait, class InPack>
+	struct _assert_constrained_pack : _constrained_pack<Trait, InPack, pack<>>
 	{
-		static_assert(is_same_as_v<Typetuple, typetuple>,
-					  "stdx::templates::constrained_typetuple<Trait, Typetuple>: Typetuple must be of type stdx::templates::typetuple<T ...> where T is any type parameter");
+		static_assert(is_same_as_v<InPack, pack>,
+					  "stdx::templates::constrained_pack<Trait, InPack>: InPack must be of type stdx::templates::pack<T ...> where T is any type parameter");
 	};
 
-	template <template <class> class Trait, class Typetuple>
-	using constrained_typetuple = typename _assert_constrained_typetuple<Trait, Typetuple>::type;
-
+	template <template <class> class Trait, class InPack>
+	using constrained_pack = typename _assert_constrained_pack<Trait, InPack>::type;
+/*
 		// Constrained valuetuple, applies a trait to each element of a valuetuple, constructing a new valuetuple with the elements of the old one for which bool(trait<element>::value) == true
 
 	template <template <auto> class Trait, class Valuetuple1, class Valuetuple2>
@@ -688,70 +679,68 @@ namespace stdx::templates
 	{
 	};
 
-	template <template <auto> class Trait, class Valuetuple>
-	struct _constrained_valuetuple<Trait, valuetuple<>, Valuetuple>
+	template <template <auto> class Trait, class IndexPack>
+	struct _constrained_valuetuple<Trait, valuetuple<>, IndexPack>
 	{
-		using type = Valuetuple;
+		using type = IndexPack;
 	};
 
-	template <template <auto> class Trait, class Valuetuple>
-	struct _assert_constrained_valuetuple : _constrained_valuetuple<Trait, Valuetuple, valuetuple<>>
+	template <template <auto> class Trait, class IndexPack>
+	struct _assert_constrained_valuetuple : _constrained_valuetuple<Trait, IndexPack, valuetuple<>>
 	{
-		static_assert(_is_same_as_v<Valuetuple, valuetuple>,
-					  "stdx::templates::constrained_valuetuple<Trait, Valuetuple>: Typetuple must be of type stdx::templates::valuetuple<V ...> where V is any non-type parameter");
+		static_assert(_is_same_as_v<IndexPack, valuetuple>,
+					  "stdx::templates::constrained_valuetuple<Trait, IndexPack>: OutPack must be of type stdx::templates::valuetuple<V ...> where V is any non-type parameter");
 	};
 
-	template <template <auto> class Trait, class Valuetuple>
-	using constrained_valuetuple = typename _assert_constrained_valuetuple<Trait, Valuetuple>::type;
+	template <template <auto> class Trait, class IndexPack>
+	using constrained_valuetuple = typename _assert_constrained_valuetuple<Trait, IndexPack>::type;
 
-		// Constrained typevaluetuple, applies a trait to each element of a typetuple (which must be of type typevalue), constructing a valuetuple with the elements for which bool(trait<element::first>::value) == true
+		// Constrained typevaluetuple, applies a trait to each element of a pack (which must be of type typevalue), constructing a valuetuple with the elements for which bool(trait<element::first>::value) == true
 
-	template <template <class> class Trait, class Typetuple, class Valuetuple> // Note: this feels inconsistent
-	struct _constrained_typevaluetuple : _constrained_typevaluetuple<Trait, typename Typetuple::template pop<1>, std::conditional_t<bool(Trait<typename Typetuple::first::first>::value), typename Valuetuple::template push<Typetuple::first::second>, Valuetuple>>
+	template <template <class> class Trait, class OutPack, class IndexPack> // Note: this feels inconsistent
+	struct _constrained_typevaluetuple : _constrained_typevaluetuple<Trait, typename OutPack::template pop<1>, std::conditional_t<bool(Trait<typename OutPack::first::first>::value), typename IndexPack::template push<OutPack::first::second>, IndexPack>>
 	{
 	};
 
-	template <template <class> class Trait, class Valuetuple>
-	struct _constrained_typevaluetuple<Trait, typetuple<>, Valuetuple>
+	template <template <class> class Trait, class IndexPack>
+	struct _constrained_typevaluetuple<Trait, pack<>, IndexPack>
 	{
-		using type = Valuetuple;
+		using type = IndexPack;
 	};
 
-	template <template <class> class Trait, class Typetuple>
-	struct _assert_constrained_typevaluetuple : _constrained_typevaluetuple<Trait, Typetuple, valuetuple<>>
+	template <template <class> class Trait, class OutPack>
+	struct _assert_constrained_typevaluetuple : _constrained_typevaluetuple<Trait, OutPack, valuetuple<>>
 	{
-		static_assert(is_same_as_v<Typetuple, typetuple>,
-					  "stdx::templates::constrained_typevaluetuple<Trait, Typetuple>: Typetuple must be of type stdx::templates::typetuple<TV ...> where TV is of type stdx::templates::typevalue<T, V> and where T is any type paramter and V is any non-type parameter");
+		static_assert(is_same_as_v<OutPack, pack>,
+					  "stdx::templates::constrained_typevaluetuple<Trait, OutPack>: OutPack must be of type stdx::templates::pack<TV ...> where TV is of type stdx::templates::typevalue<T, V> and where T is any type paramter and V is any non-type parameter");
 	};
 
-	template <template <class> class Trait, class Typetuple>
-	using constrained_typevaluetuple = typename _assert_constrained_typevaluetuple<Trait, Typetuple>::type;
-
-		
-
-		// Transformed typetuple, applies a trait to each element of a typetuple, constructing a new typetuple of the same size as the old one and with the corresponding elements as trait<element>::type
+	template <template <class> class Trait, class OutPack>
+	using constrained_typevaluetuple = typename _assert_constrained_typevaluetuple<Trait, OutPack>::type;
+*/
+		// Transformed pack, applies a trait to each element of a pack, constructing a new pack of the same size as the old one and with the corresponding elements as trait<element>::type
 	
-	template <template <class> class Trait, class Typetuple1, class Typetuple2>
-	struct _transformed_typetuple : _transformed_typetuple<Trait, typename Typetuple1::template pop<1>, typename Typetuple2::template push<typename Trait<typename Typetuple1::first>::type>>
+	template <template <class> class Trait, class InPack, class OutPack>
+	struct _transformed_pack : _transformed_pack<Trait, typename InPack::template pop<1>, typename OutPack::template push<typename Trait<typename InPack::first>::type>>
 	{
 	};
 
-	template <template <class> class Trait, class Typetuple>
-	struct _transformed_typetuple<Trait, typetuple<>, Typetuple>
+	template <template <class> class Trait, class OutPack>
+	struct _transformed_pack<Trait, pack<>, OutPack>
 	{
-		using type = Typetuple;
+		using type = OutPack;
 	};
 
-	template <template <class> class Trait, class Typetuple>
-	struct _assert_transformed_typetuple : _transformed_typetuple<Trait, Typetuple, typetuple<>>
+	template <template <class> class Trait, class InPack>
+	struct _assert_transformed_pack : _transformed_pack<Trait, InPack, pack<>>
 	{
-		static_assert(is_same_as_v<Typetuple, typetuple>,
-					  "stdx::templates::transformed_typetuple<Trait, Typetuple>: Typetuple must be of type stdx::templates::typetuple<T ...> where T is any type parameter");
+		static_assert(is_same_as_v<InPack, pack>,
+					  "stdx::templates::transformed_pack<Trait, InPack>: InPack must be of type stdx::templates::pack<T ...> where T is any type parameter");
 	};
 
-	template <template <class> class Trait, class Typetuple>
-	using transformed_typetuple = typename _assert_transformed_typetuple<Trait, Typetuple>::type;
-
+	template <template <class> class Trait, class InPack>
+	using transformed_pack = typename _assert_transformed_pack<Trait, InPack>::type;
+/*
 		// Transformed valuetuple, applies a trait to each element of a valuetuple, constructing a new valuetuple of the same size as the old one and with the corresponding elements as trait<element>::value
 
 	template <template <auto> class Trait, class Valuetuple1, class Valuetuple2>
@@ -759,83 +748,81 @@ namespace stdx::templates
 	{
 	};
 
-	template <template <auto> class Trait, class Valuetuple>
-	struct _transformed_valuetuple<Trait, valuetuple<>, Valuetuple>
+	template <template <auto> class Trait, class IndexPack>
+	struct _transformed_valuetuple<Trait, valuetuple<>, IndexPack>
 	{
-		using type = Valuetuple;
+		using type = IndexPack;
 	};
 
-	template <template <auto> class Trait, class Valuetuple>
-	struct _assert_transformed_valuetuple : _transformed_valuetuple<Trait, Valuetuple, valuetuple<>>
+	template <template <auto> class Trait, class IndexPack>
+	struct _assert_transformed_valuetuple : _transformed_valuetuple<Trait, IndexPack, valuetuple<>>
 	{
-		static_assert(_is_same_as_v<Valuetuple, valuetuple>,
-					  "stdx::templates::transformed_valuetuple<Trait, Valuetuple>: Valuetuple must be of type stdx::templates::valuetuple<V ...> where V is any non-type parameter");
+		static_assert(_is_same_as_v<IndexPack, valuetuple>,
+					  "stdx::templates::transformed_valuetuple<Trait, IndexPack>: IndexPack must be of type stdx::templates::valuetuple<V ...> where V is any non-type parameter");
 	};
 
-	template <template <auto> class Trait, class Valuetuple>
-	using transformed_valuetuple = typename _assert_transformed_valuetuple<Trait, Valuetuple>::type;
+	template <template <auto> class Trait, class IndexPack>
+	using transformed_valuetuple = typename _assert_transformed_valuetuple<Trait, IndexPack>::type;
 	
-		// Transformed typevaluetuple, applies a trait to each element of a typetuple, constructing a new valuetuple of the same size as the old one and with the corresponding elements as trait<element>::value
+		// Transformed typevaluetuple, applies a trait to each element of a pack, constructing a new valuetuple of the same size as the old one and with the corresponding elements as trait<element>::value
 
-	template <template <class> class Trait, class Typetuple, class Valuetuple>
-	struct _transformed_typevaluetuple : _transformed_typevaluetuple<Trait, typename Typetuple::template pop<1>, typename Valuetuple::template push<Trait<typename Typetuple::first>::value>>
+	template <template <class> class Trait, class OutPack, class IndexPack>
+	struct _transformed_typevaluetuple : _transformed_typevaluetuple<Trait, typename OutPack::template pop<1>, typename IndexPack::template push<Trait<typename OutPack::first>::value>>
 	{
 	};
 
-	template <template <class> class Trait, class Valuetuple>
-	struct _transformed_typevaluetuple<Trait, typetuple<>, Valuetuple>
+	template <template <class> class Trait, class IndexPack>
+	struct _transformed_typevaluetuple<Trait, pack<>, IndexPack>
 	{
-		using type = Valuetuple;
+		using type = IndexPack;
 	};
 
-	template <template <class> class Trait, class Typetuple>
-	struct _assert_transformed_typevaluetuple : _transformed_typevaluetuple<Trait, Typetuple, valuetuple<>>
+	template <template <class> class Trait, class OutPack>
+	struct _assert_transformed_typevaluetuple : _transformed_typevaluetuple<Trait, OutPack, valuetuple<>>
 	{
-		static_assert(is_same_as_v<Typetuple, typetuple>,
-					  "stdx::templates::transformed_typevaluetuple<Trait, Typetuple>: Typetuple must be of type stdx::templates::typetuple<T ...> where T is any type parameter");
+		static_assert(is_same_as_v<OutPack, pack>,
+					  "stdx::templates::transformed_typevaluetuple<Trait, OutPack>: OutPack must be of type stdx::templates::pack<T ...> where T is any type parameter");
 	};
 
-	template <template <class> class Trait, class Typetuple>
-	using transformed_typevaluetuple = typename _assert_transformed_typevaluetuple<Trait, Typetuple>::type;
+	template <template <class> class Trait, class OutPack>
+	using transformed_typevaluetuple = typename _assert_transformed_typevaluetuple<Trait, OutPack>::type;
+*/
+		// Permutated tuple, permutates the parameters inside a pack based on a valuetuple with integral values in the interval [0, N) where N is the number of elements in the tuples
 
-		// Permutated tuple, permutates the parameters inside a typetuple based on a valuetuple with integral values in the interval [0, N) where N is the number of elements in the tuples
-
-	template <class Tuple1, class Tuple2, class Valuetuple>
-	struct _permutated_tuple : _permutated_tuple<Tuple1, typename Tuple2::template push<typename Tuple1::template pop<Valuetuple::first>::first>, typename Valuetuple::template pop<1>>
+	template <class InPack, class OutPack, class IndexPack>
+	struct _permutated_pack : _permutated_pack<InPack, typename OutPack::template push<typename InPack::template pop<IndexPack::first::value>::first>, typename IndexPack::template pop<1>>
 	{
 	};
 
-	template <class Tuple1, class Tuple2>
-	struct _permutated_tuple<Tuple1, Tuple2, valuetuple<>>
+	template <class InPack, class OutPack>
+	struct _permutated_pack<InPack, OutPack, pack<>>
 	{
-		using type = Tuple2;
+		using type = OutPack;
 	};
 
 	template <class>
-	struct _assert_valuetuple_permutated_tuple : std::false_type
+	struct _assert_index_pack_permutated_pack : std::false_type
 	{
 	};
 
 	template <auto ... Values>
-	struct _assert_valuetuple_permutated_tuple<valuetuple<Values ...>> : std::is_same<valuetuple<Values ...>, constrained_valuetuple<range<0, sizeof...(Values) - 1>::template between, constrained_typevaluetuple<std::is_integral, typetuple<typevalue<decltype(Values), Values> ...>>>>
+	struct _assert_index_pack_permutated_pack<pack<value<Values> ...>> : std::is_same<pack<value<Values> ...>, constrained_pack<range<0, sizeof...(Values) - 1>::template between, constrained_pack<std::is_integral, pack<value<Values> ...>>>> // Review pending
 	{
 	};
 
-	template <class Tuple, class Valuetuple>
-	struct _assert_permutated_tuple : _permutated_tuple<Tuple, typetuple<>, Valuetuple>
+	template <class InPack, class IndexPack>
+	struct _assert_permutated_pack : _permutated_pack<InPack, pack<>, IndexPack>
 	{
-		static_assert(is_same_as_v<Tuple, typetuple> || _is_same_as_v<Tuple, valuetuple>,
-					  "stdx::templates::reordered_typetuple<Tuple, Valuetuple>: Tuple must be either of type stdx::templates::typetuple<T ...> or stdx::templates::valuetuple<V ...>");
-		static_assert(_is_same_as_v<Valuetuple, valuetuple>,
-					  "stdx::templates::reordered_typetuple<Tuple, Valuetuple>: Valuetuple must be of type stdx::templates::valuetuple<V ...>");
-		static_assert(Tuple::size == Valuetuple::size,
-					  "stdx::templates::reordered_typetuple<Tuple, Valuetuple>: Tuple::size must be equal to Valuetuple::size");
-		static_assert(_assert_valuetuple_permutated_tuple<Valuetuple>::value,
-					  "stdx::templates::reordered_typetuple<Tuple, Valuetuple>: Valuetuple must contain only integral types and these must be in the interval of [0, Valuetuple::size)");
+		static_assert(is_same_as_v<InPack, pack> || _is_same_as_v<InPack, valuetuple>,
+					  "stdx::templates::reordered_typetuple<InPack, IndexPack>: InPack must be of type stdx::templates::pack<T ...>");
+		static_assert(InPack::size == IndexPack::size,
+					  "stdx::templates::reordered_typetuple<InPack, IndexPack>: InPack::size must be equal to IndexPack::size");
+		static_assert(_assert_index_pack_permutated_pack<IndexPack>::value,
+					  "stdx::templates::reordered_typetuple<InPack, IndexPack>: IndexPack must be of type stdx::template::pack<stdx::template::value<V> ...> type where V is an integral type in the interval of [0, IndexPack::size)");
 	};
 
-	template <class Tuple, class Valuetuple>
-	using permutated_tuple = typename _assert_permutated_tuple<Tuple, Valuetuple>::type;
+	template <class InPack, class IndexPack>
+	using permutated_pack = typename _assert_permutated_pack<InPack, IndexPack>::type;
 }
 
 #endif

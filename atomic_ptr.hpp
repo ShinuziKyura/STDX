@@ -16,7 +16,7 @@ namespace stdx
 {
 	// http://en.cppreference.com/w/cpp/memory/shared_ptr
 
-	using atomic_uint_largest_lock_free_t = typename stdx::templates::constrained_typetuple<stdx::templates::is_lock_free, stdx::templates::typetuple<
+	using atomic_uint_largest_lock_free_t = typename stdx::templates::constrained_pack<stdx::templates::is_lock_free, stdx::templates::pack<
 		std::atomic_uint_least64_t,
 		std::atomic_uint_least32_t,
 		std::atomic_uint_least16_t,
