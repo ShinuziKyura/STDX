@@ -660,7 +660,7 @@ namespace stdx::templates
 	{
 	};
 
-	template <template <class> class Trait, class Type1, class Type2, class ... Types, class Typetuple>
+	template <template <class> class Trait, class Type1, class Type2, class ... Types, class Typetuple> // Note: this feels inconsistent (Idea: create a unique constrained_typepairtuple)
 	struct _constrained_typetuple<Trait, typetuple<typepair<Type1, Type2>, Types ...>, Typetuple> : _constrained_typetuple<Trait, typetuple<Types ...>, std::conditional_t<bool(Trait<Type1>::value), typename Typetuple::template push<Type2>, Typetuple>>
 	{
 	};
@@ -706,7 +706,7 @@ namespace stdx::templates
 
 		// Constrained typevaluetuple, applies a trait to each element of a typetuple (which must be of type typevalue), constructing a valuetuple with the elements for which bool(trait<element::first>::value) == true
 
-	template <template <class> class Trait, class Typetuple, class Valuetuple>
+	template <template <class> class Trait, class Typetuple, class Valuetuple> // Note: this feels inconsistent
 	struct _constrained_typevaluetuple : _constrained_typevaluetuple<Trait, typename Typetuple::template pop<1>, std::conditional_t<bool(Trait<typename Typetuple::first::first>::value), typename Valuetuple::template push<Typetuple::first::second>, Valuetuple>>
 	{
 	};
@@ -726,6 +726,8 @@ namespace stdx::templates
 
 	template <template <class> class Trait, class Typetuple>
 	using constrained_typevaluetuple = typename _assert_constrained_typevaluetuple<Trait, Typetuple>::type;
+
+		
 
 		// Transformed typetuple, applies a trait to each element of a typetuple, constructing a new typetuple of the same size as the old one and with the corresponding elements as trait<element>::type
 	

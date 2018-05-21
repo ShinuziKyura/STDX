@@ -27,7 +27,7 @@ namespace stdx
 	template <class Engine = smallest_engine, class Distribution = std::bernoulli_distribution>
 	class random_generator
 	{
-		static_assert(sizeof(typename Distribution::param_type::distribution_type) > 0, 
+		static_assert(sizeof(typename Distribution::param_type::distribution_type), 
 					  "Distribution must satisfy the requirements of RandomNumberDistribution");
 	public:
 		using engine_type = Engine;
@@ -37,9 +37,9 @@ namespace stdx
 
 		template <class Parameters = distribution_parameters>
 		random_generator<Engine, Distribution>(Parameters parameters = distribution_parameters()) :
-		/*	_seed(std::transform(std::begin(_random_data), std::end(_random_data), 
-								  std::begin(_random_data), [this] (auto const &) { return _random_device(); }),
-				   std::end(_random_data)),*/
+			_seed(std::begin(_random_data),
+				  std::transform(std::begin(_random_data), std::end(_random_data), 
+								 std::begin(_random_data), [this] (auto const &) { return _random_device(); })),
 			_engine(_seed),
 			_distribution(parameters)
 		{
@@ -49,13 +49,13 @@ namespace stdx
 		{
 			return _distribution(_engine);
 		}
-		operator result_type()
+		operator engine_type()
 		{
-			return _distribution(_engine);
+			return _engine;
 		}
 	private:
 		std::random_device _random_device;
-	//	std::array<std::mt19937_64::result_type, std::mt19937_64::state_size> _random_data;
+		std::array<std::mt19937_64::result_type, std::mt19937_64::state_size> _random_data;
 		std::seed_seq _seed; // seed_seq is bad
 		engine_type _engine;
 		distribution_type _distribution;

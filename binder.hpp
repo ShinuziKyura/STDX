@@ -10,11 +10,18 @@
 namespace stdx::binder
 {
 	template <class FuncType, class ... ArgTypes>
-	auto bind(FuncType func, ArgTypes && ... args)
+	auto bind(FuncType * func, ArgTypes && ... args)
 	{
 		static_assert(sizeof(stdx::templates::function_signature<FuncType>), 
 					  "FuncType must be a function, a pointer to function, or a pointer to member function");
 		return std::bind(func, bind_forward<ArgTypes>(args) ...);
+	}
+	template <class FuncType, class ObjType, class ... ArgTypes>
+	auto bind(FuncType ObjType::* func, ObjType * obj, ArgTypes && ... args)
+	{
+		static_assert(sizeof(stdx::templates::function_signature<FuncType>),
+					  "FuncType must be a function, a pointer to function, or a pointer to member function");
+		return std::bind(func, obj, bind_forward<ArgTypes>(args) ...);
 	}
 
 	template <class ValType>
