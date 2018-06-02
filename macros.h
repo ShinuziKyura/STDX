@@ -1,7 +1,7 @@
 #ifndef MACROS_H
 #define MACROS_H
 
-#ifdef STDX_SURPRESS_WARNINGS
+#ifdef STDX_SUPPRESS_WARNINGS
 #pragma warning(disable: 4100)
 #endif
 
@@ -12,9 +12,9 @@
 #define STDX_DEALLOC(ptr, size) \
 STDX_CODE_BEG\
 	size_t STDX_DEALLOC_VAR1 = 0;\
-	while(STDX_DEALLOC_VAR1 <= size)\
+	while(STDX_DEALLOC_VAR1 < size)\
 	{\
-		free(STDX_DEALLOC_VAR1++ != size ? (void*) (long) ptr[STDX_DEALLOC_VAR1 - 1] : NULL);\
+		free((void*) (long) ptr[STDX_DEALLOC_VAR1++]);\
 	}\
 	free(ptr);\
 STDX_CODE_END

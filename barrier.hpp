@@ -3,9 +3,9 @@
 
 #include <future>
 
-namespace atp
+namespace stdx
 {
-	class barrier
+	class barrier // TODO
 	{
 	public:
 		barrier() :

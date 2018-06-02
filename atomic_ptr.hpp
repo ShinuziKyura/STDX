@@ -4,7 +4,7 @@
 #include <atomic>
 #include <memory> // Not needed
 
-#include "templates.hpp"
+#include "meta.hpp"
 
 /* shared_ptr<T>
 All member functions (including copy constructor and copy assignment) can be called by multiple threads on different instances of shared_ptr without additional synchronization
@@ -12,11 +12,11 @@ even if these instances are copies and share ownership of the same object. If mu
 accesses uses a non-const member function of shared_ptr then a data race will occur; the shared_ptr overloads of atomic functions can be used to prevent the data race.
 */
 
-namespace stdx
+namespace stdx // This may be moved to stp
 {
 	// http://en.cppreference.com/w/cpp/memory/shared_ptr
 
-	using atomic_uint_largest_lock_free_t = typename stdx::templates::constrained_pack<stdx::templates::is_lock_free, stdx::templates::pack<
+	using atomic_uint_largest_lock_free_t = typename stdx::meta::constrained_pack<stdx::meta::is_lock_free, stdx::meta::pack<
 		std::atomic_uint_least64_t,
 		std::atomic_uint_least32_t,
 		std::atomic_uint_least16_t,

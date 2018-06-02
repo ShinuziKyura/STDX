@@ -14,4 +14,4 @@ type name ## _INLINE_VARIABLE_TYPE<>:: name ## _INLINE_VARIABLE_VALUE{ value }
 	
 #define INLINE_VARIABLE(name) name ## _INLINE_VARIABLE_TYPE<>::name ## _INLINE_VARIABLE_VALUE
 
-#endif//INLINE_VARIABLE_HPP
+#endif

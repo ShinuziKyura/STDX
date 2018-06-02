@@ -1,8 +1,8 @@
 #include <iostream>
 #include <functional>
+#include <future>
 
-//#include "concurrent_queue.hpp"
-#include "templates.hpp"
+#include "meta.hpp"
 
 template <class Type>
 struct pointer_type
@@ -10,35 +10,61 @@ struct pointer_type
 	using type = Type *;
 };
 
-int main3()
+#pragma warning(disable: 4297)
+
+long func(char, int) noexcept
 {
+	return 1;
+}
+
+struct Class
+{
+	void func(double, int) const volatile & noexcept
 	{
-	//	stdx::atomic_ptr<int> aptr(new int(3));
 	}
+};
 
-	[[maybe_unused]] 
-	stdx::templates::constrained_pack<std::is_placeholder, stdx::templates::pack<
-		stdx::templates::typepair<int &, int>, 
-		stdx::templates::typepair<double, double>, 
-		stdx::templates::typepair<decltype(std::placeholders::_1), bool>,
-		stdx::templates::typepair<char, char &&>
-	>> t1;
-	/*
-	[[maybe_unused]]
-	stdx::templates::constrained_valuetuple<stdx::templates::range<2, 4>::between, stdx::templates::valuetuple<0, 2, 5, 6, 3, 4, 1, 3>> t2;
+struct Func
+{
+	template <class FuncType>
+	Func(FuncType *)
+	{
+		std::cout << "1\n" << typeid(FuncType).name() << "\n";
+	}
+	template <class FuncType, class ObjType>
+	Func(FuncType ObjType::*)
+	{
+		std::cout << "2\n" << typeid(FuncType).name() << "\n";
+	}
+};
 
-	[[maybe_unused]]
-	stdx::templates::constrained_typevaluetuple<std::is_integral, stdx::templates::pack<
-		stdx::templates::typevalue<int, 1>, 
-		stdx::templates::typevalue<int, 3>, 
-		stdx::templates::typevalue<double, 2>
-	>> t3;
+long (*f)(char, int) noexcept = &func;
 
-	[[maybe_unused]]
-	stdx::templates::permutated_pack<stdx::templates::pack<short, int, long, long long>, stdx::templates::valuetuple<1, 3, 0, 2>> t4;
-	*/
-	[[maybe_unused]]
-	stdx::templates::transformed_pack<pointer_type, stdx::templates::pack<int, char>> t5;
+void (Class::* cf)(double, int) const volatile & noexcept = &Class::func;
+
+int main()
+{
+	using namespace stdx::meta;
+
+	[[maybe_unused]] constrained_pack<std::is_placeholder, pack<pack<int &, int>, pack<double, double>, pack<decltype(std::placeholders::_1), bool>, pack<char, char &&>>> t1;
+
+	[[maybe_unused]] transformed_pack<pointer_type, pack<pack<unsigned int, Class, double>, pack<float, bool>>> t2;
+
+	[[maybe_unused]] permutated_pack<pack<short, int, long, long long>, valpack<1, 3, 0, 2>> t3;
+
+	[[maybe_unused]] constrained_pack<value_trait<beside<2, 4>::trait>::value, as_pack_val<valpack<0, 2, 5, 6, 3, 4, 1, 3>>> t4;
+
+	[[maybe_unused]] transformed_pack<std::is_class, pack<Class, long, unsigned char>> t5;
+
+	[[maybe_unused]] permutated_pack<pack<pack<double, long double, pack<val<1>, int>>, pack<char, val<2>, bool>, val<3>>, pack<val<2>, val<0>, val<1>>> t6;
+
+	[[maybe_unused]] merged_pack<pack<int, double, char>, pack<int, double, char>> t7;
+
+	[[maybe_unused]] transformed_pack<type_trait<std::is_placeholder>::first, pack<pack<int &, int>, pack<double, double>, pack<decltype(std::placeholders::_1), bool>, pack<char, char &&>>> t8;
+
+	type_cast<int, float>();
+
+//	type_cast<int, Class>(); // SFINAE error if not convertible
 
 	return 0;
 }

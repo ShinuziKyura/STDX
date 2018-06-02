@@ -4,7 +4,7 @@
 #include <random>
 #include <array>
 
-namespace stdx
+namespace stdx//::rand
 {
 	using fastest_engine = std::ranlux48_base;
 	using smallest_engine = std::minstd_rand;
@@ -92,4 +92,4 @@ namespace stdx
 	using random_piecewise_linear_generator = random_generator<std::piecewise_linear_distribution<long double>>;
 }
 
-#endif//RANDOM_GENERATOR_HPP
+#endif
