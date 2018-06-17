@@ -1,17 +1,32 @@
 #include <iostream>
 
+#include "stopwatch.hpp"
+
 #include "spin_mutex.hpp"
 #include "atomic_ptr.hpp"
 
-int main5()
+#include "zeromem.hpp"
+
+struct S
+{
+	int i = 1;
+	double d = 1.0;
+	char c = 'a';
+};
+
+int main()
 {
 	stdx::spin_mutex mtx;
 
+	stdx::stopwatch::start();
 	mtx.lock();
+	std::cout << stdx::stopwatch::split() << std::endl;
 
-	std::cout << "Hi planet!";
+	std::cout << "Hi planet!\n";
 
+	stdx::stopwatch::split();
 	mtx.unlock();
+	std::cout << stdx::stopwatch::split() << std::endl;
 
 	return 0;
 }
