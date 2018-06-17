@@ -1,7 +1,3 @@
-#ifdef STDX_SUPPRESS_WARNINGS
-#pragma warning(disable: 4100)
-#endif
-
 #define STDX_CODE_BEG		if(1){
 #define STDX_CODE_END		}else(void)0
 

@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "spin_mutex.hpp"
+#include "atomic_ptr.hpp"
 
 int main5()
 {

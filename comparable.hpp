@@ -1,10 +1,10 @@
-#ifndef COMPARABLE_HPP
-#define COMPARABLE_HPP
+#ifndef STDX_COMPARABLE_HPP
+#define STDX_COMPARABLE_HPP
 
 namespace stdx
 {
 	template <class Type>
-	struct comparable
+	struct comparable // Review this
 	{
 		bool operator>(comparable<Type> const & that)
 		{

@@ -1,5 +1,5 @@
-#ifndef BINDER_HPP
-#define BINDER_HPP
+#ifndef STDX_BINDER_HPP
+#define STDX_BINDER_HPP
 
 #include <functional>
 

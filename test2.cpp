@@ -14,12 +14,12 @@ int main2()
 
 #if SITUATION == 1 // 3 seconds
 	{
-		auto future = std::async(std::launch::async, func);
+		auto future = std::async(std::launch::async, func); // Destructor is called
 	}
-#elif SITUATION == 2 // 2 seconds
-	auto future = std::async(std::launch::async, func);
-#elif SITUATION == 3 // 3 seconds
-	std::async(std::launch::async, func);
+#elif SITUATION == 2 // 3 seconds
+	std::async(std::launch::async, func); // Destructor is called
+#elif SITUATION == 3 // 2 seconds
+	auto future = std::async(std::launch::async, func); // Destructor is not called
 #endif
 
 	std::this_thread::sleep_for(std::chrono::seconds(2));

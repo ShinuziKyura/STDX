@@ -1,5 +1,5 @@
-#ifndef ATOMIC_PTR_HPP
-#define ATOMIC_PTR_HPP
+#ifndef STDX_ATOMIC_PTR_HPP
+#define STDX_ATOMIC_PTR_HPP
 
 #include <atomic>
 #include <memory> // Not needed
@@ -11,6 +11,8 @@ All member functions (including copy constructor and copy assignment) can be cal
 even if these instances are copies and share ownership of the same object. If multiple threads of execution access the same shared_ptr without synchronization and any of those 
 accesses uses a non-const member function of shared_ptr then a data race will occur; the shared_ptr overloads of atomic functions can be used to prevent the data race.
 */
+
+// Note to self: check https://blogs.msdn.microsoft.com/vcblog/2018/04/09/intellisense-for-remote-linux-headers/?utm_source=vs_developer_news&utm_medium=referral
 
 namespace stdx // This may be moved to stp
 {
