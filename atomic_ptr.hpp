@@ -16,18 +16,18 @@ namespace stdx // This may be moved to stp
 {
 	// http://en.cppreference.com/w/cpp/memory/shared_ptr
 
-	using atomic_uint_largest_lock_free_t = typename stdx::meta::constrained_pack<stdx::meta::is_lock_free, stdx::meta::pack<
+/*	using atomic_uint_least_largest_lock_free_t = typename stdx::meta::constrained_pack<stdx::meta::is_lock_free, stdx::meta::pack<
 		std::atomic_uint_least64_t,
 		std::atomic_uint_least32_t,
 		std::atomic_uint_least16_t,
 		std::atomic_uint_least8_t
-	>>::first;
+	>>::template push<std::atomic_uint_least64_t>::first; */
+
+	using _atomic_counter = std::atomic_uint_least8_t; // Make it so one can specify how large it wants this type to be
 
 	class _atomic_ptr_ref_counter
 	{
 	public:
-		using counter_type = atomic_uint_largest_lock_free_t;
-
 		void increment()
 		{
 			_references.fetch_add(1, std::memory_order_relaxed); // No synchronization on this operation?
@@ -41,22 +41,21 @@ namespace stdx // This may be moved to stp
 				// See https://stackoverflow.com/questions/14167767/what-is-the-difference-between-using-explicit-fences-and-stdatomic
 				// See http://preshing.com/20131125/acquire-and-release-fences-dont-work-the-way-youd-expect/
 
-
-				_delete_atomic_ptr_counter();
+				_delete_atomic_ptr_ref_counter();
 			}
 		}
 	protected:
 		_atomic_ptr_ref_counter() = default;
 		virtual ~_atomic_ptr_ref_counter() = default;
 
-		virtual void _delete_atomic_ptr_counter() = 0;
+		virtual void _delete_atomic_ptr_ref_counter() = 0;
 	private:
 		_atomic_ptr_ref_counter(_atomic_ptr_ref_counter const &) = delete;
 		_atomic_ptr_ref_counter & operator=(_atomic_ptr_ref_counter const &) = delete;
 		_atomic_ptr_ref_counter(_atomic_ptr_ref_counter &&) = delete;
 		_atomic_ptr_ref_counter & operator=(_atomic_ptr_ref_counter &&) = delete;
 
-		counter_type _references{ 1 };
+		_atomic_counter _references{ 1 };
 	};
 
 	template <class ObjType>
@@ -67,18 +66,20 @@ namespace stdx // This may be moved to stp
 		{
 		}
 
-		void _delete_atomic_ptr_counter() override
+		void _delete_atomic_ptr_ref_counter() override
 		{
-			if (auto object = _object.exchange(nullptr, std::memory_order_acquire))
-			{
-				delete object;
-			}
+			delete object;
+
 			delete this;
 		}
 
-		std::atomic<ObjType *> _object;
+		ObjType * _object;
 
-		friend _atomic_ptr_ref_counter * _make_atomic_ptr_obj_counter(ObjType *);
+		template <class ObjType>
+		friend _atomic_ptr_ref_counter * _make_atomic_ptr_obj_ref_counter(ObjType * object) // Study argument dependent lookup and namespaces
+		{
+			return new _atomic_ptr_obj_ref_counter<ObjType>(object);
+		}
 	};
 
 	template <class ObjType, class DelType>
@@ -89,32 +90,23 @@ namespace stdx // This may be moved to stp
 		{
 		}
 
-		void _delete_atomic_ptr_counter() override
+		void _delete_atomic_ptr_ref_counter() override
 		{
-			if (auto object = _object.exchange(nullptr, std::memory_order_relaxed)) // A load would probably suffice
-			{
-				_deleter(object);
-			}
+			_deleter(object);
+
 			delete this;
 		}
 
 		DelType _deleter;
 
-		friend _atomic_ptr_ref_counter * _make_atomic_ptr_obj_del_counter(ObjType *, DelType);
+		template <class ObjType, class DelType>
+		friend _atomic_ptr_ref_counter * _make_atomic_ptr_obj_del_ref_counter(ObjType * object, DelType deleter)
+		{
+			return new _atomic_ptr_obj_del_ref_counter<ObjType, DelType>(object, std::move(deleter));
+		}
 	};
 
-	template <class ObjType>
-	inline _atomic_ptr_ref_counter * _make_atomic_ptr_obj_counter(ObjType * object)
-	{
-		return new _atomic_ptr_obj_ref_counter<ObjType>(object);
-	}
-	template <class ObjType, class DelType>
-	inline _atomic_ptr_ref_counter * _make_atomic_ptr_obj_del_counter(ObjType * object, DelType deleter)
-	{
-		return new _atomic_ptr_obj_del_ref_counter<ObjType, DelType>(object, std::move(deleter));
-	}
-
-	template <class Type>
+	template <class Type> // Add both shared_ptr and atomic interfaces
 	class atomic_ptr
 	{
 	public:
@@ -127,7 +119,7 @@ namespace stdx // This may be moved to stp
 					std::is_convertible<Type *, ObjType *>>::value,
 				int> = 0>
 		atomic_ptr<Type>(ObjType * object) :
-			_counter(_make_atomic_ptr_obj_counter(object))
+			_counter(_make_atomic_ptr_obj_ref_counter(object))
 		{
 		}
 		template <
@@ -143,7 +135,7 @@ namespace stdx // This may be moved to stp
 						std::is_invocable<DelType, ObjType *>>>,
 				int> = 0>
 		atomic_ptr<Type>(ObjType * object, DelType deleter) :
-			_counter(_make_atomic_ptr_obj_del_counter(object, std::move(deleter)))
+			_counter(_make_atomic_ptr_obj_del_ref_counter(object, std::move(deleter)))
 		{
 		}
 		atomic_ptr<Type>(atomic_ptr<Type> const & other)
@@ -182,14 +174,14 @@ namespace stdx // This may be moved to stp
 		{
 			reset();
 
-			_control.store(_make_atomic_ptr_obj_counter(object), std::memory_order_relaxed);
+			_control.store(_make_atomic_ptr_obj_ref_counter(object), std::memory_order_relaxed);
 		}
 		template <class ObjType, class DelType>
 		void reset(ObjType * object, DelType deleter)
 		{
 			reset();
 
-			_control.store(_make_atomic_ptr_obj_del_counter(object, std::move(deleter)), std::memory_order_relaxed);
+			_control.store(_make_atomic_ptr_obj_del_ref_counter(object, std::move(deleter)), std::memory_order_relaxed);
 		}
 		
 		operator bool()
@@ -197,7 +189,7 @@ namespace stdx // This may be moved to stp
 			return _counter.load(std::memory_order_relaxed);
 		}
 	private:
-		_atomic_ptr_ref_counter::counter_type _access{ 0 };
+		_atomic_counter _access{ 0 };
 		std::atomic<_atomic_ptr_ref_counter *> _control{ nullptr };
 	};
 }

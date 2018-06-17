@@ -3,8 +3,6 @@
 
 #include <functional>
 
-// https://stackoverflow.com/questions/27566894/how-to-check-if-a-type-is-defined-by-typedef-or-using-in-template-parameters?rq=1
-
 namespace stdx::binder
 {
 	template <class FuncType, class ... ArgTypes>
@@ -53,5 +51,9 @@ namespace stdx::binder
 		}
 	}
 }
+
+#if defined(STDX_USING_BINDER) || defined(STDX_USING_ALL)
+namespace stdx { using namespace binder; }
+#endif
 
 #endif

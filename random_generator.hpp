@@ -6,9 +6,9 @@
 
 namespace stdx//::rand
 {
-	using fastest_engine = std::ranlux48_base;
-	using smallest_engine = std::minstd_rand;
-	using ficklest_engine = std::mt19937_64;
+	using fast_engine = std::ranlux48_base;
+	using small_engine = std::minstd_rand;
+	using fickle_engine = std::mt19937_64;
 
 	// TODO
 	class distribution_parameters
@@ -24,7 +24,7 @@ namespace stdx//::rand
 	};
 
 	// TODO
-	template <class Engine = smallest_engine, class Distribution = std::bernoulli_distribution>
+	template <class Engine = small_engine, class Distribution = std::bernoulli_distribution>
 	class random_generator
 	{
 		static_assert(sizeof(typename Distribution::param_type::distribution_type), 
@@ -55,7 +55,7 @@ namespace stdx//::rand
 		}
 	private:
 		std::random_device _random_device;
-		std::array<std::mt19937_64::result_type, std::mt19937_64::state_size> _random_data;
+//		std::array<std::mt19937_64::result_type, ::state_size> _random_data;
 		std::seed_seq _seed; // seed_seq is bad
 		engine_type _engine;
 		distribution_type _distribution;
@@ -91,5 +91,10 @@ namespace stdx//::rand
 	using random_piecewise_constant_generator = random_generator<std::piecewise_constant_distribution<long double>>;
 	using random_piecewise_linear_generator = random_generator<std::piecewise_linear_distribution<long double>>;
 }
+
+#if defined(STDX_USING_RAND) // || defined(STDX_USING_ALL)
+#error Namespace 'rand' not ready
+namespace stdx { using namespace rand; }
+#endif
 
 #endif

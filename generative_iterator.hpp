@@ -6,7 +6,7 @@
 namespace stdx
 {
 	template <class Iterator>
-	class gen_iterator : public Iterator
+	class [[deprecated]] gen_iterator : public Iterator
 	{
 	public:
 		template <class Function, class = std::enable_if_t<bool(sizeof(std::iterator_traits<Iterator>::iterator_category))>>

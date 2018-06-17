@@ -1,6 +1,3 @@
-#ifndef MACROS_H
-#define MACROS_H
-
 #ifdef STDX_SUPPRESS_WARNINGS
 #pragma warning(disable: 4100)
 #endif
@@ -18,5 +15,3 @@ STDX_CODE_BEG\
 	}\
 	free(ptr);\
 STDX_CODE_END
-
-#endif//MACROS_H
