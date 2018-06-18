@@ -35,7 +35,7 @@ namespace stdx
 			_lock.clear(std::memory_order_release);
 		}
 	private:
-		std::atomic_flag _lock{ ATOMIC_FLAG_INIT };
+		std::atomic_flag _lock = ATOMIC_FLAG_INIT;
 	};
 }
 

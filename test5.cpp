@@ -26,7 +26,9 @@ int main()
 
 	stdx::stopwatch::split();
 	mtx.unlock();
-	std::cout << stdx::stopwatch::split() << std::endl;
+	std::cout << stdx::stopwatch::stop() << std::endl;
+
+	std::cout << stdx::stopwatch::total_time() << std::endl;
 
 	return 0;
 }

@@ -483,7 +483,7 @@ namespace stdx::meta
 		using trait = std::bool_constant<N < Min || Max < N>;
 	};
 
-	// Logic traits
+	// Logic traits // Review this (make interface more similar to std versions)
 
 		// Conjunction
 

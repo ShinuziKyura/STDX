@@ -4,6 +4,10 @@
 #include <list>
 #include <chrono>
 
+#ifndef STDX_STOPWATCH_RESOLUTION
+#define STDX_STOPWATCH_RESOLUTION std::ratio<1>
+#endif
+
 namespace stdx
 {
 	class stopwatch
@@ -19,30 +23,21 @@ namespace stdx
 		}
 		static double split()
 		{
-			if (_running)
-			{
-				_split();
-				return _split_times.back();
-			}
-			return 0.0;
+			return _split(true);
 		}
-		static double pause()
+		static double stop()
 		{
-			if (_running)
-			{
-				_split();
-				_running = false;
-				return _total_time;
-			}
-			return 0.0;
+			return _split(false);
 		}
-		static void reset()
+		static void clear()
 		{
-			_split_times.clear();
-			_total_time = 0.0;
-			_running = false;
+			if (!_running)
+			{
+				_split_times.clear();
+				_total_time = 0.0;
+			}
 		}
-		static std::list<double> const split_times()
+		static std::list<double> split_times()
 		{
 			return _split_times;
 		}
@@ -51,10 +46,16 @@ namespace stdx
 			return _total_time;
 		}
 	private:
-		static void _split()
+		static double _split(bool running)
 		{
-			auto start_point = std::exchange(_split_point, std::chrono::steady_clock::now());
-			_total_time += _split_times.emplace_back(std::chrono::duration<double>(_split_point - start_point).count());
+			if (_running)
+			{
+				auto start_point = std::exchange(_split_point, std::chrono::steady_clock::now());
+				_total_time += _split_times.emplace_back(std::chrono::duration<double, STDX_STOPWATCH_RESOLUTION>(_split_point - start_point).count());
+				_running = running;
+				return _split_times.back();
+			}
+			return 0.0;
 		}
 
 		thread_local static bool _running;
@@ -63,10 +64,10 @@ namespace stdx
 		thread_local static double _total_time;
 	};
 
-	bool									stopwatch::_running = false;
-	std::chrono::steady_clock::time_point	stopwatch::_split_point;
-	std::list<double>						stopwatch::_split_times;
-	double									stopwatch::_total_time = 0.0;
+	thread_local bool stopwatch::_running = false;
+	thread_local std::chrono::steady_clock::time_point stopwatch::_split_point;
+	thread_local std::list<double> stopwatch::_split_times;
+	thread_local double stopwatch::_total_time = 0.0;
 }
 
 #endif
