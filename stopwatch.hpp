@@ -15,9 +15,9 @@ namespace stdx
 	public:
 		static void start()
 		{
-			if (!_running)
+			if (!_counting)
 			{
-				_running = true;
+				_counting = true;
 				_split_point = std::chrono::steady_clock::now();
 			}
 		}
@@ -31,7 +31,7 @@ namespace stdx
 		}
 		static void clear()
 		{
-			if (!_running)
+			if (!_counting)
 			{
 				_split_times.clear();
 				_total_time = 0.0;
@@ -45,26 +45,30 @@ namespace stdx
 		{
 			return _total_time;
 		}
-	private:
-		static double _split(bool running)
+		static bool counting()
 		{
-			if (_running)
+			return _counting;
+		}
+	private:
+		static double _split(bool counting)
+		{
+			if (_counting)
 			{
 				auto start_point = std::exchange(_split_point, std::chrono::steady_clock::now());
 				_total_time += _split_times.emplace_back(std::chrono::duration<double, STDX_STOPWATCH_RESOLUTION>(_split_point - start_point).count());
-				_running = running;
+				_counting = counting;
 				return _split_times.back();
 			}
 			return 0.0;
 		}
 
-		thread_local static bool _running;
+		thread_local static bool _counting;
 		thread_local static std::chrono::steady_clock::time_point _split_point;
 		thread_local static std::list<double> _split_times;
 		thread_local static double _total_time;
 	};
 
-	thread_local bool stopwatch::_running = false;
+	thread_local bool stopwatch::_counting = false;
 	thread_local std::chrono::steady_clock::time_point stopwatch::_split_point;
 	thread_local std::list<double> stopwatch::_split_times;
 	thread_local double stopwatch::_total_time = 0.0;

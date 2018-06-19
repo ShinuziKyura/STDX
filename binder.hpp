@@ -39,7 +39,7 @@ namespace stdx::binder
 		}
 	}
 	template <class ValType>
-	auto bind_forward(std::remove_reference_t<ValType> && val)
+	auto bind_forward(std::remove_reference_t<ValType> && val) // Consider removing this overload and making bind_forward an implementation function
 	{
 		if constexpr (std::is_placeholder_v<std::remove_cv_t<std::remove_reference_t<ValType>>>)
 		{

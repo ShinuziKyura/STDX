@@ -23,6 +23,8 @@ int main()
 	std::cout << stdx::stopwatch::split() << std::endl;
 
 	std::cout << "Hi planet!\n";
+	S s;
+	stdx::zeromem(s);
 
 	stdx::stopwatch::split();
 	mtx.unlock();

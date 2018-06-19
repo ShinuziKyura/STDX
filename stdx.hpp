@@ -11,6 +11,7 @@
 // Classes
 
 #include "comparable.hpp"
+#include "stopwatch.hpp"
 #include "spin_mutex.hpp"
 
 // Functions

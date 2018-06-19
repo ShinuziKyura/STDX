@@ -4,7 +4,7 @@
 #include <type_traits>
 
 namespace stdx
-{	// TODO
+{	// WIP
 	class generic /*
 	{
 	public:

@@ -6,7 +6,7 @@
 
 namespace stdx
 {
-	template <class Type> // TODO
+	template <class Type> // WIP
 	class superinteger
 	{
 	public:
