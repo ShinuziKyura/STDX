@@ -4,7 +4,7 @@
 #include <random>
 #include <array>
 
-namespace stdx//::rand
+namespace stdx // rand
 {
 	using fast_engine = std::ranlux48_base;
 	using small_engine = std::minstd_rand;
@@ -23,9 +23,9 @@ namespace stdx//::rand
 		}
 	};
 
-	// TODO
+	// WIP
 	template <class Engine = small_engine, class Distribution = std::bernoulli_distribution>
-	class random_generator
+	class random_generator // Consider renaming this class
 	{
 		static_assert(sizeof(typename Distribution::param_type::distribution_type), 
 					  "Distribution must satisfy the requirements of RandomNumberDistribution");

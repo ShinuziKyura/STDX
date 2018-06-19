@@ -8,7 +8,7 @@
 #define STDX_STOPWATCH_RESOLUTION std::ratio<1>
 #endif
 
-namespace stdx
+namespace stdx // chrono
 {
 	class stopwatch
 	{

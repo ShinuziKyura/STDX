@@ -3,9 +3,9 @@
 
 #include <atomic>
 
-namespace stdx
+namespace stdx // thread
 {	
-	class spin_mutex final
+	class spin_mutex
 	{
 	public:
 		spin_mutex() = default;
