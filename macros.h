@@ -11,3 +11,6 @@ STDX_CODE_BEG\
 	}\
 	free(ptr);\
 STDX_CODE_END
+
+#define STDX_RANGE(container) ::std::begin(container), ::std::end(container)
+#define STDX_RRANGE(container) ::std::rbegin(container), ::std::rend(container)

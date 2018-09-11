@@ -18,7 +18,7 @@ int main3()
 
 	[[maybe_unused]] permutated_pack<pack<short, int, long, long long>, valpack<1, 3, 0, 2>> t3;
 
-	[[maybe_unused]] constrained_pack<value_trait<beside<2, 4>::trait>::value, as_pack_val<valpack<0, 2, 5, 6, 3, 4, 1, 3>>> t4;
+	[[maybe_unused]] constrained_pack<value_trait<outside<2, 4>::trait>::value, as_pack_val<valpack<0, 2, 5, 6, 3, 4, 1, 3>>> t4;
 
 	[[maybe_unused]] transformed_pack<std::is_class, pack<Class, long, unsigned char>> t5;
 
@@ -26,9 +26,17 @@ int main3()
 
 	[[maybe_unused]] merged_pack<pack<int, double, char>, pack<int, double, char>> t7;
 
+	type_if<1 + 2 == 2>::then<
+		int
+	>::else_if<1 + 2 == 4>::then<
+		double
+	>::else_then<
+		char
+	>::endif();
+
 	type_cast<int, float>();
 
-//	type_cast<int, ptr>(); // SFINAE error if not convertible
+//	type_cast<int, Class>(); // SFINAE error if not convertible
 
 	return 0;
 }

@@ -1,59 +1,53 @@
-#ifndef CONCURRENT_QUEUE_HPP
-#define CONCURRENT_QUEUE_HPP
+#ifndef STDX_CONCURRENT_QUEUE_HPP
+#define STDX_CONCURRENT_QUEUE_HPP
 
 #include <atomic>
-#include "atomic_ptr.hpp"
+#include "synchronized_ptr.hpp"
 
 namespace stdx
 {
-	template <class Type, class CompareLess = std::less<Type>, class CompareEqual = std::equal_to<Type>>
-	class concurrent_queue
+	template <class Type, class Ordering>
+	class concurrent_queue;
+
+	template <class Type>
+	class concurrent_queue<Type, std::equal_to<Type>>
 	{
 	//	using _atomic_counter = _atomic_lock_free_uint_fast_largest_t;
 	public:
-		/*concurrent_queue<Type, CompareLess, CompareEqual>()
+		concurrent_queue()
 		{
 			
-		}//*/
-		/*concurrent_queue<Type, CompareLess, CompareEqual>(CompareLess const & compare_less, CompareEqual const & compare_equal)
+		}
+		concurrent_queue(concurrent_queue const & other)
 		{
 		}
-		concurrent_queue<Type, CompareLess, CompareEqual>(concurrent_queue const & other)
+		concurrent_queue & operator=(concurrent_queue const & other)
 		{
 		}
-		concurrent_queue<Type, CompareLess, CompareEqual> & operator=(concurrent_queue const & other)
+		concurrent_queue(concurrent_queue && other)
 		{
 		}
-		concurrent_queue<Type, CompareLess, CompareEqual>(concurrent_queue && other)
+		concurrent_queue & operator=(concurrent_queue && other)
 		{
 		}
-		concurrent_queue<Type, CompareLess, CompareEqual> & operator=(concurrent_queue && other)
+		~concurrent_queue()
 		{
 		}
-		~concurrent_queue<Type, CompareLess, CompareEqual>()
-		{
-		}*/
 
 		Type pop()
 		{
-			auto prev = _concurrent_queue_top;
+
 		}
 	private:
-		struct _concurrent_node
+		struct _node
 		{
-			atomic_ptr<_concurrent_node> next{ nullptr };
-		};
-		struct _concurrent_obj_node : _concurrent_node
-		{
+			stdx::synchronized_ptr<_node> next;
+			std::atomic_flag flag = ATOMIC_FLAG_INIT;
 			Type object;
 		};
-
-	/*	_atomic_counter _concurrent_queue_push_count{ 0 };
-		_atomic_counter _concurrent_queue_pop_count{ 0 };
-		_atomic_counter _concurrent_queue_object_count{ 0 }; */
 	
-		atomic_ptr<_concurrent_node> _concurrent_queue_top{ new _concurrent_node() };
+		stdx::synchronized_ptr<_node> _top;
 	};
 }
 
-#endif//CONCURRENT_QUEUE_HPP
+#endif

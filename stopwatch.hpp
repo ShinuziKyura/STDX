@@ -15,9 +15,9 @@ namespace stdx // chrono
 	public:
 		static void start()
 		{
-			if (!_counting)
+			if (!_ticking)
 			{
-				_counting = true;
+				_ticking = true;
 				_split_point = std::chrono::steady_clock::now();
 			}
 		}
@@ -31,7 +31,7 @@ namespace stdx // chrono
 		}
 		static void clear()
 		{
-			if (!_counting)
+			if (!_ticking)
 			{
 				_split_times.clear();
 				_total_time = 0.0;
@@ -45,33 +45,35 @@ namespace stdx // chrono
 		{
 			return _total_time;
 		}
-		static bool counting()
+		static bool ticking()
 		{
-			return _counting;
+			return _ticking;
 		}
 	private:
-		static double _split(bool counting)
+		static double _split(bool ticking)
 		{
-			if (_counting)
+			if (_ticking)
 			{
+				_ticking = ticking;
+
 				auto start_point = std::exchange(_split_point, std::chrono::steady_clock::now());
 				_total_time += _split_times.emplace_back(std::chrono::duration<double, STDX_STOPWATCH_RESOLUTION>(_split_point - start_point).count());
-				_counting = counting;
 				return _split_times.back();
 			}
 			return 0.0;
 		}
 
-		thread_local static bool _counting;
-		thread_local static std::chrono::steady_clock::time_point _split_point;
-		thread_local static std::list<double> _split_times;
-		thread_local static double _total_time;
+		thread_local static bool									_ticking;
+		thread_local static std::chrono::steady_clock::time_point	_split_point;
+		thread_local static std::list<double>						_split_times;
+		thread_local static double									_total_time;
 	};
 
-	thread_local bool stopwatch::_counting = false;
-	thread_local std::chrono::steady_clock::time_point stopwatch::_split_point;
-	thread_local std::list<double> stopwatch::_split_times;
-	thread_local double stopwatch::_total_time = 0.0;
+	// stopwatch class static initializers
+	thread_local bool									stopwatch::	_ticking = false;
+	thread_local std::chrono::steady_clock::time_point	stopwatch::	_split_point;
+	thread_local std::list<double>						stopwatch::	_split_times;
+	thread_local double									stopwatch::	_total_time = 0.0;
 }
 
 #endif

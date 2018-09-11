@@ -1,18 +1,96 @@
 #ifndef STDX_META_HPP
 #define STDX_META_HPP
 
+#include <type_traits>
+#include <complex>
 #include <atomic>
 
-namespace stdx::meta
+namespace stdx::meta // Consider further subdivision of file into nested namespaces (or into different files) for each trait class
 {
-	template <auto>
-	struct val;
+	struct _nulltype;
+
+	// Container types
+
+		// Vals
+
+	template <auto Value>
+	struct val
+	{
+		using type = decltype(Value);
+		static constexpr auto value = Value;
+	};
+
+		// Packs
 
 	template <class ...>
-	struct pack;
+	struct pack
+	{
+		static constexpr size_t size = 0;
+		template <class ... Types>
+		using push = pack<Types ...>;
+		template <size_t N>
+		using pop = pack<>;
+	};
+
+	template <class Type>
+	struct pack<Type>
+	{
+		static constexpr size_t size = 1;
+		using first = Type;
+		using last = Type;
+		template <class ... Types>
+		using push = pack<Type, Types ...>;
+		template <size_t N>
+		using pop = std::conditional_t<bool(N), pack<>, pack<Type>>;
+	};
+
+	template <class Type, class ... Types>
+	struct pack<Type, Types ...>
+	{
+		static constexpr size_t size = 1 + sizeof...(Types);
+		using first = Type;
+		using last = typename pack<Types ...>::last;
+		template <class ... Types1>
+		using push = pack<Type, Types ..., Types1 ...>;
+		template <size_t N>
+		using pop = std::conditional_t<bool(N), typename pack<Types ...>::template pop<N - 1>, pack<Type, Types ...>>;
+	};
+
+		// Valpacks
 
 	template <auto ...>
-	struct valpack;
+	struct valpack
+	{
+		static constexpr size_t size = 0;
+		template <auto ... Values>
+		using push = valpack<Values ...>;
+		template <size_t N>
+		using pop = pack<>;
+	};
+
+	template <auto Value>
+	struct valpack<Value>
+	{
+		static constexpr size_t size = 1;
+		static constexpr auto first = Value;
+		static constexpr auto last = Value;
+		template <auto ... Values>
+		using push = valpack<Value, Values ...>;
+		template <size_t N>
+		using pop = std::conditional_t<bool(N), valpack<>, valpack<Value>>;
+	};
+
+	template <auto Value, auto ... Values>
+	struct valpack<Value, Values ...>
+	{
+		static constexpr size_t size = 1 + sizeof...(Values);
+		static constexpr auto first = Value;
+		static constexpr auto last = valpack<Values ...>::last;
+		template <auto ... Values1>
+		using push = valpack<Value, Values ..., Values1 ...>;
+		template <size_t N>
+		using pop = std::conditional_t<bool(N), typename valpack<Values ...>::template pop<N - 1>, valpack<Value, Values ...>>;
+	};
 
 	// Type traits
 
@@ -67,35 +145,20 @@ namespace stdx::meta
 	template <class Type1, class Type2>
 	using type_cast = std::enable_if_t<std::is_convertible_v<Type1, Type2>, Type2>;
 
-		// Class-template equality
+		// Check if a type is an instantiation of a class template
 
 	template <class, template <class ...> class>
-	struct is_same_as : std::false_type
+	struct is_template_instantiation : std::false_type
 	{
 	};
 
 	template <template <class ...> class Template, class ... Parameters>
-	struct is_same_as<Template<Parameters ...>, Template> : std::true_type
+	struct is_template_instantiation<Template<Parameters ...>, Template> : std::true_type
 	{
 	};
 
 	template <class Class, template <class ...> class Template>
-	inline constexpr bool is_same_as_v = is_same_as<Class, Template>::value;
-
-		// Template-template equality
-
-	template <template <class ...> class, template <class ...> class>
-	struct is_same_with : std::false_type
-	{
-	};
-
-	template <template <class ...> class Template>
-	struct is_same_with<Template, Template> : std::true_type
-	{
-	};
-
-	template <template <class ...> class Template1, template <class ...> class Template2>
-	inline constexpr bool is_same_with_v = is_same_with<Template1, Template2>::value;
+	inline constexpr bool is_template_instantiation_v = is_template_instantiation<Class, Template>::value;
 
 	// Function traits
 
@@ -427,13 +490,28 @@ namespace stdx::meta
 
 	// Numeric traits
 
+		// Boolean checks
+
+	template <class Type>
+	struct is_complex : std::false_type
+	{
+	};
+
+	template <class Type>
+	struct is_complex<std::complex<Type>> : std::true_type
+	{
+	};
+
+	template <class Type>
+	inline constexpr bool is_complex_v = is_complex<Type>::value;
+
 		// Addition
 
 	template <auto Y>
 	struct addition
 	{
 		template <auto X>
-		using trait = std::integral_constant<decltype(X), X + Y>;
+		using trait = std::integral_constant<decltype(X + Y), X + Y>;
 	};
 
 		// Subtraction
@@ -442,7 +520,7 @@ namespace stdx::meta
 	struct subtraction
 	{
 		template <auto X>
-		using trait = std::integral_constant<decltype(X), X - Y>;
+		using trait = std::integral_constant<decltype(X - Y), X - Y>;
 	};
 
 		// Multiplication
@@ -468,7 +546,7 @@ namespace stdx::meta
 		// Range
 
 	template <auto Min, auto Max>
-	struct between
+	struct inside
 	{
 		using _auto = decltype(Min); // Workaround for VC++ bug
 		template <_auto N>
@@ -476,16 +554,69 @@ namespace stdx::meta
 	};
 
 	template <auto Min, auto Max>
-	struct beside
+	struct outside
 	{
 		using _auto = decltype(Min); // Workaround for VC++ bug
 		template <_auto N>
 		using trait = std::bool_constant<N < Min || Max < N>;
 	};
 
-	// Logic traits // Review this (make interface more similar to std versions)
+	// Logic traits
+	
+		// If statement, takes the first type for which corresponding condition is true, or _nulltype (an incomplete type) if all are false
 
-		// Conjunction
+	template <bool, class>
+	struct _type_if;
+
+	template <class Type>
+	struct _type_then
+	{
+		template <bool>
+		using else_if = _type_if<false, Type>;
+
+		template <class>
+		using else_then = _type_then<Type>;
+
+		using endif = Type;
+	};
+
+	template <>
+	struct _type_then<_nulltype>
+	{
+		template <bool Condition>
+		using else_if = _type_if<Condition, _nulltype>;
+
+		template <class Type>
+		using else_then = _type_then<Type>;
+
+		using endif = _nulltype;
+	};
+
+	template <bool, class Type>
+	struct _type_if
+	{
+		template <class>
+		using then = _type_then<Type>;
+	};
+
+	template <>
+	struct _type_if<false, _nulltype>
+	{
+		template <class Type>
+		using then = _type_then<_nulltype>;
+	};
+
+	template <>
+	struct _type_if<true, _nulltype>
+	{
+		template <class Type>
+		using then = _type_then<Type>;
+	};
+
+	template <bool Condition>
+	using type_if = _type_if<Condition, _nulltype>;
+
+		// Conjunction // Review this (make interface more similar to std versions)
 
 	template <class ... BoolTypes>
 	constexpr bool _conjunction(BoolTypes ... booleans)
@@ -500,7 +631,7 @@ namespace stdx::meta
 		using trait = std::bool_constant<_conjunction(Trait<Types>::value ...)>;
 	};
 
-		// Disjunction
+		// Disjunction // Review this (make interface more similar to std versions)
 
 	template <class ... BoolTypes>
 	constexpr bool _disjunction(BoolTypes ... booleans)
@@ -514,12 +645,6 @@ namespace stdx::meta
 		template <class ... Types>
 		using trait = std::bool_constant<_disjunction(Trait<Types>::value ...)>;
 	};
-
-/*	
-	Note: (Potential bug)
-	
-	Cast any one of these to an integral type (or otherwise) and the compiler breaks
-*/
 
 	// Atomic traits
 
@@ -535,181 +660,100 @@ namespace stdx::meta
 
 #ifdef ATOMIC_BOOL_LOCK_FREE
 	template <>
-	struct is_lock_free<std::atomic<bool>> : std::bool_constant<bool(ATOMIC_BOOL_LOCK_FREE)>
+	struct is_lock_free<std::atomic<bool>> : std::integral_constant<int, ATOMIC_BOOL_LOCK_FREE>
 	{
 	};
 #endif
 
 #ifdef ATOMIC_CHAR_LOCK_FREE
 	template <>
-	struct is_lock_free<std::atomic<char>> : std::bool_constant<bool(ATOMIC_CHAR_LOCK_FREE)>
+	struct is_lock_free<std::atomic<char>> : std::integral_constant<int, ATOMIC_CHAR_LOCK_FREE>
 	{
 	};
 
 	template <>
-	struct is_lock_free<std::atomic<unsigned char>> : std::bool_constant<bool(ATOMIC_CHAR_LOCK_FREE)>
+	struct is_lock_free<std::atomic<unsigned char>> : std::integral_constant<int, ATOMIC_CHAR_LOCK_FREE>
 	{
 	};
 #endif
 
 #ifdef ATOMIC_CHAR16_T_LOCK_FREE
 	template <>
-	struct is_lock_free<std::atomic<char16_t>> : std::bool_constant<bool(ATOMIC_CHAR16_T_LOCK_FREE)>
+	struct is_lock_free<std::atomic<char16_t>> : std::integral_constant<int, ATOMIC_CHAR16_T_LOCK_FREE>
 	{
 	};
 #endif
 
 #ifdef ATOMIC_CHAR32_T_LOCK_FREE
 	template <>
-	struct is_lock_free<std::atomic<char32_t>> : std::bool_constant<bool(ATOMIC_CHAR32_T_LOCK_FREE)>
+	struct is_lock_free<std::atomic<char32_t>> : std::integral_constant<int, ATOMIC_CHAR32_T_LOCK_FREE>
 	{
 	};
 #endif
 
 #ifdef ATOMIC_WCHAR_T_LOCK_FREE
 	template <>
-	struct is_lock_free<std::atomic<wchar_t>> : std::bool_constant<bool(ATOMIC_WCHAR_T_LOCK_FREE)>
+	struct is_lock_free<std::atomic<wchar_t>> : std::integral_constant<int, ATOMIC_WCHAR_T_LOCK_FREE>
 	{
 	};
 #endif
 
 #ifdef ATOMIC_SHORT_LOCK_FREE
 	template <>
-	struct is_lock_free<std::atomic<short>> : std::bool_constant<bool(ATOMIC_SHORT_LOCK_FREE)>
+	struct is_lock_free<std::atomic<short>> : std::integral_constant<int, ATOMIC_SHORT_LOCK_FREE>
 	{
 	};
 
 	template <>
-	struct is_lock_free<std::atomic<unsigned short>> : std::bool_constant<bool(ATOMIC_SHORT_LOCK_FREE)>
+	struct is_lock_free<std::atomic<unsigned short>> : std::integral_constant<int, ATOMIC_SHORT_LOCK_FREE>
 	{
 	};
 #endif
 
 #ifdef ATOMIC_INT_LOCK_FREE
 	template <>
-	struct is_lock_free<std::atomic<int>> : std::bool_constant<bool(ATOMIC_INT_LOCK_FREE)>
+	struct is_lock_free<std::atomic<int>> : std::integral_constant<int, ATOMIC_INT_LOCK_FREE>
 	{
 	};
 
 	template <>
-	struct is_lock_free<std::atomic<unsigned int>> : std::bool_constant<bool(ATOMIC_INT_LOCK_FREE)>
+	struct is_lock_free<std::atomic<unsigned int>> : std::integral_constant<int, ATOMIC_INT_LOCK_FREE>
 	{
 	};
 #endif
 
 #ifdef ATOMIC_LONG_LOCK_FREE
 	template <>
-	struct is_lock_free<std::atomic<long>> : std::bool_constant<bool(ATOMIC_LONG_LOCK_FREE)>
+	struct is_lock_free<std::atomic<long>> : std::integral_constant<int, ATOMIC_LONG_LOCK_FREE>
 	{
 	};
 
 	template <>
-	struct is_lock_free<std::atomic<unsigned long>> : std::bool_constant<bool(ATOMIC_LONG_LOCK_FREE)>
+	struct is_lock_free<std::atomic<unsigned long>> : std::integral_constant<int, ATOMIC_LONG_LOCK_FREE>
 	{
 	};
 #endif
 
 #ifdef ATOMIC_LLONG_LOCK_FREE
 	template <>
-	struct is_lock_free<std::atomic<long long>> : std::bool_constant<bool(ATOMIC_LLONG_LOCK_FREE)>
+	struct is_lock_free<std::atomic<long long>> : std::integral_constant<int, ATOMIC_LLONG_LOCK_FREE>
 	{
 	};
 
 	template <>
-	struct is_lock_free<std::atomic<unsigned long long>> : std::bool_constant<bool(ATOMIC_LLONG_LOCK_FREE)>
+	struct is_lock_free<std::atomic<unsigned long long>> : std::integral_constant<int, ATOMIC_LLONG_LOCK_FREE>
 	{
 	};
 #endif
 
 #ifdef ATOMIC_POINTER_LOCK_FREE
 	template <class Type>
-	struct is_lock_free<std::atomic<Type *>> : std::bool_constant<bool(ATOMIC_POINTER_LOCK_FREE)>
+	struct is_lock_free<std::atomic<Type *>> : std::integral_constant<int, ATOMIC_POINTER_LOCK_FREE>
 	{
 	};
 #endif
 
-	// Container types
-
-		// Vals
-
-	template <auto N>
-	struct val
-	{
-		using type = decltype(N);
-		static constexpr auto value = N;
-	};
-
-		// Packs
-
-	template <class ...>
-	struct pack
-	{
-		static constexpr size_t size = 0;
-		template <class ... Types>
-		using push = pack<Types ...>;
-		template <size_t N>
-		using pop = pack<>;
-	};
-
-	template <class Type>
-	struct pack<Type>
-	{
-		using first = Type;
-		using last = Type;
-		static constexpr size_t size = 1;
-		template <class ... Types>
-		using push = pack<Type, Types ...>;
-		template <size_t N>
-		using pop = std::conditional_t<bool(N), pack<>, pack<Type>>;
-	};
-
-	template <class Type, class ... Types>
-	struct pack<Type, Types ...>
-	{
-		using first = Type;
-		using last = typename pack<Types ...>::last;
-		static constexpr size_t size = 1 + sizeof...(Types);
-		template <class ... Types1>
-		using push = pack<Type, Types ..., Types1 ...>;
-		template <size_t N>
-		using pop = std::conditional_t<bool(N), typename pack<Types ...>::template pop<N - 1>, pack<Type, Types ...>>;
-	};
-
-		// Valpacks
-
-	template <auto ...>
-	struct valpack
-	{
-		static constexpr size_t size = 0;
-		template <auto ... Values>
-		using push = valpack<Values ...>;
-		template <size_t N>
-		using pop = pack<>;
-	};
-
-	template <auto Value>
-	struct valpack<Value>
-	{
-		static constexpr auto first = Value;
-		static constexpr auto last = Value;
-		static constexpr size_t size = 1;
-		template <auto ... Values>
-		using push = valpack<Value, Values ...>;
-		template <size_t N>
-		using pop = std::conditional_t<bool(N), valpack<>, valpack<Value>>;
-	};
-
-	template <auto Value, auto ... Values>
-	struct valpack<Value, Values ...>
-	{
-		static constexpr auto first = Value;
-		static constexpr auto last = valpack<Values ...>::last;
-		static constexpr size_t size = 1 + sizeof...(Values);
-		template <auto ... Values1>
-		using push = valpack<Value, Values ..., Values1 ...>;
-		template <size_t N>
-		using pop = std::conditional_t<bool(N), typename valpack<Values ...>::template pop<N - 1>, valpack<Value, Values ...>>;
-	};
+	// Container modifiers
 
 		// Convert from Pack of Vals to Valpack
 
@@ -763,7 +807,7 @@ namespace stdx::meta
 	template <class Pack>
 	using as_pack_val = typename _as_pack_val<Pack>::_type;
 
-		// Apply a trait that takes a type parameter to a type alias from Val
+		// Apply a trait that takes a type parameter to a type from Val
 
 	template <template <class> class Trait>
 	struct type_trait
@@ -772,7 +816,7 @@ namespace stdx::meta
 		using type = Trait<typename Val::type>;
 	};
 
-		// Apply a trait that takes a non-type parameter to a constant expression from Val
+		// Apply a trait that takes a non-type parameter to a value from Val
 
 	template <template <auto> class Trait>
 	struct value_trait
@@ -781,7 +825,7 @@ namespace stdx::meta
 		using value = Trait<Val::value>;
 	};
 
-		// Apply a trait that takes a type parameter to type aliases from Pack
+		// Apply a trait that takes a type parameter to types from Pack
 
 	template <template <class> class Trait, size_t Index = 0>
 	struct pack_trait
@@ -794,7 +838,7 @@ namespace stdx::meta
 		using last = Trait<typename Pack::last>;
 	};
 
-		// Apply a trait that takes a non-type parameter to constant expressions from Valpack
+		// Apply a trait that takes a non-type parameter to values from Valpack
 
 	template <template <auto> class Trait, size_t Index = 0>
 	struct valpack_trait
@@ -823,9 +867,9 @@ namespace stdx::meta
 	template <template <class> class Trait, class InPack>
 	struct _assert_constrained_pack : _constrained_pack<Trait, InPack, pack<>>
 	{
-		static_assert(is_same_as_v<InPack, pack>,
+		static_assert(is_template_instantiation_v<InPack, pack>,
 					  "'stdx::meta::constrained_pack<Trait, InPack>': "
-					  "InPack must be of type stdx::meta::pack<T ...> where T is any type parameter");
+					  "InPack must be of type stdx::meta::pack<T ...> where T are any type parameters");
 	};
 
 	template <template <class> class Trait, class InPack>
@@ -847,9 +891,9 @@ namespace stdx::meta
 	template <template <class> class Trait, class InPack>
 	struct _assert_transformed_pack : _transformed_pack<Trait, InPack, pack<>>
 	{
-		static_assert(is_same_as_v<InPack, pack>,
+		static_assert(is_template_instantiation_v<InPack, pack>,
 					  "'stdx::meta::transformed_pack<Trait, InPack>': "
-					  "InPack must be of type stdx::meta::pack<T ...> where T is any type parameter");
+					  "InPack must be of type stdx::meta::pack<T ...> where T are any type parameters");
 	};
 
 	template <template <class> class Trait, class InPack>
@@ -869,14 +913,14 @@ namespace stdx::meta
 	};
 
 	template <class IndexPack>
-	struct _assert_index_values_permutated_pack : std::is_same<IndexPack, constrained_pack<value_trait<between<0, IndexPack::size - 1>::trait>::template value, constrained_pack<type_trait<std::is_integral>::template type, IndexPack>>>
+	struct _assert_index_values_permutated_pack : std::is_same<IndexPack, constrained_pack<value_trait<inside<0, IndexPack::size - 1>::trait>::template value, constrained_pack<type_trait<std::is_integral>::template type, IndexPack>>>
 	{
 	};
 
 	template <class InPack, class IndexPack>
 	struct _assert_permutated_pack : _permutated_pack<InPack, pack<>, as_valpack<IndexPack>>
 	{
-		static_assert(is_same_as_v<InPack, pack>,
+		static_assert(is_template_instantiation_v<InPack, pack>,
 					  "'stdx::meta::permutated_pack<InPack, IndexPack>': "
 					  "InPack must be of type stdx::meta::pack<T ...> where T is any type parameter");
 		static_assert(InPack::size == IndexPack::size,
@@ -884,7 +928,7 @@ namespace stdx::meta
 					  "InPack::size must be equal to IndexPack::size");
 		static_assert(_assert_index_values_permutated_pack<as_pack_val<IndexPack>>::value,
 					  "'stdx::meta::permutated_pack<InPack, IndexPack>': "
-					  "IndexPack must be of type stdx::template::valpack<V ...> type where V are integral types in the interval of [0, IndexPack::size), all unique");
+					  "IndexPack must be of type stdx::template::valpack<V ...> where V are unique integral value parameters in the interval of [0, IndexPack::size)");
 	};
 
 	template <class InPack, class IndexPack>

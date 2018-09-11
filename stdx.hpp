@@ -13,8 +13,9 @@
 #include "comparable.hpp"
 #include "stopwatch.hpp"
 #include "spin_mutex.hpp"
+#include "spin_shared_mutex.hpp"
 
 // Functions
 
-#include "binder.hpp"
+#include "functional.hpp"
 #include "zeromem.hpp"

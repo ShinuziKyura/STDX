@@ -2,15 +2,15 @@
 #include <unordered_set>
 
 #include "random_generator.hpp"
-
+/*
 int main1()
 {
-	stdx::random_uniform_int_generator rng/*(std::uniform_int_distribution<>::param_type(1, 365))*/;
+//	stdx::random_uniform_int_generator rng(std::uniform_int_distribution<>::param_type(1, 365));
 	std::unordered_set<int> birthdays;
 	std::pair<decltype(birthdays)::iterator, bool> same;
 
-	for (int bday = rng; (same = birthdays.insert(bday)).second; bday = rng)
-		std::cout << bday << "\n";
+//	for (int bday = rng; (same = birthdays.insert(bday)).second; bday = rng)
+//		std::cout << bday << "\n";
 
 	std::cout << "Repeat: " << *same.first << "\n\n";
 	std::cout << "Size: " << birthdays.size() + 1 << "\n\n";
@@ -19,3 +19,4 @@ int main1()
 
 	return 0;
 }
+*/

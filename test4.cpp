@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "binder.hpp"
+#include "functional.hpp"
 
 class MyClass
 {
@@ -99,45 +99,45 @@ int main4()
 
 	std::cout << "\t\t\ti: " << MyObject.i << "\nBind\n\tPRvalue\n";
 
-	stdx::binder::bind(MyMethod, MyClass())(); // Move
-//	stdx::binder::bind(MyMethodL, std::forward<MyClass>(MyClass()))(); // Error
-	stdx::binder::bind(MyMethodR, MyClass())();
+	stdx::functional::bind(MyMethod, MyClass())(); // Move
+//	stdx::functional::bind(MyMethodL, std::forward<MyClass>(MyClass()))(); // Error
+	stdx::functional::bind(MyMethodR, MyClass())();
 
-	stdx::binder::bind(MyMethod, MyClassC())(); // Copy
-//	stdx::binder::bind(MyMethodL, std::forward<MyClassC>(MyClassC()))(); // Error
-//	stdx::binder::bind(MyMethodR, MyClassC())(); // Error
+	stdx::functional::bind(MyMethod, MyClassC())(); // Copy
+//	stdx::functional::bind(MyMethodL, std::forward<MyClassC>(MyClassC()))(); // Error
+//	stdx::functional::bind(MyMethodR, MyClassC())(); // Error
 
-	stdx::binder::bind(MyMethodC, MyClassC())(); // Copy
-	stdx::binder::bind(MyMethodLC, MyClassC())();
-	stdx::binder::bind(MyMethodRC, MyClassC())();
+	stdx::functional::bind(MyMethodC, MyClassC())(); // Copy
+	stdx::functional::bind(MyMethodLC, MyClassC())();
+	stdx::functional::bind(MyMethodRC, MyClassC())();
 	
 	std::cout << "\tLvalue\n";
 
-	stdx::binder::bind(MyMethod, MyObject)(); // Copy
-	stdx::binder::bind(MyMethodL, MyObject)(); // Modifies MyObject
-//	stdx::binder::bind(MyMethodR, MyObject)(); // Error
+	stdx::functional::bind(MyMethod, MyObject)(); // Copy
+	stdx::functional::bind(MyMethodL, MyObject)(); // Modifies MyObject
+//	stdx::functional::bind(MyMethodR, MyObject)(); // Error
 
-	stdx::binder::bind(MyMethod, MyObjectC)(); // Copy
-//	stdx::binder::bind(MyMethodL, MyObjectC)(); // Error
-//	stdx::binder::bind(MyMethodR, MyObjectC)(); // Error
+	stdx::functional::bind(MyMethod, MyObjectC)(); // Copy
+//	stdx::functional::bind(MyMethodL, MyObjectC)(); // Error
+//	stdx::functional::bind(MyMethodR, MyObjectC)(); // Error
 
-	stdx::binder::bind(MyMethodC, MyObjectC)(); // Copy
-	stdx::binder::bind(MyMethodLC, MyObjectC)();
-//	stdx::binder::bind(MyMethodRC, MyObjectC)(); // Error
+	stdx::functional::bind(MyMethodC, MyObjectC)(); // Copy
+	stdx::functional::bind(MyMethodLC, MyObjectC)();
+//	stdx::functional::bind(MyMethodRC, MyObjectC)(); // Error
 
 	std::cout << "\t\t\ti: " << MyObject.i << "\n\tXvalue\n";
 
-	stdx::binder::bind(MyMethod, std::move(MyObject))(); // Move
-//	stdx::binder::bind(MyMethodL, std::move(MyObject))(); // Error
-	stdx::binder::bind(MyMethodR, std::move(MyObject))(); // Modifies MyObject
+	stdx::functional::bind(MyMethod, std::move(MyObject))(); // Move
+//	stdx::functional::bind(MyMethodL, std::move(MyObject))(); // Error
+	stdx::functional::bind(MyMethodR, std::move(MyObject))(); // Modifies MyObject
 	
-	stdx::binder::bind(MyMethod, std::move(MyObjectC))(); // Copy
-//	stdx::binder::bind(MyMethodL, std::move(MyObjectC))(); // Error
-//	stdx::binder::bind(MyMethodR, std::move(MyObjectC))(); // Error
+	stdx::functional::bind(MyMethod, std::move(MyObjectC))(); // Copy
+//	stdx::functional::bind(MyMethodL, std::move(MyObjectC))(); // Error
+//	stdx::functional::bind(MyMethodR, std::move(MyObjectC))(); // Error
 
-	stdx::binder::bind(MyMethodC, std::move(MyObjectC))(); // Copy
-	stdx::binder::bind(MyMethodLC, std::move(MyObjectC))();
-	stdx::binder::bind(MyMethodRC, std::move(MyObjectC))();
+	stdx::functional::bind(MyMethodC, std::move(MyObjectC))(); // Copy
+	stdx::functional::bind(MyMethodLC, std::move(MyObjectC))();
+	stdx::functional::bind(MyMethodRC, std::move(MyObjectC))();
 
 	std::cout << "\t\t\ti: " << MyObject.i << "\nEnd" << std::endl;
 	

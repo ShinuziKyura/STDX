@@ -1,14 +1,14 @@
-#ifndef SPIN_MUTEX_HPP
-#define SPIN_MUTEX_HPP
+#ifndef STDX_SPIN_MUTEX_HPP
+#define STDX_SPIN_MUTEX_HPP
 
 #include <atomic>
 
-namespace stdx // thread
+namespace stdx::mutex
 {	
 	class spin_mutex
 	{
 	public:
-		spin_mutex() = default;
+		spin_mutex() noexcept = default;
 		spin_mutex(spin_mutex const &) = delete;
 		spin_mutex & operator=(spin_mutex const &) = delete;
 		spin_mutex(spin_mutex &&) = delete;
@@ -16,19 +16,14 @@ namespace stdx // thread
 	
 		void lock()
 		{
-			while (_lock.test_and_set(std::memory_order_relaxed));
-
-			std::atomic_thread_fence(std::memory_order_acquire);
+			while (_lock.test_and_set(std::memory_order_acquire))
+			{
+				std::this_thread::yield();
+			}
 		}
 		bool try_lock()
 		{
-			if (!_lock.test_and_set(std::memory_order_relaxed))
-			{
-				std::atomic_thread_fence(std::memory_order_acquire);
-				
-				return true;
-			}
-			return false;
+			return !_lock.test_and_set(std::memory_order_acquire);
 		}
 		void unlock()
 		{
@@ -38,5 +33,9 @@ namespace stdx // thread
 		std::atomic_flag _lock = ATOMIC_FLAG_INIT;
 	};
 }
+
+#if defined(STDX_USING_MUTEX) || defined(STDX_USING_ALL)
+namespace stdx { using namespace mutex; }
+#endif
 
 #endif
