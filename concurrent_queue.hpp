@@ -2,7 +2,8 @@
 #define STDX_CONCURRENT_QUEUE_HPP
 
 #include <atomic>
-#include "synchronized_ptr.hpp"
+
+#include "atomic_ptr.hpp"
 
 namespace stdx
 {
@@ -12,7 +13,6 @@ namespace stdx
 	template <class Type>
 	class concurrent_queue<Type, std::equal_to<Type>>
 	{
-	//	using _atomic_counter = _atomic_lock_free_uint_fast_largest_t;
 	public:
 		concurrent_queue()
 		{
@@ -34,19 +34,56 @@ namespace stdx
 		{
 		}
 
+		void push(Type const & element)
+		{
+			stdx::atomic_ptr<_node> node(new _node(element));
+			stdx::atomic_ptr<_node> node_actual; // To be used with compare_swap
+			/*
+				swap _back, expect node_actual, desired is node, if expected is different, we try with node_actual->next
+			*/
+		}
 		Type pop()
 		{
+			stdx::atomic_ptr<_node> element = _front;
 
+			while (element)
+			{
+				if (!element->flag.test_and_set(std::memory_order_relaxed))
+				{
+
+
+				}
+				else
+				{
+
+
+				}
+			}
 		}
 	private:
+		enum class _node_state
+		{
+			popped,
+			pushed,
+			null
+		};
 		struct _node
 		{
-			stdx::synchronized_ptr<_node> next;
+			_node(Type const & element) : 
+				object(element)
+			{
+			}
+
+			stdx::atomic_ptr<_node> next;
 			std::atomic_flag flag = ATOMIC_FLAG_INIT;
+
 			Type object;
 		};
 	
-		stdx::synchronized_ptr<_node> _top;
+		stdx::atomic_ptr<_node> _front;
+		stdx::atomic_ptr<_node> _back;
+
+		std::atomic<stdx::_uint_largest_lock_free_t> _pop_counter;
 	};
 }
 

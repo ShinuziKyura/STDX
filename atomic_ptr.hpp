@@ -1,7 +1,8 @@
-#ifndef STDX_SYNCHRONIZED_PTR_HPP
-#define STDX_SYNCHRONIZED_PTR_HPP
+#ifndef STDX_ATOMIC_PTR_HPP
+#define STDX_ATOMIC_PTR_HPP
 
 #include <atomic>
+#include <typeinfo>
 #include <memory> // Not needed
 
 #include "meta.hpp"
@@ -17,12 +18,10 @@ accesses uses a non-const member function of shared_ptr then a data race will oc
 
 namespace stdx // This may be moved to stp
 {
-	/* Atomic unsigned integer type at least as large 
-	 * as the largest size supported while simultaneously being lock free.
-	 * May not be lock free, and in that case it will be at least as large
-	 * as the largest size supported by the CPU.
+	/* Unsigned integer type T at least as large as the largest size for which std::atomic<T> is lock free.
+	 * If there is no type T for which std::atomic<T> is lock free, T is the largest size supported by the architecture.
 	 */
-	using _atomic_uint_leastL_lock_free_t =
+	using _uint_largest_lock_free_t =
 		typename stdx::meta::constrained_pack<
 			stdx::meta::is_lock_free,
 			stdx::meta::pack<
@@ -33,19 +32,19 @@ namespace stdx // This may be moved to stp
 			>
 		>::template push<
 			std::atomic_uint_least64_t
-		>::first;
+		>::first::value_type;
 
 	// Reference counter abstract class
 
-	class _synchronized_ptr_ref_counter
+	class _atomic_ptr_ref_counter
 	{
 	protected:
-		_synchronized_ptr_ref_counter() noexcept = default;
-		_synchronized_ptr_ref_counter(_synchronized_ptr_ref_counter const &) = delete;
-		_synchronized_ptr_ref_counter & operator=(_synchronized_ptr_ref_counter const &) = delete;
-		_synchronized_ptr_ref_counter(_synchronized_ptr_ref_counter &&) = delete;
-		_synchronized_ptr_ref_counter & operator=(_synchronized_ptr_ref_counter &&) = delete;
-		virtual ~_synchronized_ptr_ref_counter() noexcept = default;
+		_atomic_ptr_ref_counter() noexcept = default;
+		_atomic_ptr_ref_counter(_atomic_ptr_ref_counter const &) = delete;
+		_atomic_ptr_ref_counter & operator=(_atomic_ptr_ref_counter const &) = delete;
+		_atomic_ptr_ref_counter(_atomic_ptr_ref_counter &&) = delete;
+		_atomic_ptr_ref_counter & operator=(_atomic_ptr_ref_counter &&) = delete;
+		virtual ~_atomic_ptr_ref_counter() noexcept = default;
 	public:
 		void increment() noexcept
 		{
@@ -66,7 +65,7 @@ namespace stdx // This may be moved to stp
 				_delete();
 			}
 		}
-		auto use_count() const noexcept -> _atomic_uint_leastL_lock_free_t::value_type
+		auto use_count() const noexcept -> _uint_largest_lock_free_t
 		{
 			return _references.load(std::memory_order_relaxed);
 		}
@@ -76,18 +75,16 @@ namespace stdx // This may be moved to stp
 	protected:
 		virtual void _delete() noexcept = 0;
 
-		_atomic_uint_leastL_lock_free_t _references{ 1 };
+		std::atomic<_uint_largest_lock_free_t> _references{ 1 };
 	};
-
-	using _atomic_ref_counter_t = std::atomic<_synchronized_ptr_ref_counter *>;
 
 	// Reference counter object container subclass
 
 	template <class ObjType>
-	class _synchronized_ptr_obj_ref_counter : public _synchronized_ptr_ref_counter
+	class _atomic_ptr_obj_ref_counter : public _atomic_ptr_ref_counter
 	{
 	protected:
-		_synchronized_ptr_obj_ref_counter(ObjType * object) noexcept : _synchronized_ptr_ref_counter(),
+		_atomic_ptr_obj_ref_counter(ObjType * object) noexcept : _atomic_ptr_ref_counter(),
 			_object(object)
 		{
 		}
@@ -111,24 +108,20 @@ namespace stdx // This may be moved to stp
 		ObjType * const _object;
 
 		template <class Type>
-		friend class synchronized_ptr;
+		friend class atomic_ptr;
 	};
 
 	// Reference counter object and deleter container subclass
 
 	template <class ObjType, class DelType>
-	class _synchronized_ptr_obj_del_ref_counter : public _synchronized_ptr_obj_ref_counter<ObjType>
+	class _atomic_ptr_obj_del_ref_counter : public _atomic_ptr_obj_ref_counter<ObjType>
 	{
 	protected:
-		_synchronized_ptr_obj_del_ref_counter(ObjType * object, DelType deleter) noexcept : _synchronized_ptr_obj_ref_counter<ObjType>(object),
+		_atomic_ptr_obj_del_ref_counter(ObjType * object, DelType deleter) noexcept : _atomic_ptr_obj_ref_counter<ObjType>(object),
 			_deleter(std::move(deleter))
 		{
 		}
 	public:
-		void * get() const noexcept
-		{
-			return this->_object;
-		}
 		void * get_deleter(type_info const & del_type) noexcept
 		{
 			if (del_type == typeid(DelType))
@@ -148,73 +141,70 @@ namespace stdx // This may be moved to stp
 		DelType _deleter;
 
 		template <class Type>
-		friend class synchronized_ptr;
+		friend class atomic_ptr;
 	};
 
 	// Reference counter object, deleter and allocator container subclass
 
 	// TODO
 	template <class ObjType, class DelType, class AllocType>
-	class _synchronized_ptr_obj_del_alloc_ref_counter : public _synchronized_ptr_obj_del_ref_counter<ObjType, DelType>
-	{
-
-	}
+	class _atomic_ptr_obj_del_alloc_ref_counter; // : public _synchronized_ptr_obj_del_ref_counter<ObjType, DelType>
 
 	// ==== ==== ==== ==== ==== ==== ==== ==== ==== ==== ==== ==== ==== ==== ==== ==== ==== ==== ==== ==== ==== ==== ==== ==== ==== ==== ==== ==== ==== ====
 
 	template <class Type>
-	class synchronized_ptr;
+	class atomic_ptr;
 
 	// Access counter class
 
 	template <class Type>
-	class _synchronized_ptr_acc_counter
+	class _atomic_ptr_acc_counter
 	{
 		using element_type = std::remove_extent_t<Type>;
 
-		_synchronized_ptr_acc_counter(synchronized_ptr<Type> const * synchronized_ptr) noexcept :
-			_synchronized_ptr(synchronized_ptr)
+		_atomic_ptr_acc_counter(atomic_ptr<Type> const * atomic_ptr) noexcept :
+			_atomic_ptr(atomic_ptr)
 		{
-			_synchronized_ptr->_accesses.fetch_add(1, std::memory_order_acquire); // vvvv
+			_atomic_ptr->_accesses.fetch_add(1, std::memory_order_acquire); // vvvv
 		}
 	public:
-		~_synchronized_ptr_acc_counter() noexcept
+		~_atomic_ptr_acc_counter() noexcept
 		{
-			_synchronized_ptr->_accesses.fetch_sub(1, std::memory_order_release); // ^^^^
+			_atomic_ptr->_accesses.fetch_sub(1, std::memory_order_release); // ^^^^
 		}
 
 		auto operator*() const noexcept -> Type &
 		{
-			return *static_cast<Type *>(_synchronized_ptr->_ref_counter.load(std::memory_order_relaxed)->get());
+			return *static_cast<Type *>(_atomic_ptr->_ref_counter.load(std::memory_order_relaxed)->get());
 		}
 		auto operator->() const noexcept -> Type *
 		{
-			return static_cast<Type *>(_synchronized_ptr->_ref_counter.load(std::memory_order_relaxed)->get());
+			return static_cast<Type *>(_atomic_ptr->_ref_counter.load(std::memory_order_relaxed)->get());
 		}
 		auto operator[](std::ptrdiff_t index) const -> element_type &
 		{
-			return static_cast<element_type *>(_synchronized_ptr->_ref_counter.load(std::memory_order_relaxed)->get())[index];
+			return static_cast<element_type *>(_atomic_ptr->_ref_counter.load(std::memory_order_relaxed)->get())[index];
 		}
-		operator bool() const noexcept
+		explicit operator bool() const noexcept
 		{
-			return _synchronized_ptr->_ref_counter.load(std::memory_order_relaxed) != nullptr;
+			return _atomic_ptr->_ref_counter.load(std::memory_order_relaxed) != nullptr;
 		}
 	private:
-		synchronized_ptr<Type> const * _synchronized_ptr;
+		atomic_ptr<Type> const * _atomic_ptr;
 
-		friend class synchronized_ptr<Type>;
+		friend class atomic_ptr<Type>;
 	};
 
 	// synchronized pointer class
 
 	// TODO test and prove correctness
 	template <class Type>
-	class synchronized_ptr
+	class atomic_ptr
 	{
 	public:
 		using element_type = std::remove_extent_t<Type>;
 		
-		constexpr synchronized_ptr() noexcept = default;
+		constexpr atomic_ptr() noexcept = default;
 		template <class ObjType, 
 			std::enable_if_t<
 				std::conditional_t<std::is_array_v<Type>,
@@ -223,8 +213,8 @@ namespace stdx // This may be moved to stp
 				>::value,
 				int
 			> = 0>
-		synchronized_ptr(ObjType * object) :
-			_ref_counter(_make_synchronized_ptr_ref_counter(object))
+		atomic_ptr(ObjType * object) :
+			_ref_counter(_make_atomic_ptr_ref_counter(object))
 		{
 		}
 		template <class ObjType, class DelType,
@@ -241,28 +231,28 @@ namespace stdx // This may be moved to stp
 				>,
 				int
 			> = 0>
-		synchronized_ptr(ObjType * object, DelType deleter) :
-			_ref_counter(_make_synchronized_ptr_ref_counter(object, std::move(deleter)))
+		atomic_ptr(ObjType * object, DelType deleter) :
+			_ref_counter(_make_atomic_ptr_ref_counter(object, std::move(deleter)))
 		{
 		}
-		synchronized_ptr(synchronized_ptr const & other) noexcept :
+		atomic_ptr(atomic_ptr const & other) noexcept :
 			_ref_counter(other._acquire())
 		{
 		}
-		synchronized_ptr & operator=(synchronized_ptr const & other) noexcept
+		atomic_ptr & operator=(atomic_ptr const & other) noexcept
 		{
 			_release(other._acquire());
 			return *this;
 		}
-		synchronized_ptr(synchronized_ptr && other)
+		atomic_ptr(atomic_ptr && other)
 		{
 			// TODO
 		}
-		synchronized_ptr & operator=(synchronized_ptr && other)
+		atomic_ptr & operator=(atomic_ptr && other)
 		{
 			// TODO
 		}
-		~synchronized_ptr() noexcept
+		~atomic_ptr() noexcept
 		{
 			_release(nullptr);
 		}
@@ -281,7 +271,7 @@ namespace stdx // This may be moved to stp
 				>::value
 			>
 		{
-			_release(_make_synchronized_ptr_ref_counter(object));
+			_release(_make_atomic_ptr_ref_counter(object));
 		}
 		template <class ObjType, class DelType>
 		auto reset(ObjType * object, DelType deleter) -> /* void */
@@ -298,9 +288,18 @@ namespace stdx // This may be moved to stp
 				>
 			>
 		{
-			_release(_make_synchronized_ptr_ref_counter(object, std::move(deleter)));
+			_release(_make_atomic_ptr_ref_counter(object, std::move(deleter)));
 		}
-		void swap(synchronized_ptr &) // Note: this one is delicate
+		// Consider renaming these exchange
+		void swap(atomic_ptr & other)
+		{
+			// TODO
+		}
+		auto compare_swap(atomic_ptr & expected, atomic_ptr desired, std::memory_order success, std::memory_order failure) noexcept -> bool
+		{
+			// TODO
+		}
+		auto compare_swap(atomic_ptr & expected, atomic_ptr desired, std::memory_order order = std::memory_order_seq_cst) noexcept -> bool
 		{
 			// TODO
 		}
@@ -308,25 +307,29 @@ namespace stdx // This may be moved to stp
 		// Observers - single-thread
 		auto operator*() const noexcept -> Type &
 		{
-			return _synchronized_ptr_acc_counter<Type>(this).operator*();
+			return _atomic_ptr_acc_counter<Type>(this).operator*();
 		}
 		auto operator->() const noexcept -> Type *
 		{
-			return _synchronized_ptr_acc_counter<Type>(this).operator->();
+			return _atomic_ptr_acc_counter<Type>(this).operator->();
 		}
 		auto operator[](std::ptrdiff_t index) const -> element_type &
 		{
-			return _synchronized_ptr_acc_counter<Type>(this).operator[](index);
+			return _atomic_ptr_acc_counter<Type>(this).operator[](index);
+		}
+		explicit operator bool() const noexcept
+		{
+			return _atomic_ptr_acc_counter<Type>(this).operator bool();
 		}
 
 		// Observers - multi-thread
 		auto get() const noexcept
 		{
-			return _synchronized_ptr_acc_counter<Type>(this);
+			return _atomic_ptr_acc_counter<Type>(this);
 		}
-		auto use_count() const noexcept -> _atomic_uint_leastL_lock_free_t::value_type
+		auto use_count() const noexcept -> _uint_largest_lock_free_t
 		{
-			_synchronized_ptr_acc_counter<Type> access(this);
+			_atomic_ptr_acc_counter<Type> acc_counter(this);
 			
 			if (auto const ref_counter = _ref_counter.load(std::memory_order_relaxed))
 			{
@@ -335,31 +338,26 @@ namespace stdx // This may be moved to stp
 
 			return 0;
 		}
-		template <class OtherType>
-		auto owner_before(synchronized_ptr<OtherType> const & other) const noexcept -> bool
+		auto owner_before(atomic_ptr const & other) const noexcept -> bool
 		{
-			_synchronized_ptr_acc_counter<Type> access(this);
-			_synchronized_ptr_acc_counter<OtherType> other_access(&other);
+			_atomic_ptr_acc_counter<Type> this_acc_counter(this);
+			_atomic_ptr_acc_counter<Type> other_acc_counter(&other);
 
 			return _ref_counter.load(std::memory_order_relaxed) < other._ref_counter.load(std::memory_order_relaxed);
-		}
-		explicit operator bool() const noexcept
-		{
-			return _synchronized_ptr_acc_counter<Type>(this).operator bool();
 		}
 
 		static constexpr auto is_lock_free() noexcept -> bool
 		{
-			return stdx::meta::is_lock_free<_atomic_ref_counter_t>::value && stdx::meta::is_lock_free<_synchronized_uint_leastL_lock_free_t>::value;
+			return stdx::meta::is_lock_free<std::atomic<_atomic_ptr_ref_counter *>>::value && stdx::meta::is_lock_free<std::atomic<_uint_largest_lock_free_t>>::value;
 		}
 	private:
 		auto _get_deleter(type_info const & del_type) const noexcept -> void *
 		{
-			_synchronized_ptr_acc_counter<Type> access(this);
+			_atomic_ptr_acc_counter<Type> acc_counter(this);
 
 			return _ref_counter.load(std::memory_order_relaxed)->get_deleter(del_type);
 		}
-		auto _acquire() noexcept -> _atomic_ref_counter_t::value_type
+		auto _acquire() noexcept -> _atomic_ptr_ref_counter *
 		{
 			_accesses.fetch_add(1, std::memory_order_acquire); // vvvv
 
@@ -374,11 +372,11 @@ namespace stdx // This may be moved to stp
 
 			return ref_counter;
 		}
-		void _release(_atomic_ref_counter_t::value_type new_ref_counter) noexcept
+		void _release(_atomic_ptr_ref_counter * new_ref_counter) noexcept
 		{
 			if (auto const old_ref_counter = _ref_counter.exchange(new_ref_counter, std::memory_order_relaxed))
 			{
-				_atomic_uint_leastL_lock_free_t::value_type accesses = 0;
+				_uint_largest_lock_free_t accesses = 0;
 
 				while (!_accesses.compare_exchange_weak(accesses, 0, std::memory_order_acq_rel)) // vvvv ^^^^
 				{
@@ -390,51 +388,44 @@ namespace stdx // This may be moved to stp
 		}
 
 		template <class ObjType>
-		static auto _make_synchronized_ptr_ref_counter(ObjType * object) -> _atomic_ref_counter_t::value_type
+		static auto _make_atomic_ptr_ref_counter(ObjType * object) -> _atomic_ptr_ref_counter *
 		{
-			return new _synchronized_ptr_obj_ref_counter<ObjType>(object);
+			return new _atomic_ptr_obj_ref_counter<ObjType>(object);
 		}
 		template <class ObjType, class DelType>
-		static auto _make_synchronized_ptr_ref_counter(ObjType * object, DelType deleter) -> _atomic_ref_counter_t::value_type
+		static auto _make_atomic_ptr_ref_counter(ObjType * object, DelType deleter) -> _atomic_ptr_ref_counter *
 		{
-			return new _synchronized_ptr_obj_del_ref_counter<ObjType, DelType>(object, std::move(deleter));
+			return new _atomic_ptr_obj_del_ref_counter<ObjType, DelType>(object, std::move(deleter));
 		}
 
-		_atomic_ref_counter_t _ref_counter{ nullptr }; // Payload
-		_atomic_uint_leastL_lock_free_t mutable _accesses{ 0 }; // Guard
+		std::atomic<_atomic_ptr_ref_counter *> _ref_counter{ nullptr }; // Payload
+		std::atomic<_uint_largest_lock_free_t> mutable _accesses{ 0 }; // Guard
 
 		template <class DelType1, class Type1>
-		friend DelType1 * get_deleter(synchronized_ptr<Type1> const &) noexcept;
+		friend DelType1 * get_deleter(atomic_ptr<Type1> const &) noexcept;
 
-		friend class _synchronized_ptr_acc_counter<Type>;
+		friend class _atomic_ptr_acc_counter<Type>;
 	};
 
+	// TODO
 	template<class Type, class ... ArgTypes>
 	auto make_synchronized(ArgTypes && ... args) ->
 		std::enable_if_t<
 			!std::is_array_v<Type>,
-			synchronized_ptr<Type>
-		>
-	{
-	/*	auto ptr = operator new(
-			sizeof(_synchronized_ptr_obj_del_alloc_ref_counter) + 
-			(sizeof(_synchronized_ptr_obj_del_alloc_ref_counter) % alignof(_synchronized_ptr_obj_del_alloc_ref_counter)) + 
-			sizeof(Type) + 
-			(sizeof(Type) % alignof(Type)));
-		auto ref_counter = ::new (ptr) ; */
-	}
+			atomic_ptr<Type>
+		>;
 
 	template<class Type>
-	synchronized_ptr<Type> make_synchronized(std::size_t size);
+	atomic_ptr<Type> make_synchronized(std::size_t size);
 
 	template<class Type>
-	synchronized_ptr<Type> make_synchronized();
+	atomic_ptr<Type> make_synchronized();
 	
 	template<class Type>
-	synchronized_ptr<Type> make_synchronized(std::size_t size, std::remove_extent_t<Type> const & val);
+	atomic_ptr<Type> make_synchronized(std::size_t size, std::remove_extent_t<Type> const & val);
 	
 	template<class Type>
-	synchronized_ptr<Type> make_synchronized(std::remove_extent_t<Type> const & val);
+	atomic_ptr<Type> make_synchronized(std::remove_extent_t<Type> const & val);
 
 	// TODO
 	// allocate_shared
@@ -464,9 +455,9 @@ namespace stdx // This may be moved to stp
 	} */
 
 	template <class DelType, class Type>
-	DelType * get_deleter(synchronized_ptr<Type> const & synchronized_ptr) noexcept
+	DelType * get_deleter(atomic_ptr<Type> const & atomic_ptr) noexcept
 	{
-		return static_cast<DelType *>(synchronized_ptr._get_deleter(typeid(DelType)));
+		return static_cast<DelType *>(atomic_ptr._get_deleter(typeid(DelType)));
 	}
 }
 

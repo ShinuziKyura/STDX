@@ -4,7 +4,7 @@
 #define STDX_USING_MUTEX
 #include "spin_mutex.hpp"
 #include "spin_shared_mutex.hpp"
-#include "synchronized_ptr.hpp"
+#include "atomic_ptr.hpp"
 
 #include "stopwatch.hpp"
 #include "matrix.hpp"
@@ -21,10 +21,10 @@ struct S
 int main()
 {
 	using namespace stdx::indexing;
-
+	
 	stdx::matrix<int> m(10, 10, stdx::matrix_type::pascal);
 	stdx::spin_shared_mutex mtx;
-	stdx::synchronized_ptr<S> ptr(new S());
+	stdx::atomic_ptr<S> ptr(new S());
 
 //	std::cout << m[8_i,2_j] << std::endl;
 

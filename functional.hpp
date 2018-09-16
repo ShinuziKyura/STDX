@@ -6,7 +6,7 @@
 namespace stdx::functional
 {
 	template <class ValType>
-	auto forward(std::remove_reference_t<ValType> & val) // Special forwarding functions to be used with bind
+	constexpr auto forward(std::remove_reference_t<ValType> & val) // Special forwarding functions to be used with std::bind
 	{
 		if constexpr (std::is_placeholder_v<std::remove_cv_t<std::remove_reference_t<ValType>>>)
 		{
@@ -22,7 +22,7 @@ namespace stdx::functional
 		}
 	}
 	template <class ValType>
-	auto forward(std::remove_reference_t<ValType> && val)
+	constexpr auto forward(std::remove_reference_t<ValType> && val)
 	{
 		if constexpr (std::is_placeholder_v<std::remove_cv_t<std::remove_reference_t<ValType>>>)
 		{
@@ -34,7 +34,7 @@ namespace stdx::functional
 		}
 	}
 
-	template <class FuncType, class ... ArgTypes> // Version of bind that respects argument passing semantics, actually a wrapper for std::bind using stdx::functional::forward
+	template <class FuncType, class ... ArgTypes> // Wrapper for std::bind that uses stdx::functional::forward to pass arguments with correct semantics
 	auto bind(FuncType * func, ArgTypes && ... args)
 	{
 		static_assert(std::is_function_v<FuncType>,
