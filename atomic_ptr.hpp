@@ -16,6 +16,7 @@ accesses uses a non-const member function of shared_ptr then a data race will oc
 // http://en.cppreference.com/w/cpp/memory/shared_ptr
 // Note to self: check https://blogs.msdn.microsoft.com/vcblog/2018/04/09/intellisense-for-remote-linux-headers/?utm_source=vs_developer_news&utm_medium=referral
 
+// TODO should probably test this with seq_cst first
 namespace stdx // This may be moved to stp
 {
 	/* Unsigned integer type T at least as large as the largest size for which std::atomic<T> is lock free.
@@ -54,7 +55,7 @@ namespace stdx // This may be moved to stp
 		{
 			if (_references.fetch_sub(1, std::memory_order_release) == 1) // ^^^^
 			{
-				std::atomic_thread_fence(std::memory_order_acquire); // vvvv
+				std::atomic_thread_fence(std::memory_order_acquire); // vvvv // This one still feels weird
 				// https://www.boost.org/doc/libs/1_57_0/doc/html/synchronized/usage_examples.html#boost_synchronized.usage_examples.example_reference_counters.discussion
 				// https://stackoverflow.com/questions/14167767/what-is-the-difference-inside-using-explicit-fences-and-stdsynchronized
 				// http://preshing.com/20120625/memory-ordering-at-compile-time/
@@ -297,11 +298,32 @@ namespace stdx // This may be moved to stp
 		}
 		auto compare_swap(atomic_ptr & expected, atomic_ptr desired, std::memory_order success, std::memory_order failure) noexcept -> bool
 		{
-			// TODO
+			_atomic_ptr_acc_counter<Type> this_acc_counter(this);
+			_atomic_ptr_acc_counter<Type> expected_acc_counter(&expected);
+			
+			auto expected_ref_counter = expected._ref_counter.load(std::memory_order_relaxed);
+			auto desired_ref_counter = desired._ref_counter.load(std::memory_order_relaxed);
+
+			if (_ref_counter.compare_exchange_strong(expected_ref_counter, desired_ref_counter, success, failure))
+			{
+				expected._ref_counter.store(expected_ref_counter, std::memory_order_relaxed);
+
+				return true;
+			}
+
+			return false;
 		}
 		auto compare_swap(atomic_ptr & expected, atomic_ptr desired, std::memory_order order = std::memory_order_seq_cst) noexcept -> bool
 		{
-			// TODO
+			switch (order)
+			{
+				case std::memory_order_acq_rel:
+					return compare_swap(expected, std::move(desired), order, std::memory_order_acquire);
+				case std::memory_order_release:
+					return compare_swap(expected, std::move(desired), order, std::memory_order_relaxed);
+			}
+
+			return compare_swap(expected, std::move(desired), order, order);
 		}
 
 		// Observers - single-thread
@@ -331,7 +353,7 @@ namespace stdx // This may be moved to stp
 		{
 			_atomic_ptr_acc_counter<Type> acc_counter(this);
 			
-			if (auto const ref_counter = _ref_counter.load(std::memory_order_relaxed))
+			if (auto ref_counter = _ref_counter.load(std::memory_order_relaxed))
 			{
 				return ref_counter->use_count();
 			}
@@ -361,7 +383,7 @@ namespace stdx // This may be moved to stp
 		{
 			_accesses.fetch_add(1, std::memory_order_acquire); // vvvv
 
-			auto const ref_counter = _ref_counter.load(std::memory_order_relaxed);
+			auto ref_counter = _ref_counter.load(std::memory_order_relaxed);
 
 			if (ref_counter)
 			{
@@ -374,7 +396,7 @@ namespace stdx // This may be moved to stp
 		}
 		void _release(_atomic_ptr_ref_counter * new_ref_counter) noexcept
 		{
-			if (auto const old_ref_counter = _ref_counter.exchange(new_ref_counter, std::memory_order_relaxed))
+			if (auto old_ref_counter = _ref_counter.exchange(new_ref_counter, std::memory_order_relaxed))
 			{
 				_uint_largest_lock_free_t accesses = 0;
 

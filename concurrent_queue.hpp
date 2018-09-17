@@ -7,6 +7,19 @@
 
 namespace stdx
 {
+	using _uint_largest_lock_free_t =
+		typename stdx::meta::constrained_pack<
+			stdx::meta::is_lock_free,
+			stdx::meta::pack<
+				std::atomic_uint_least64_t,
+				std::atomic_uint_least32_t,
+				std::atomic_uint_least16_t,
+				std::atomic_uint_least8_t
+			>
+		>::template push<
+			std::atomic_uint_least64_t
+		>::first::value_type;
+
 	template <class Type, class Ordering>
 	class concurrent_queue;
 
@@ -16,7 +29,6 @@ namespace stdx
 	public:
 		concurrent_queue()
 		{
-			
 		}
 		concurrent_queue(concurrent_queue const & other)
 		{
@@ -36,21 +48,33 @@ namespace stdx
 
 		void push(Type const & element)
 		{
-			stdx::atomic_ptr<_node> node(new _node(element));
-			stdx::atomic_ptr<_node> node_actual; // To be used with compare_swap
-			/*
-				swap _back, expect node_actual, desired is node, if expected is different, we try with node_actual->next
-			*/
+			auto size = _size.fetch_add(1, std::memory_order_acquire); // fetch_add(1)/fetch_add(0) vs load/store (acq/rel)
+
+			stdx::atomic_ptr<_node> node(new _node(element)); // Need to allocate from memory pool, otherwise lockfree-ness is lost (explore synchronized_pool_resource)
+			stdx::atomic_ptr<_node> node_actual(nullptr); // To be used with compare_swap
+
+			bool non_empty = false;
+			while (!_back.compare_swap(node_actual, node))
+			{
+				node_actual = node_actual->next; // Is there any guarantee that this won't explode?
+				non_empty = true;
+			}
+			if (non_empty)
+			{
+				node_actual->next = node;
+			}
+
+			// TODO update next
 		}
-		Type pop()
+		bool pop(Type &)
 		{
 			stdx::atomic_ptr<_node> element = _front;
 
 			while (element)
 			{
-				if (!element->flag.test_and_set(std::memory_order_relaxed))
+				if (!element->popped.test_and_set(std::memory_order_relaxed))
 				{
-
+					// TODO
 
 				}
 				else
@@ -61,12 +85,6 @@ namespace stdx
 			}
 		}
 	private:
-		enum class _node_state
-		{
-			popped,
-			pushed,
-			null
-		};
 		struct _node
 		{
 			_node(Type const & element) : 
@@ -75,15 +93,16 @@ namespace stdx
 			}
 
 			stdx::atomic_ptr<_node> next;
-			std::atomic_flag flag = ATOMIC_FLAG_INIT;
+			std::atomic_flag popped = ATOMIC_FLAG_INIT;
 
 			Type object;
 		};
 	
 		stdx::atomic_ptr<_node> _front;
 		stdx::atomic_ptr<_node> _back;
+		std::atomic<_uint_largest_lock_free_t> _size;
 
-		std::atomic<stdx::_uint_largest_lock_free_t> _pop_counter;
+		std::atomic<_uint_largest_lock_free_t> _pop_counter;
 	};
 }
 
