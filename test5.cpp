@@ -11,12 +11,21 @@
 
 #include "zeromem.hpp"
 
+#define STDX_WHILE_ELSE
+#include "macros.h"
+
 struct S
 {
 	int i = 1;
 	double d = 0.5;
 	char c = ' ';
 };
+
+bool test(int i)
+{
+	std::cout << "Evaluated i" << std::endl;
+	return i < 10;
+}
 
 int main()
 {
@@ -28,6 +37,17 @@ int main()
 
 //	std::cout << m[8_i,2_j] << std::endl;
 
+	int i = 0;
+
+	while (test(i))
+	{
+		std::cout << i++ << std::endl;
+	}
+	else
+	{
+		std::cout << "Never executed i++!" << std::endl;
+	}
+	
 	stdx::stopwatch::start();
 	mtx.lock_shared();
 	std::cout << stdx::stopwatch::split() << std::endl;

@@ -51,17 +51,16 @@ namespace stdx
 			auto size = _size.fetch_add(1, std::memory_order_acquire); // fetch_add(1)/fetch_add(0) vs load/store (acq/rel)
 
 			stdx::atomic_ptr<_node> node(new _node(element)); // Need to allocate from memory pool, otherwise lockfree-ness is lost (explore synchronized_pool_resource)
-			stdx::atomic_ptr<_node> node_actual(nullptr); // To be used with compare_swap
+			stdx::atomic_ptr<_node> back_actual(nullptr); // To be used with compare_swap
 
 			bool non_empty = false;
-			while (!_back.compare_swap(node_actual, node))
+			while (!_back.compare_swap(back_actual, node, std::memory_order_relaxed))
 			{
-				node_actual = node_actual->next; // Is there any guarantee that this won't explode?
 				non_empty = true;
 			}
 			if (non_empty)
 			{
-				node_actual->next = node;
+				node_actual->next = node; // We need to guarantee that no one else touches this ptr
 			}
 
 			// TODO update next
