@@ -11,8 +11,7 @@
 
 #include "zeromem.hpp"
 
-#define STDX_WHILE_ELSE
-#include "macros.h"
+#include "language.h"
 
 struct S
 {
@@ -39,6 +38,8 @@ int main()
 
 	int i = 0;
 
+#include STDX_WHILE_ELSE
+
 	while (test(i))
 	{
 		std::cout << i++ << std::endl;
@@ -47,6 +48,15 @@ int main()
 	{
 		std::cout << "Never executed i++!" << std::endl;
 	}
+
+#include STDX_DO_WHILE
+
+	do
+	{
+		std::cout << i-- << std::endl;
+		std::cout << "Executed i-- at least once!" << std::endl;
+	}
+	while (i > 10);
 	
 	stdx::stopwatch::start();
 	mtx.lock_shared();
