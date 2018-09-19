@@ -5,7 +5,7 @@
 #include <complex>
 #include <atomic>
 
-namespace stdx::meta // Consider further subdivision of file into nested namespaces (or into different files) for each trait class
+namespace stdx::meta // TODO Consider further subdivision of file into nested namespaces (or into different files) for each trait class
 {
 	struct _nulltype;
 

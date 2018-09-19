@@ -1,4 +1,0 @@
-#ifndef while
-// Proof of concept: implements while-else in the language; unfortunately, it breaks do-while in the process
-#define while(condition) if (bool STDX_MACRO_CONCAT(STDX_WHILE_ELSE_VAR_, __LINE__) = (condition)) while ((STDX_MACRO_CONCAT(STDX_WHILE_ELSE_VAR_, __LINE__) && ((STDX_MACRO_CONCAT(STDX_WHILE_ELSE_VAR_, __LINE__) = false) == false)) || (condition))
-#endif

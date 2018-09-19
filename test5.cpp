@@ -1,17 +1,17 @@
 #include <iostream>
 #include <shared_mutex>
 
-#define STDX_USING_MUTEX
-#include "spin_mutex.hpp"
-#include "spin_shared_mutex.hpp"
-#include "atomic_ptr.hpp"
+#define STDX_USING_ALL
 
+#include "spinlock.hpp"
 #include "stopwatch.hpp"
-#include "matrix.hpp"
-
 #include "zeromem.hpp"
 
-#include "language.h"
+#include "language.hpp"
+
+// WIP
+#include "atomic_ptr.hpp"
+#include "matrix.hpp"
 
 struct S
 {

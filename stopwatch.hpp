@@ -8,7 +8,7 @@
 #define STDX_STOPWATCH_RESOLUTION std::ratio<1>
 #endif
 
-namespace stdx // chrono
+namespace stdx::chrono
 {
 	class stopwatch
 	{
@@ -75,5 +75,9 @@ namespace stdx // chrono
 	thread_local std::list<double>						stopwatch::	_split_times;
 	thread_local double									stopwatch::	_total_time = 0.0;
 }
+
+#if defined(STDX_USING_CHRONO) || defined(STDX_USING_ALL)
+namespace stdx { using namespace chrono; }
+#endif
 
 #endif

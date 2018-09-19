@@ -1,5 +1,7 @@
-#ifndef SUPERINTEGER_HPP
-#define SUPERINTEGER_HPP
+#ifndef STDX_SUPERINTEGER_HPP
+#define STDX_SUPERINTEGER_HPP
+
+#ifdef STDX_WIP
 
 #include <type_traits>
 #include <limits>
@@ -51,4 +53,5 @@ namespace stdx
 	}
 }
 
+#endif
 #endif

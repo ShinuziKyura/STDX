@@ -1,12 +1,12 @@
-#ifndef RANDOM_GENERATOR_HPP
-#define RANDOM_GENERATOR_HPP
+#ifndef STDX_RANDOM_HPP
+#define STDX_RANDOM_HPP
 
 #ifdef STDX_WIP
 
 #include <random>
 #include <array>
 
-namespace stdx // rand
+namespace stdx::random
 {
 	// Review this (consider using more engines and combinations with adaptors)
 	using fast_engine = std::ranlux48_base;
@@ -95,9 +95,8 @@ namespace stdx // rand
 	using random_piecewise_linear_generator = random_number_generator<std::piecewise_linear_distribution<long double>>;
 }
 
-#if defined(STDX_USING_RAND) // || defined(STDX_USING_ALL)
-#error Namespace 'rand' not ready
-namespace stdx { using namespace rand; }
+#if defined(STDX_USING_RANDOM) || defined(STDX_USING_ALL)
+namespace stdx { using namespace random; }
 #endif
 
 #endif

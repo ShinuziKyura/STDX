@@ -1,19 +1,17 @@
 // Macros
 
-#if defined(STDX_USING_MACROS)
-#include "macros.h"
+#if defined(STDX_USING_LANGUAGE)
+#include "language.hpp"
 #endif
 
-// Metaprogramming
+// Metafunctions
 
 #include "meta.hpp"
 
 // Classes
 
-#include "comparable.hpp"
 #include "stopwatch.hpp"
-#include "spin_mutex.hpp"
-#include "spin_shared_mutex.hpp"
+#include "spinlock.hpp"
 
 // Functions
 
