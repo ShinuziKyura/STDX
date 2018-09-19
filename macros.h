@@ -14,5 +14,3 @@ STDX_CODE_END
 
 #define STDX_RANGE(container) ::std::begin(container), ::std::end(container)
 #define STDX_RRANGE(container) ::std::rbegin(container), ::std::rend(container)
-
-// See https://www.chiark.greenend.org.uk/~sgtatham/mp/
