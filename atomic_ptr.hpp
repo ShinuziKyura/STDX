@@ -245,13 +245,14 @@ namespace stdx // This may be moved to stp
 			_release(other._acquire());
 			return *this;
 		}
-		atomic_ptr(atomic_ptr && other)
+		atomic_ptr(atomic_ptr && other) noexcept :
+			_ref_counter(other._ref_counter.exchange(nullptr, std::memory_order_relaxed)) // Review memory order (will maybe need a function specific for this operation i.e. _steal())
 		{
-			// TODO
 		}
 		atomic_ptr & operator=(atomic_ptr && other)
 		{
-			// TODO
+			_release(other._ref_counter.exchange(nullptr, std::memory_order_relaxed)); // Review memory order
+			return *this;
 		}
 		~atomic_ptr() noexcept
 		{
@@ -298,20 +299,19 @@ namespace stdx // This may be moved to stp
 		}
 		auto compare_swap(atomic_ptr & expected, atomic_ptr desired, std::memory_order success, std::memory_order failure) noexcept -> bool
 		{
-			_atomic_ptr_acc_counter<Type> this_acc_counter(this);
-			_atomic_ptr_acc_counter<Type> expected_acc_counter(&expected);
+			_atomic_ptr_acc_counter<Type> acc_counter(this);
 			
-			auto expected_ref_counter = expected._ref_counter.load(std::memory_order_relaxed);
+			auto expected_ref_counter = expected._acquire();
 			auto desired_ref_counter = desired._ref_counter.load(std::memory_order_relaxed);
 
-			if (_ref_counter.compare_exchange_strong(expected_ref_counter, desired_ref_counter, success, failure))
+			if (!_ref_counter.compare_exchange_strong(expected_ref_counter, desired_ref_counter, success, failure))
 			{
-				expected._ref_counter.store(expected_ref_counter, std::memory_order_relaxed);
+				expected._release(expected_ref_counter);
 
-				return true;
+				return false;
 			}
 
-			return false;
+			return true;
 		}
 		auto compare_swap(atomic_ptr & expected, atomic_ptr desired, std::memory_order order = std::memory_order_seq_cst) noexcept -> bool
 		{
@@ -398,14 +398,9 @@ namespace stdx // This may be moved to stp
 		{
 			if (auto old_ref_counter = _ref_counter.exchange(new_ref_counter, std::memory_order_relaxed))
 			{
-				_uint_largest_lock_free_t accesses = 0;
+				while (!_accesses.load(std::memory_order_relaxed));
 
-				while (!_accesses.compare_exchange_weak(accesses, 0, std::memory_order_acq_rel)) // vvvv ^^^^
-				{
-					accesses = 0;
-				}
-
-				old_ref_counter->decrement();
+				old_ref_counter->decrement(); // vvvv (if _references == 0) / ^^^^
 			}
 		}
 
