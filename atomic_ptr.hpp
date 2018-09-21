@@ -19,7 +19,7 @@ accesses uses a non-const member function of shared_ptr then a data race will oc
 // TODO should probably test this with seq_cst first
 namespace stdx // This may be moved to stp
 {
-	/* Unsigned integer type T at least as large as the largest size for which std::atomic<T> is lock free.
+	/* Unsigned integer type T of the largest size for which std::atomic<T> is lock free.
 	 * If there is no type T for which std::atomic<T> is lock free, T is the largest size supported by the architecture.
 	 */
 	using _uint_largest_lock_free_t =
@@ -249,7 +249,7 @@ namespace stdx // This may be moved to stp
 			_ref_counter(other._ref_counter.exchange(nullptr, std::memory_order_relaxed)) // Review memory order (will maybe need a function specific for this operation i.e. _steal())
 		{
 		}
-		atomic_ptr & operator=(atomic_ptr && other)
+		atomic_ptr & operator=(atomic_ptr && other) noexcept
 		{
 			_release(other._ref_counter.exchange(nullptr, std::memory_order_relaxed)); // Review memory order
 			return *this;
@@ -383,7 +383,7 @@ namespace stdx // This may be moved to stp
 		{
 			_accesses.fetch_add(1, std::memory_order_acquire); // vvvv
 
-			auto ref_counter = _ref_counter.load(std::memory_order_relaxed);
+			auto ref_counter = _ref_counter.load(std::memory_order_acquire); // vvvv
 
 			if (ref_counter)
 			{
@@ -396,9 +396,9 @@ namespace stdx // This may be moved to stp
 		}
 		void _release(_atomic_ptr_ref_counter * new_ref_counter) noexcept
 		{
-			if (auto old_ref_counter = _ref_counter.exchange(new_ref_counter, std::memory_order_relaxed))
+			if (auto old_ref_counter = _ref_counter.exchange(new_ref_counter, std::memory_order_acq_rel)) // vvvv / ^^^^
 			{
-				while (!_accesses.load(std::memory_order_relaxed));
+				while (_accesses.load(std::memory_order_relaxed));
 
 				old_ref_counter->decrement(); // vvvv (if _references == 0) / ^^^^
 			}

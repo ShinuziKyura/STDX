@@ -1,7 +1,7 @@
 #include <iostream>
 #include <unordered_set>
 
-#include "random_generator.hpp"
+#include "random.hpp"
 /*
 int main1()
 {
