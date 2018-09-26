@@ -6,7 +6,7 @@
 namespace stdx::functional
 {
 	template <class ValType>
-	constexpr auto forward(std::remove_reference_t<ValType> & val) // Forwarding functions used with std::bind to pass stored arguments to the stored function with the correct semantics
+	auto forward(std::remove_reference_t<ValType> & val) // Forwarding functions used with std::bind to pass stored arguments to the stored function with the correct semantics
 	{
 		if constexpr (std::is_placeholder_v<std::remove_cv_t<std::remove_reference_t<ValType>>>)
 		{
@@ -22,7 +22,7 @@ namespace stdx::functional
 		}
 	}
 	template <class ValType>
-	constexpr auto forward(std::remove_reference_t<ValType> && val)
+	auto forward(std::remove_reference_t<ValType> && val)
 	{
 		if constexpr (std::is_placeholder_v<std::remove_cv_t<std::remove_reference_t<ValType>>>)
 		{

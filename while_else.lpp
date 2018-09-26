@@ -1,4 +1,5 @@
-#ifndef while
-// Proof of concept: implements while-else in the language; unfortunately, it breaks do-while in the process
-#define while(condition) if (bool STDX_CONCATENATE(STDX_WHILE_ELSE_VARIABLE_1_, __LINE__) = (condition)) while ((STDX_CONCATENATE(STDX_WHILE_ELSE_VARIABLE_1_, __LINE__) && ((STDX_CONCATENATE(STDX_WHILE_ELSE_VARIABLE_1_, __LINE__) = false) == false)) || (condition))
-#endif
+// Proof of concept: implements while-else in the language; unfortunately, it breaks do-while
+#undef while
+#define while(condition) \
+if (bool STDX_CONCATENATE(STDX_WHILE_ELSE_VARIABLE_, __LINE__) = (condition))\
+	while ((STDX_CONCATENATE(STDX_WHILE_ELSE_VARIABLE_, __LINE__) && ((STDX_CONCATENATE(STDX_WHILE_ELSE_VARIABLE_1_, __LINE__) = false) == false)) || (condition))

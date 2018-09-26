@@ -39,7 +39,7 @@ namespace stdx::thread
 
 	class spin_shared_mutex
 	{
-		using _atomic_int_leastL_lock_free_t =
+		using _atomic_int_largest_lock_free_t =
 			typename stdx::meta::constrained_pack<
 				stdx::meta::is_lock_free,
 				stdx::meta::pack<
@@ -51,8 +51,8 @@ namespace stdx::thread
 			>::push<
 				std::atomic_int_least64_t
 			>::first;
-		using _int_leastL_lock_free_t = 
-			typename _atomic_int_leastL_lock_free_t::value_type;
+		using _int_largest_lock_free_t = 
+			typename _atomic_int_largest_lock_free_t::value_type;
 	public:
 		spin_shared_mutex() noexcept = default;
 		spin_shared_mutex(spin_shared_mutex const &) = delete;
@@ -62,9 +62,9 @@ namespace stdx::thread
 
 		void lock()
 		{
-			_int_leastL_lock_free_t available = 0;
+			_int_largest_lock_free_t available = 0;
 
-			while (!_lock.compare_exchange_weak(available, std::numeric_limits<_int_leastL_lock_free_t>::min(), std::memory_order_acquire))
+			while (!_lock.compare_exchange_weak(available, std::numeric_limits<_int_largest_lock_free_t>::min(), std::memory_order_acquire))
 			{
 				std::this_thread::yield();
 				available = 0;
@@ -72,9 +72,9 @@ namespace stdx::thread
 		}
 		bool try_lock()
 		{
-			_int_leastL_lock_free_t available = 0;
+			_int_largest_lock_free_t available = 0;
 
-			return _lock.compare_exchange_weak(available, std::numeric_limits<_int_leastL_lock_free_t>::min(), std::memory_order_acquire);
+			return _lock.compare_exchange_weak(available, std::numeric_limits<_int_largest_lock_free_t>::min(), std::memory_order_acquire);
 		}
 		void unlock()
 		{
@@ -82,17 +82,17 @@ namespace stdx::thread
 		}
 		void lock_shared()
 		{
-			_int_leastL_lock_free_t available = _lock.load(std::memory_order_relaxed);
+			_int_largest_lock_free_t available = _lock.load(std::memory_order_relaxed);
 
 			do
 			{
 				switch (available)
 				{
-					case std::numeric_limits<_int_leastL_lock_free_t>::min():
+					case std::numeric_limits<_int_largest_lock_free_t>::min():
 						std::this_thread::yield();
 						available = 0;
 						break;
-					case std::numeric_limits<_int_leastL_lock_free_t>::max():
+					case std::numeric_limits<_int_largest_lock_free_t>::max():
 						std::this_thread::yield();
 						--available;
 						break;
@@ -102,14 +102,14 @@ namespace stdx::thread
 		}
 		bool try_lock_shared()
 		{
-			_int_leastL_lock_free_t available = _lock.load(std::memory_order_relaxed);
+			_int_largest_lock_free_t available = _lock.load(std::memory_order_relaxed);
 
 			switch (available)
 			{
-				case std::numeric_limits<_int_leastL_lock_free_t>::min():
+				case std::numeric_limits<_int_largest_lock_free_t>::min():
 					available = 0;
 					break;
-				case std::numeric_limits<_int_leastL_lock_free_t>::max():
+				case std::numeric_limits<_int_largest_lock_free_t>::max():
 					--available;
 					break;
 			}
@@ -123,14 +123,14 @@ namespace stdx::thread
 
 		static constexpr bool is_lock_free()
 		{
-			return stdx::meta::is_lock_free<_atomic_int_leastL_lock_free_t>::value;
+			return stdx::meta::is_lock_free<_atomic_int_largest_lock_free_t>::value;
 		}
 		static constexpr auto maximum_number_of_owners()
 		{
-			return std::numeric_limits<_int_leastL_lock_free_t>::max();
+			return std::numeric_limits<_int_largest_lock_free_t>::max();
 		}
 	private:
-		_atomic_int_leastL_lock_free_t _lock = 0;
+		_atomic_int_largest_lock_free_t _lock = 0;
 	};
 }
 
