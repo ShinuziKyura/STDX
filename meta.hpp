@@ -26,6 +26,7 @@ namespace stdx::meta // TODO Consider further subdivision of file into nested na
 	struct pack
 	{
 		static constexpr size_t size = 0;
+
 		template <class ... Types>
 		using push = pack<Types ...>;
 		template <size_t N>
@@ -38,6 +39,7 @@ namespace stdx::meta // TODO Consider further subdivision of file into nested na
 		static constexpr size_t size = 1;
 		using first = Type;
 		using last = Type;
+
 		template <class ... Types>
 		using push = pack<Type, Types ...>;
 		template <size_t N>
@@ -50,6 +52,7 @@ namespace stdx::meta // TODO Consider further subdivision of file into nested na
 		static constexpr size_t size = 1 + sizeof...(Types);
 		using first = Type;
 		using last = typename pack<Types ...>::last;
+
 		template <class ... Types1>
 		using push = pack<Type, Types ..., Types1 ...>;
 		template <size_t N>
@@ -62,6 +65,7 @@ namespace stdx::meta // TODO Consider further subdivision of file into nested na
 	struct valpack
 	{
 		static constexpr size_t size = 0;
+
 		template <auto ... Values>
 		using push = valpack<Values ...>;
 		template <size_t N>
@@ -74,6 +78,7 @@ namespace stdx::meta // TODO Consider further subdivision of file into nested na
 		static constexpr size_t size = 1;
 		static constexpr auto first = Value;
 		static constexpr auto last = Value;
+
 		template <auto ... Values>
 		using push = valpack<Value, Values ...>;
 		template <size_t N>
@@ -86,6 +91,7 @@ namespace stdx::meta // TODO Consider further subdivision of file into nested na
 		static constexpr size_t size = 1 + sizeof...(Values);
 		static constexpr auto first = Value;
 		static constexpr auto last = valpack<Values ...>::last;
+
 		template <auto ... Values1>
 		using push = valpack<Value, Values ..., Values1 ...>;
 		template <size_t N>
@@ -101,8 +107,8 @@ namespace stdx::meta // TODO Consider further subdivision of file into nested na
 	{
 		using type = Type;
 	};
-
-		// Obtain template from class
+/*	TODO: review names
+		// Obtain template from class 
 
 	template <class>
 	struct class_template;
@@ -139,7 +145,7 @@ namespace stdx::meta // TODO Consider further subdivision of file into nested na
 		template <size_t N>
 		using type = val<valpack<Parameters ...>::template pop<N>::first>;
 	};
-
+*/
 		// Cast from one type to another, if they are convertible
 
 	template <class Type1, class Type2>
@@ -807,7 +813,7 @@ namespace stdx::meta // TODO Consider further subdivision of file into nested na
 	template <class Pack>
 	using as_pack_val = typename _as_pack_val<Pack>::_type;
 
-		// Apply a trait that takes a type parameter to a type from Val
+		// Apply a trait that takes a type parameter to the type from a Val
 
 	template <template <class> class Trait>
 	struct type_trait
@@ -816,7 +822,7 @@ namespace stdx::meta // TODO Consider further subdivision of file into nested na
 		using type = Trait<typename Val::type>;
 	};
 
-		// Apply a trait that takes a non-type parameter to a value from Val
+		// Apply a trait that takes a non-type parameter to the value from a Val
 
 	template <template <auto> class Trait>
 	struct value_trait
@@ -825,7 +831,7 @@ namespace stdx::meta // TODO Consider further subdivision of file into nested na
 		using value = Trait<Val::value>;
 	};
 
-		// Apply a trait that takes a type parameter to types from Pack
+		// Apply a trait that takes a type parameter to a type from a Pack
 
 	template <template <class> class Trait, size_t Index = 0>
 	struct pack_trait
@@ -838,7 +844,7 @@ namespace stdx::meta // TODO Consider further subdivision of file into nested na
 		using last = Trait<typename Pack::last>;
 	};
 
-		// Apply a trait that takes a non-type parameter to values from Valpack
+		// Apply a trait that takes a non-type parameter to a value from a Valpack
 
 	template <template <auto> class Trait, size_t Index = 0>
 	struct valpack_trait
@@ -913,7 +919,7 @@ namespace stdx::meta // TODO Consider further subdivision of file into nested na
 	};
 
 	template <class IndexPack>
-	struct _assert_index_values_permutated_pack : std::is_same<IndexPack, constrained_pack<value_trait<inside<0, IndexPack::size - 1>::trait>::template value, constrained_pack<type_trait<std::is_integral>::template type, IndexPack>>>
+	struct _assert_index_values_permutated_pack : std::is_same<IndexPack, constrained_pack<value_trait<inside<0, IndexPack::size - 1>::template trait>::template value, constrained_pack<type_trait<std::is_integral>::template type, IndexPack>>>
 	{
 	};
 
