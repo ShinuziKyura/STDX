@@ -1,5 +1,5 @@
-#ifndef STDX_SPINLOCK_HPP
-#define STDX_SPINLOCK_HPP
+#ifndef STDX_MUTEX_HPP
+#define STDX_MUTEX_HPP
 
 #include <limits>
 #include <thread>
@@ -7,7 +7,7 @@
 
 #include "meta.hpp"
 
-namespace stdx::thread
+namespace stdx::mutex
 {	
 	class spin_mutex
 	{
@@ -134,8 +134,8 @@ namespace stdx::thread
 	};
 }
 
-#if defined(STDX_USING_THREAD) || defined(STDX_USING_ALL)
-namespace stdx { using namespace thread; }
+#if defined(STDX_USING_MUTEX) || defined(STDX_USING_ALL)
+namespace stdx { using namespace mutex; }
 #endif
 
 #endif
