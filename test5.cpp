@@ -3,7 +3,8 @@
 
 #define STDX_USING_ALL
 
-#include "spinlock.hpp"
+#include "stream.hpp"
+#include "spin_mutex.hpp"
 #include "stopwatch.hpp"
 #include "zeromem.hpp"
 
@@ -20,10 +21,18 @@ struct S
 	char c = ' ';
 };
 
-bool test(int i)
+bool test_less(int i)
 {
-	std::cout << "Evaluated i" << std::endl;
-	return i < 10;
+	bool test = i < 10;
+	std::cout << std::boolalpha << "Evaluated i: " << test << std::endl;
+	return test;
+}
+
+bool test_greater(int i)
+{
+	bool test = i > 10;
+	std::cout << std::boolalpha << "Evaluated i: " << test << std::endl;
+	return test;
 }
 
 int main()
@@ -40,24 +49,27 @@ int main()
 
 #include STDX_WHILE_ELSE
 
-	while (test(i))
+	while (test_less(i))
 	{
-		std::cout << i++ << std::endl;
+		std::cout << ++i << std::endl;
 	}
 	else
 	{
-		std::cout << "Never executed i++!" << std::endl;
+		std::cout << "Never executed ++i!" << std::endl;
 	}
+
+	std::cout << std::endl;
 
 #include STDX_DO_WHILE
 
 	do
 	{
-		std::cout << i-- << std::endl;
-		std::cout << "Executed i-- at least once!" << std::endl;
+		std::cout << --i << std::endl;
 	}
-	while (i > 10);
+	while (test_greater(i));
 	
+	std::cout << std::endl;
+
 	stdx::stopwatch::start();
 	mtx.lock_shared();
 	std::cout << stdx::stopwatch::split() << std::endl;
@@ -70,6 +82,8 @@ int main()
 	std::cout << stdx::stopwatch::stop() << std::endl;
 
 	std::cout << stdx::stopwatch::total_time() << std::endl;
+
+	stdx::wait_for_newline();
 
 	return 0;
 }
