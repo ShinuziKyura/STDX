@@ -16,8 +16,8 @@ namespace stdx::meta // TODO Consider further subdivision of file into nested na
 
 	namespace qualifiers
 	{
-	//	no qualifiers
-		struct _;
+	//	unqualified
+		struct _u;
 	//	const
 		struct _c;
 	//	volatile
@@ -275,7 +275,7 @@ namespace stdx::meta // TODO Consider further subdivision of file into nested na
 	struct function_signature;
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...)> : _function_signature<RetType(ParamTypes ...), qualifiers::_>
+	struct function_signature<RetType(ParamTypes ...)> : _function_signature<RetType(ParamTypes ...), qualifiers::_u>
 	{
 	};
 
@@ -411,7 +411,7 @@ namespace stdx::meta // TODO Consider further subdivision of file into nested na
 	struct _make_function_signature;
 
 	template <class RetType, class ... ParamTypes>
-	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers::_>>
+	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers::_u>>
 	{
 		using _type = RetType(ParamTypes ...);
 	};
