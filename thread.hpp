@@ -6,7 +6,7 @@
 namespace stdx::thread
 {
 	template <class FuncType, class ... ArgTypes>
-	constexpr void daemon(FuncType func, ArgTypes && ... args)
+	void daemon(FuncType func, ArgTypes && ... args)
 	{
 		std::thread(func, std::forward<ArgTypes>(args) ...).detach();
 	}

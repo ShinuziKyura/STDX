@@ -51,7 +51,7 @@ namespace stdx::mutex
 			>::push<
 				std::atomic_int_least64_t
 			>::first;
-		using _int_largest_lock_free_t = 
+		using _int_largest_lock_free_t =
 			typename _atomic_int_largest_lock_free_t::value_type;
 	public:
 		spin_shared_mutex() noexcept = default;

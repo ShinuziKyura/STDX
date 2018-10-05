@@ -5,9 +5,98 @@
 #include <complex>
 #include <atomic>
 
+// SFINAE is weird: https://stackoverflow.com/questions/39510630/member-function-template-selection-and-sfinae
+
 namespace stdx::meta // TODO Consider further subdivision of file into nested namespaces (or into different files) for each trait class
 {
-	struct _nulltype;
+	namespace _implementation
+	{
+		struct _void;
+	}
+
+	namespace qualifiers
+	{
+	//	no qualifiers
+		struct _;
+	//	const
+		struct _c;
+	//	volatile
+		struct _v;
+	//	const volatile
+		struct _cv;
+
+	//	lvalue reference
+		struct _l;
+	//	const lvalue reference
+		struct _cl;
+	//	volatile lvalue reference
+		struct _vl;
+	//	const volatile lvalue reference
+		struct _cvl;
+
+	//	rvalue reference
+		struct _r;
+	//	const rvalue reference
+		struct _cr;
+	//	volatile rvalue reference
+		struct _vr;
+	//	const volatile rvalue reference
+		struct _cvr;
+
+	//	noexcept
+		struct _n;
+	//	const noexcept
+		struct _cn;
+	//	volatile noexcept
+		struct _vn;
+	//	const volatile noexcept
+		struct _cvn;
+
+	//	lvalue reference noexcept
+		struct _ln;
+	//	const lvalue reference noexcept
+		struct _cln;
+	//	volatile lvalue reference noexcept
+		struct _vln;
+	//	const volatile lvalue reference noexcept
+		struct _cvln;
+
+	//	rvalue reference noexcept
+		struct _rn;
+	//	const rvalue reference noexcept
+		struct _crn;
+	//	volatile rvalue reference noexcept
+		struct _vrn;
+	//	const volatile rvalue reference noexcept
+		struct _cvrn;
+	}
+
+	namespace placeholders
+	{
+		template <size_t>
+		struct _p;
+		
+		using _1 = _p<1>;
+		using _2 = _p<2>;
+		using _3 = _p<3>;
+		using _4 = _p<4>;
+		using _5 = _p<5>;
+		using _6 = _p<6>;
+		using _7 = _p<7>;
+		using _8 = _p<8>;
+		using _9 = _p<9>;
+		using _10 = _p<10>;
+		using _11 = _p<11>;
+		using _12 = _p<12>;
+		using _13 = _p<13>;
+		using _14 = _p<14>;
+		using _15 = _p<15>;
+		using _16 = _p<16>;
+		using _17 = _p<17>;
+		using _18 = _p<18>;
+		using _19 = _p<19>;
+		using _20 = _p<20>;
+	}
 
 	// Container types
 
@@ -107,6 +196,7 @@ namespace stdx::meta // TODO Consider further subdivision of file into nested na
 	{
 		using type = Type;
 	};
+
 /*	TODO: review names
 		// Obtain template from class 
 
@@ -168,36 +258,9 @@ namespace stdx::meta // TODO Consider further subdivision of file into nested na
 
 	// Function traits
 
-		// Tag types for function_signature and make_function_signature
-
-	struct qualifiers_;
-	struct qualifiers_c;
-	struct qualifiers_v;
-	struct qualifiers_cv;
-	struct qualifiers_l;
-	struct qualifiers_cl;
-	struct qualifiers_vl;
-	struct qualifiers_cvl;
-	struct qualifiers_r;
-	struct qualifiers_cr;
-	struct qualifiers_vr;
-	struct qualifiers_cvr;
-	struct qualifiers_n;
-	struct qualifiers_cn;
-	struct qualifiers_vn;
-	struct qualifiers_cvn;
-	struct qualifiers_ln;
-	struct qualifiers_cln;
-	struct qualifiers_vln;
-	struct qualifiers_cvln;
-	struct qualifiers_rn;
-	struct qualifiers_crn;
-	struct qualifiers_vrn;
-	struct qualifiers_cvrn;
-
 		// Function signature
 
-	template <class, class>
+	template <class, class = _implementation::_void>
 	struct _function_signature;
 
 	template <class RetType, class ... ParamTypes, class QualType>
@@ -212,122 +275,122 @@ namespace stdx::meta // TODO Consider further subdivision of file into nested na
 	struct function_signature;
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...)> : _function_signature<RetType(ParamTypes ...), qualifiers_>
+	struct function_signature<RetType(ParamTypes ...)> : _function_signature<RetType(ParamTypes ...), qualifiers::_>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const> : _function_signature<RetType(ParamTypes ...), qualifiers_c>
+	struct function_signature<RetType(ParamTypes ...) const> : _function_signature<RetType(ParamTypes ...), qualifiers::_c>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) volatile> : _function_signature<RetType(ParamTypes ...), qualifiers_v>
+	struct function_signature<RetType(ParamTypes ...) volatile> : _function_signature<RetType(ParamTypes ...), qualifiers::_v>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const volatile> : _function_signature<RetType(ParamTypes ...), qualifiers_cv>
+	struct function_signature<RetType(ParamTypes ...) const volatile> : _function_signature<RetType(ParamTypes ...), qualifiers::_cv>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) &> : _function_signature<RetType(ParamTypes ...), qualifiers_l>
+	struct function_signature<RetType(ParamTypes ...) &> : _function_signature<RetType(ParamTypes ...), qualifiers::_l>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const &> : _function_signature<RetType(ParamTypes ...), qualifiers_cl>
+	struct function_signature<RetType(ParamTypes ...) const &> : _function_signature<RetType(ParamTypes ...), qualifiers::_cl>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) volatile &> : _function_signature<RetType(ParamTypes ...), qualifiers_vl>
+	struct function_signature<RetType(ParamTypes ...) volatile &> : _function_signature<RetType(ParamTypes ...), qualifiers::_vl>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const volatile &> : _function_signature<RetType(ParamTypes ...), qualifiers_cvl>
+	struct function_signature<RetType(ParamTypes ...) const volatile &> : _function_signature<RetType(ParamTypes ...), qualifiers::_cvl>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) &&> : _function_signature<RetType(ParamTypes ...), qualifiers_r>
+	struct function_signature<RetType(ParamTypes ...) &&> : _function_signature<RetType(ParamTypes ...), qualifiers::_r>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const &&> : _function_signature<RetType(ParamTypes ...), qualifiers_cr>
+	struct function_signature<RetType(ParamTypes ...) const &&> : _function_signature<RetType(ParamTypes ...), qualifiers::_cr>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) volatile &&> : _function_signature<RetType(ParamTypes ...), qualifiers_vr>
+	struct function_signature<RetType(ParamTypes ...) volatile &&> : _function_signature<RetType(ParamTypes ...), qualifiers::_vr>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const volatile &&> : _function_signature<RetType(ParamTypes ...), qualifiers_cvr>
+	struct function_signature<RetType(ParamTypes ...) const volatile &&> : _function_signature<RetType(ParamTypes ...), qualifiers::_cvr>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers_n>
+	struct function_signature<RetType(ParamTypes ...) noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers::_n>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers_cn>
+	struct function_signature<RetType(ParamTypes ...) const noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers::_cn>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) volatile noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers_vn>
+	struct function_signature<RetType(ParamTypes ...) volatile noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers::_vn>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const volatile noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers_cvn>
+	struct function_signature<RetType(ParamTypes ...) const volatile noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers::_cvn>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) & noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers_ln>
+	struct function_signature<RetType(ParamTypes ...) & noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers::_ln>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const & noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers_cln>
+	struct function_signature<RetType(ParamTypes ...) const & noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers::_cln>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) volatile & noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers_vln>
+	struct function_signature<RetType(ParamTypes ...) volatile & noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers::_vln>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const volatile & noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers_cvln>
+	struct function_signature<RetType(ParamTypes ...) const volatile & noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers::_cvln>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) && noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers_rn>
+	struct function_signature<RetType(ParamTypes ...) && noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers::_rn>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const && noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers_crn>
+	struct function_signature<RetType(ParamTypes ...) const && noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers::_crn>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) volatile && noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers_vrn>
+	struct function_signature<RetType(ParamTypes ...) volatile && noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers::_vrn>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const volatile && noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers_cvrn>
+	struct function_signature<RetType(ParamTypes ...) const volatile && noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers::_cvrn>
 	{
 	};
 
@@ -348,151 +411,184 @@ namespace stdx::meta // TODO Consider further subdivision of file into nested na
 	struct _make_function_signature;
 
 	template <class RetType, class ... ParamTypes>
-	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers_>>
+	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers::_>>
 	{
 		using _type = RetType(ParamTypes ...);
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers_c>>
+	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers::_c>>
 	{
 		using _type = RetType(ParamTypes ...) const;
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers_v>>
+	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers::_v>>
 	{
 		using _type = RetType(ParamTypes ...) volatile;
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers_cv>>
+	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers::_cv>>
 	{
 		using _type = RetType(ParamTypes ...) const volatile;
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers_l>>
+	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers::_l>>
 	{
 		using _type = RetType(ParamTypes ...) &;
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers_cl>>
+	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers::_cl>>
 	{
 		using _type = RetType(ParamTypes ...) const &;
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers_vl>>
+	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers::_vl>>
 	{
 		using _type = RetType(ParamTypes ...) volatile &;
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers_cvl>>
+	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers::_cvl>>
 	{
 		using _type = RetType(ParamTypes ...) const volatile &;
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers_r>>
+	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers::_r>>
 	{
 		using _type = RetType(ParamTypes ...) &&;
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers_cr>>
+	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers::_cr>>
 	{
 		using _type = RetType(ParamTypes ...) const &&;
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers_vr>>
+	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers::_vr>>
 	{
 		using _type = RetType(ParamTypes ...) volatile &&;
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers_cvr>>
+	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers::_cvr>>
 	{
 		using _type = RetType(ParamTypes ...) const volatile &&;
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers_n>>
+	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers::_n>>
 	{
 		using _type = RetType(ParamTypes ...) noexcept;
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers_cn>>
+	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers::_cn>>
 	{
 		using _type = RetType(ParamTypes ...) const noexcept;
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers_vn>>
+	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers::_vn>>
 	{
 		using _type = RetType(ParamTypes ...) volatile noexcept;
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers_cvn>>
+	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers::_cvn>>
 	{
 		using _type = RetType(ParamTypes ...) const volatile noexcept;
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers_ln>>
+	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers::_ln>>
 	{
 		using _type = RetType(ParamTypes ...) & noexcept;
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers_cln>>
+	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers::_cln>>
 	{
 		using _type = RetType(ParamTypes ...) const & noexcept;
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers_vln>>
+	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers::_vln>>
 	{
 		using _type = RetType(ParamTypes ...) volatile & noexcept;
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers_cvln>>
+	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers::_cvln>>
 	{
 		using _type = RetType(ParamTypes ...) const volatile & noexcept;
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers_rn>>
+	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers::_rn>>
 	{
 		using _type = RetType(ParamTypes ...) && noexcept;
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers_crn>>
+	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers::_crn>>
 	{
 		using _type = RetType(ParamTypes ...) const && noexcept;
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers_vrn>>
+	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers::_vrn>>
 	{
 		using _type = RetType(ParamTypes ...) volatile && noexcept;
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers_cvrn>>
+	struct _make_function_signature<pack<RetType, pack<ParamTypes ...>, qualifiers::_cvrn>>
 	{
 		using _type = RetType(ParamTypes ...) const volatile && noexcept;
 	};
 
 	template <class FuncType>
 	using make_function_signature = typename _make_function_signature<FuncType>::_type;
+
+		// Bind, generates a type wrapper for Template; evaluating this wrapper is equivalent to evaluating Template instantiated with some of its parameters bound to Types
+
+	template <template <class ...> class Template, size_t Evaluating, class Pack1, class Pack2>
+	struct _bind // Move Pack1::first to end of Pack1
+	{
+		using _invoke = typename _bind<Template, Evaluating, typename Pack1::template pop<1>::template push<typename Pack1::first>, Pack2>::_invoke;
+	};
+
+	template <template <class ...> class Template, size_t Evaluating, class ... Types1, class Pack2>
+	struct _bind<Template, Evaluating, pack<placeholders::_p<Evaluating>, Types1 ...>, Pack2> // Found placeholder match with Evaluating: insert Pack2::first at end of Pack1
+	{
+		using _invoke = typename _bind<Template, Evaluating, pack<Types1 ..., typename Pack2::first>, Pack2>::_invoke;
+	};
+
+	template <template <class ...> class Template, size_t Evaluating, class ... Types1, class Pack2>
+	struct _bind<Template, Evaluating, pack<_implementation::_void, Types1 ...>, Pack2> // Found end of Pack1, Pack2 not empty: Evaluating += 1, move _void to end of Pack1, erase Pack2::first from Pack2
+	{
+		using _invoke = typename _bind<Template, Evaluating + 1, pack<Types1 ..., _implementation::_void>, typename Pack2::template pop<1>>::_invoke;
+	};
+
+	template <template <class ...> class Template, size_t Evaluating, class ... Types1>
+	struct _bind<Template, Evaluating, pack<_implementation::_void, Types1 ...>, pack<>> // Found end of Pack1, Pack2 empty: invoke is instantiation of Template with Pack1
+	{
+		using _invoke = Template<Types1 ...>;
+	};
+
+	template <template <class ...> class Template, class ... BoundTypes>
+	struct bind
+	{
+		template <class ... Types>
+		using invoke = typename _bind<Template, 1, pack<BoundTypes ..., _implementation::_void>, pack<Types ...>>::_invoke;
+	};
 
 	// Numeric traits
 
@@ -569,7 +665,7 @@ namespace stdx::meta // TODO Consider further subdivision of file into nested na
 
 	// Logic traits
 	
-		// If statement, takes the first type for which corresponding condition is true, or _nulltype (an incomplete type) if all are false
+		// If statement, takes the first type for which corresponding condition is true, or _implementation::_void (an incomplete type) if all are false
 
 	template <bool, class>
 	struct _type_if;
@@ -587,15 +683,15 @@ namespace stdx::meta // TODO Consider further subdivision of file into nested na
 	};
 
 	template <>
-	struct _type_then<_nulltype>
+	struct _type_then<_implementation::_void>
 	{
 		template <bool Condition>
-		using else_if = _type_if<Condition, _nulltype>;
+		using else_if = _type_if<Condition, _implementation::_void>;
 
 		template <class Type>
 		using else_then = _type_then<Type>;
 
-		using endif = _nulltype;
+		using endif = _implementation::_void;
 	};
 
 	template <bool, class Type>
@@ -606,21 +702,21 @@ namespace stdx::meta // TODO Consider further subdivision of file into nested na
 	};
 
 	template <>
-	struct _type_if<false, _nulltype>
+	struct _type_if<false, _implementation::_void>
 	{
 		template <class Type>
-		using then = _type_then<_nulltype>;
+		using then = _type_then<_implementation::_void>;
 	};
 
 	template <>
-	struct _type_if<true, _nulltype>
+	struct _type_if<true, _implementation::_void>
 	{
 		template <class Type>
 		using then = _type_then<Type>;
 	};
 
 	template <bool Condition>
-	using type_if = _type_if<Condition, _nulltype>;
+	using type_if = _type_if<Condition, _implementation::_void>;
 
 		// Conjunction // Review this (make interface more similar to std versions)
 
@@ -651,6 +747,14 @@ namespace stdx::meta // TODO Consider further subdivision of file into nested na
 		template <class ... Types>
 		using trait = std::bool_constant<_disjunction(Trait<Types>::value ...)>;
 	};
+
+		// False assertion, evaluating this function will result in a compile-time error
+
+	template <class Type = void>
+	constexpr Type false_assertion()
+	{
+		static_assert(false);
+	}
 
 	// Atomic traits
 

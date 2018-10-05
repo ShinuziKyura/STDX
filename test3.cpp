@@ -9,7 +9,7 @@ struct Class
 {
 };
 
-template <class>
+template <class ...>
 struct ClassTemplate
 {
 };
@@ -29,6 +29,10 @@ int main3()
 	[[maybe_unused]] stdx::permutated_pack<stdx::pack<stdx::pack<double, long double, stdx::pack<stdx::val<1>, int>>, stdx::pack<char, stdx::val<2>, bool>, stdx::val<3>>, stdx::pack<stdx::val<2>, stdx::val<0>, stdx::val<1>>> t6;
 
 	[[maybe_unused]] stdx::merged_pack<stdx::pack<int, double, char>, stdx::pack<int, double, char>> t7;
+
+	using f1 = stdx::bind<ClassTemplate, stdx::placeholders::_2, bool, stdx::placeholders::_1, stdx::placeholders::_1>;
+
+	using r1 = f1::invoke<int, char, double, double, unsigned>;
 
 	stdx::type_if<1 + 2 == 2>::then<
 		int

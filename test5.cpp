@@ -1,16 +1,18 @@
 #include <iostream>
-#include <shared_mutex>
 
 #define STDX_USING_ALL
+#define _ENABLE_ATOMIC_ALIGNMENT_FIX
 
-#include "stream.hpp"
+#include "meta.hpp"
+#include "language.hpp"
+#include "utility.hpp"
+
 #include "spin_mutex.hpp"
 #include "stopwatch.hpp"
 #include "zeromem.hpp"
 
-#include "language.hpp"
+#include "stream.hpp"
 
-// WIP
 #include "atomic_ptr.hpp"
 #include "matrix.hpp"
 
@@ -30,7 +32,7 @@ bool test_less(int i)
 
 bool test_greater(int i)
 {
-	bool test = i > 10;
+	bool test = i > 0;
 	std::cout << std::boolalpha << "Evaluated i: " << test << std::endl;
 	return test;
 }
@@ -42,6 +44,9 @@ int main()
 	stdx::matrix<int> m(10, 10, stdx::matrix_type::pascal);
 	stdx::spin_shared_mutex mtx;
 	stdx::atomic_ptr<S> ptr(new S());
+
+	std::fstream fout("test.txt", std::ios::out | std::ios::trunc);
+	stdx::streamroute STDX_SCOPED_VARIABLE(std::cout, fout);
 
 //	std::cout << m[8_i,2_j] << std::endl;
 
@@ -83,7 +88,9 @@ int main()
 
 	std::cout << stdx::stopwatch::total_time() << std::endl;
 
-	stdx::wait_for_newline();
+	stdx::ignoreline();
+
+	fout.close();
 
 	return 0;
 }
