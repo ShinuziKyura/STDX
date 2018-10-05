@@ -25,12 +25,12 @@ namespace stdx::stream
 		using pos_type = typename Traits::pos_type;
 		using off_type = typename Traits::off_type;
 
-		template <class ... StreambufTypes
-			//, std::enable_if_t<stdx::meta::conjunction<stdx::meta::bind<std::is_base_of, base_type, stdx::meta::placeholders::_1>::invoke>::template trait<StreambufTypes ...>::value, int> = 0 // Will result in internal compiler error for MSVC, even though it is well formed
-		> 
+		template <class ... StreambufTypes>
 		basic_multibuf(StreambufTypes * ... streams)
 			: _streams({ streams ... })
 		{
+			static_assert(stdx::meta::conjunction<stdx::meta::bind<std::is_base_of, base_type, stdx::meta::placeholders::_1>::invoke>::template trait<StreambufTypes ...>::value, 
+						  "stdx::stream::basic_multibuf<CharType, Traits>::basic_multibuf<StreambufTypes ...>: StreambufTypes must be of or derived of type std::basic_streambuf<CharType, Traits>");
 		}
 	protected:
 		// Positioning
@@ -128,17 +128,17 @@ namespace stdx::stream
 	class streamroute
 	{
 	public:
-		template <class ... OstreamTypes, 
-			std::enable_if_t<stdx::meta::conjunction<stdx::meta::bind<std::is_base_of, std::ostream, stdx::meta::placeholders::_1>::invoke>::template trait<OstreamTypes ...>::value, int> = 0>
+		template <class ... OstreamTypes>
 		streamroute(std::ostream & source, OstreamTypes & ... destination) :
 			_source(&source),
 			_buffer(source.rdbuf(new multibuf(source.rdbuf(), destination.rdbuf() ...)))
 		{
+			static_assert(stdx::meta::conjunction<stdx::meta::bind<std::is_base_of, std::ostream, stdx::meta::placeholders::_1>::invoke>::template trait<OstreamTypes ...>::value, 
+						  "stdx::stream::streamroute::streamroute<OstreamTypes ...>: OstreamTypes must be of or derived of type std::ostream");
 		}
 		~streamroute() noexcept
 		{
-			auto multibuf = _source->rdbuf(_buffer);
-			delete multibuf;
+			delete _source->rdbuf(_buffer);
 		}
 	private:
 		std::ostream *		_source;

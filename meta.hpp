@@ -559,26 +559,19 @@ namespace stdx::meta // TODO Consider further subdivision of file into nested na
 
 		// Bind, generates a type wrapper for Template; evaluating this wrapper is equivalent to evaluating Template instantiated with some of its parameters bound to Types
 
-	template <template <class ...> class Template, size_t Evaluating, class Pack1, class Pack2>
-	struct _bind // Move Pack1::first to end of Pack1
+	template <template <class ...> class Template, class Pack1, class Pack2>
+	struct _bind : _bind<Template, typename Pack1::template pop<1>::template push<typename Pack1::first>, Pack2>
 	{
-		using _invoke = typename _bind<Template, Evaluating, typename Pack1::template pop<1>::template push<typename Pack1::first>, Pack2>::_invoke;
 	};
 
-	template <template <class ...> class Template, size_t Evaluating, class ... Types1, class Pack2>
-	struct _bind<Template, Evaluating, pack<placeholders::_p<Evaluating>, Types1 ...>, Pack2> // Found placeholder match with Evaluating: insert Pack2::first at end of Pack1
+	template <template <class ...> class Template, size_t Index, class ... Types1, class Pack2>
+	struct _bind<Template, pack<placeholders::_p<Index>, Types1 ...>, Pack2> : _bind<Template, pack<Types1 ..., typename Pack2::template pop<Index - 1>::first>, Pack2>
 	{
-		using _invoke = typename _bind<Template, Evaluating, pack<Types1 ..., typename Pack2::first>, Pack2>::_invoke;
+		static_assert(Index <= Pack2::size, "stdx::meta::bind<Template, BoundTypes ...>::invoke<Types ...>: For BoundTypes of type stdx::placeholders::_p<Index>, Index must be less or equal than sizeof...(Types)");
 	};
 
-	template <template <class ...> class Template, size_t Evaluating, class ... Types1, class Pack2>
-	struct _bind<Template, Evaluating, pack<_implementation::_void, Types1 ...>, Pack2> // Found end of Pack1, Pack2 not empty: Evaluating += 1, move _void to end of Pack1, erase Pack2::first from Pack2
-	{
-		using _invoke = typename _bind<Template, Evaluating + 1, pack<Types1 ..., _implementation::_void>, typename Pack2::template pop<1>>::_invoke;
-	};
-
-	template <template <class ...> class Template, size_t Evaluating, class ... Types1>
-	struct _bind<Template, Evaluating, pack<_implementation::_void, Types1 ...>, pack<>> // Found end of Pack1, Pack2 empty: invoke is instantiation of Template with Pack1
+	template <template <class ...> class Template, class ... Types1, class Pack2>
+	struct _bind<Template, pack<_implementation::_void, Types1 ...>, Pack2>
 	{
 		using _invoke = Template<Types1 ...>;
 	};
@@ -587,7 +580,7 @@ namespace stdx::meta // TODO Consider further subdivision of file into nested na
 	struct bind
 	{
 		template <class ... Types>
-		using invoke = typename _bind<Template, 1, pack<BoundTypes ..., _implementation::_void>, pack<Types ...>>::_invoke;
+		using invoke = typename _bind<Template, pack<BoundTypes ..., _implementation::_void>, pack<Types ...>>::_invoke;
 	};
 
 	// Numeric traits
