@@ -566,7 +566,7 @@ namespace stdx::meta // TODO Consider further subdivision of file into nested na
 	template <template <class ...> class Template, size_t Index, class ... Types1, class Pack2>
 	struct _bind<Template, pack<placeholders::_p<Index>, Types1 ...>, Pack2> : _bind<Template, pack<Types1 ..., typename Pack2::template pop<Index - 1>::first>, Pack2>
 	{
-		static_assert(Index <= Pack2::size, "stdx::meta::bind<Template, BoundTypes ...>::invoke<Types ...>: For BoundTypes of type stdx::meta::placeholders::_p<Index>, Index must be less or equal than sizeof...(Types)");
+		static_assert(Index <= Pack2::size, "'stdx::meta::bind<Template, BoundTypes ...>::invoke<Types ...>': For BoundTypes of type stdx::meta::placeholders::_p<Index>, Index must be less or equal than sizeof...(Types)");
 	};
 
 	template <template <class ...> class Template, class ... Types1, class Pack2>

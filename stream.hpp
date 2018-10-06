@@ -31,7 +31,7 @@ namespace stdx::stream
 			_streams({ streams ... })
 		{
 			static_assert(stdx::meta::conjunction<stdx::meta::bind<std::is_base_of, base_type, stdx::meta::placeholders::_1>::invoke>::template trait<StreambufTypes ...>::value, 
-						  "stdx::stream::basic_multibuf<CharType, Traits>::basic_multibuf<StreambufTypes ...>: StreambufTypes must be of type or derived of type std::basic_streambuf<CharType, Traits>");
+						  "'stdx::stream::basic_multibuf<CharType, Traits>::basic_multibuf(StreambufTypes * ...)': StreambufTypes must be of type or derived of type std::basic_streambuf<CharType, Traits>");
 		}
 		basic_multibuf(basic_multibuf const & other) :
 			base_type(other),
@@ -197,7 +197,7 @@ namespace stdx::stream
 			_buffer(source.rdbuf(new multibuf(source.rdbuf(), destination.rdbuf() ...)))
 		{
 			static_assert(stdx::meta::conjunction<stdx::meta::bind<std::is_base_of, std::ostream, stdx::meta::placeholders::_1>::invoke>::template trait<OstreamTypes ...>::value, 
-						  "stdx::stream::streamroute::streamroute<OstreamTypes ...>: OstreamTypes must be of type or derived of type std::ostream");
+						  "'stdx::stream::streamroute::streamroute(std::ostream &, OstreamTypes & ...)': OstreamTypes must be of type or derived of type std::ostream");
 		}
 		streamroute(streamroute const &) = delete;
 		streamroute & operator=(streamroute const &) = delete;

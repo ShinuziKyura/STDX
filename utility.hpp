@@ -29,7 +29,7 @@ namespace stdx
 	inline void memzero(Type & obj)
 	{
 		static_assert(std::conjunction_v<std::negation<std::is_const<Type>>, std::is_trivially_copyable<Type>, std::is_standard_layout<Type>>, 
-					  "stdx::memzero<Type>: Type must be a non-const, trivially copyable, standard layout type!");
+					  "'stdx::memzero(Type &)': Type must be a non-const, trivially copyable, standard layout type!");
 		std::memset(&obj, 0, sizeof obj);
 	}
 }
