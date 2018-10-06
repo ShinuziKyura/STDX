@@ -7,7 +7,7 @@
 #include "language.hpp"
 
 // May be declared only inside functions or at the global scope, one per line
-#define STDX_SCOPED_VARIABLE(...) STDX_CONCATENATE(STDX_UNNAMED_VARIABLE_, __LINE__)(__VA_ARGS__)
+#define STDX_SCOPED_VARIABLE(...) STDX_CONCATENATE(STDX_SCOPED_VARIABLE_, __LINE__)(__VA_ARGS__)
 
 // May be declared in base clause of any class
 #define STDX_POLYMORPHIC_CLASS protected virtual stdx::_polymorphic
