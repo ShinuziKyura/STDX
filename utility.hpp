@@ -7,10 +7,20 @@
 #include "language.hpp"
 
 // May be declared only inside functions or at the global scope, one per line
-#define STDX_UNNAMED_VARIABLE(...) STDX_CONCATENATE(STDX_UNNAMED_VARIABLE_, __LINE__)(__VA_ARGS__)
+#define STDX_SCOPED_VARIABLE(...) STDX_CONCATENATE(STDX_UNNAMED_VARIABLE_, __LINE__)(__VA_ARGS__)
+
+// May be declared in base clause of any class
+#define STDX_POLYMORPHIC_CLASS protected virtual stdx::_polymorphic
 
 namespace stdx
 {
+	class _polymorphic
+	{
+	protected:
+		_polymorphic() = default;
+		virtual ~_polymorphic() = default;
+	};
+
 	// May be called only once, inside a non-reentrant function, before any IO operation has happened
 	inline void faster_ios()
 	{

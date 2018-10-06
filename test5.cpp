@@ -12,10 +12,8 @@
 //#define _ENABLE_ATOMIC_ALIGNMENT_FIX
 //#include "atomic_ptr.hpp"
 
-struct S
+struct S // : STDX_POLYMORPHIC_CLASS
 {
-//	virtual ~S() = default;
-//private:
 	int i = 1;
 	double d = 0.5;
 	char c = ' ';
@@ -40,7 +38,7 @@ int main()
 	stdx::faster_ios();
 
 	std::fstream fout("test.txt", std::ios::out | std::ios::trunc);
-	stdx::streamroute<stdx::policy::repeat> STDX_UNNAMED_VARIABLE(std::cout, fout);
+	stdx::stream_traits<std::ostream>::route<stdx::policy::replicate> STDX_SCOPED_VARIABLE(std::cout, fout);
 
 	S s;
 	int i = 0;
@@ -55,7 +53,7 @@ int main()
 	}
 	else
 	{
-		std::cout << "Never executed ++i!" << std::endl;
+		std::cout << "Never executed loop!" << std::endl;
 	}
 
 	std::cout << "Elapsed time in while-else loop: " << stdx::stopwatch::split() << std::endl << std::endl;
