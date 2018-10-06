@@ -1,23 +1,21 @@
 #include <iostream>
 
 #define STDX_USING_ALL
-#define _ENABLE_ATOMIC_ALIGNMENT_FIX
 
 #include "meta.hpp"
 #include "language.hpp"
 #include "utility.hpp"
 
-#include "spin_mutex.hpp"
 #include "stopwatch.hpp"
-#include "zeromem.hpp"
-
 #include "stream.hpp"
 
-#include "atomic_ptr.hpp"
-#include "matrix.hpp"
+//#define _ENABLE_ATOMIC_ALIGNMENT_FIX
+//#include "atomic_ptr.hpp"
 
 struct S
 {
+//	virtual ~S() = default;
+//private:
 	int i = 1;
 	double d = 0.5;
 	char c = ' ';
@@ -39,20 +37,17 @@ bool test_greater(int i)
 
 int main()
 {
-	using namespace stdx::indexing;
-	
-	stdx::matrix<int> m(10, 10, stdx::matrix_type::pascal);
-	stdx::spin_shared_mutex mtx;
-	stdx::atomic_ptr<S> ptr(new S());
+	stdx::faster_ios();
 
 	std::fstream fout("test.txt", std::ios::out | std::ios::trunc);
-	stdx::streamroute STDX_SCOPED_VARIABLE(std::cout, fout);
+	stdx::streamroute<stdx::policy::repeat> STDX_UNNAMED_VARIABLE(std::cout, fout);
 
-//	std::cout << m[8_i,2_j] << std::endl;
-
+	S s;
 	int i = 0;
 
 #include STDX_WHILE_ELSE
+
+	stdx::stopwatch::start();
 
 	while (test_less(i))
 	{
@@ -63,34 +58,27 @@ int main()
 		std::cout << "Never executed ++i!" << std::endl;
 	}
 
-	std::cout << std::endl;
+	std::cout << "Elapsed time in while-else loop: " << stdx::stopwatch::split() << std::endl << std::endl;
+
+	stdx::memzero(s);
 
 #include STDX_DO_WHILE
+
+	stdx::stopwatch::split();
 
 	do
 	{
 		std::cout << --i << std::endl;
 	}
 	while (test_greater(i));
-	
-	std::cout << std::endl;
 
-	stdx::stopwatch::start();
-	mtx.lock_shared();
-	std::cout << stdx::stopwatch::split() << std::endl;
+	std::cout << "Elapsed time in do-while loop: " << stdx::stopwatch::stop() << std::endl << std::endl;
 
-	std::cout << "Hi" << ptr.get()->c << "planet!" << std::endl;
-	stdx::zeromem(*ptr);
-
-	stdx::stopwatch::split();
-	mtx.unlock_shared();
-	std::cout << stdx::stopwatch::stop() << std::endl;
-
-	std::cout << stdx::stopwatch::total_time() << std::endl;
-
-	stdx::ignoreline();
+	std::cout << "Elapsed time in total: " << stdx::stopwatch::total_time() << std::endl;
 
 	fout.close();
+
+	stdx::ignoreline();
 
 	return 0;
 }
