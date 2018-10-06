@@ -22,9 +22,9 @@ namespace stdx
 	};
 
 	// May be called only once, inside a non-reentrant function, before any IO operation has happened
-	inline void faster_ios()
+	inline void unsynced_ios()
 	{
-	//	std::setvbuf(stdin, NULL, _IOFBF, BUFSIZ);
+		std::setvbuf(stdin, NULL, _IOFBF, BUFSIZ);
 		std::setvbuf(stdout, NULL, _IOFBF, BUFSIZ);
 		std::setvbuf(stderr, NULL, _IOFBF, BUFSIZ);
 		std::ios_base::sync_with_stdio(false);

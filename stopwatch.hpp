@@ -63,17 +63,11 @@ namespace stdx::chrono
 			return 0.0;
 		}
 
-		thread_local static bool									_ticking;
-		thread_local static std::chrono::steady_clock::time_point	_split_point;
-		thread_local static std::list<double>						_split_times;
-		thread_local static double									_total_time;
+		thread_local inline static bool										_ticking = false;
+		thread_local inline static std::chrono::steady_clock::time_point	_split_point;
+		thread_local inline static std::list<double>						_split_times;
+		thread_local inline static double									_total_time = 0.0;
 	};
-
-	// stopwatch class static initializers
-	thread_local bool									stopwatch::	_ticking = false;
-	thread_local std::chrono::steady_clock::time_point	stopwatch::	_split_point;
-	thread_local std::list<double>						stopwatch::	_split_times;
-	thread_local double									stopwatch::	_total_time = 0.0;
 }
 
 #if defined(STDX_USING_CHRONO) || defined(STDX_USING_ALL)

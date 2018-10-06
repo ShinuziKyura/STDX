@@ -35,7 +35,7 @@ bool test_greater(int i)
 
 int main()
 {
-	stdx::faster_ios();
+	stdx::unsynced_ios();
 
 	std::fstream fout("test.txt", std::ios::out | std::ios::trunc);
 	stdx::stream_traits<std::ostream>::route<stdx::policy::replicate> STDX_SCOPED_VARIABLE(std::cout, fout);
