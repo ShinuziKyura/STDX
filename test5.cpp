@@ -9,9 +9,6 @@
 #include "stopwatch.hpp"
 #include "stream.hpp"
 
-//#define _ENABLE_ATOMIC_ALIGNMENT_FIX
-//#include "atomic_ptr.hpp"
-
 struct S // : STDX_POLYMORPHIC_CLASS
 {
 	int i = 1;
@@ -22,22 +19,22 @@ struct S // : STDX_POLYMORPHIC_CLASS
 bool test_less(int i)
 {
 	bool test = i < 10;
-	std::cout << std::boolalpha << "Evaluated i: " << test << std::endl;
+	std::cout << std::boolalpha << "Evaluated i < 10: " << test << std::endl;
 	return test;
 }
 
 bool test_greater(int i)
 {
 	bool test = i > 0;
-	std::cout << std::boolalpha << "Evaluated i: " << test << std::endl;
+	std::cout << std::boolalpha << "Evaluated i > 0: " << test << std::endl;
 	return test;
 }
 
-int main()
+int test5()
 {
 	stdx::unsynced_ios();
 
-	std::fstream fout("test.txt", std::ios::out | std::ios::trunc);
+	std::fstream fout("test5.txt", std::ios::out | std::ios::trunc);
 	stdx::stream_traits<std::ostream>::route<stdx::policy::replicate> STDX_SCOPED_VARIABLE(std::cout, fout);
 
 	S s;

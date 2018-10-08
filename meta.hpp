@@ -2,11 +2,12 @@
 #define STDX_META_HPP
 
 #include <type_traits>
+#include <complex>
 #include <atomic>
 
 // SFINAE is weird: https://stackoverflow.com/questions/39510630/member-function-template-selection-and-sfinae
 
-namespace stdx::meta // TODO Consider further subdivision of file into nested namespaces (or into different files) for each trait class
+namespace stdx::meta
 {
 	namespace _implementation
 	{
@@ -196,45 +197,14 @@ namespace stdx::meta // TODO Consider further subdivision of file into nested na
 		using type = Type;
 	};
 
-/*	TODO: review names
-		// Obtain template from class 
+		// False assertion, evaluating this function will result in a compile-time error (needs reviewing)
 
-	template <class>
-	struct class_template;
-
-	template <template <class ...> class Template, class ... Parameters>
-	struct class_template<Template<Parameters ...>>
+/*	template <class Type = void>
+	constexpr Type false_assertion()
 	{
-		template <class ... Parameters1>
-		using type = Template<Parameters1 ...>;
-	};
+		static_assert(false);
+	} */
 
-	template <template <auto ...> class Template, auto ... Parameters>
-	struct class_template<Template<Parameters ...>>
-	{
-		template <auto ... Parameters1>
-		using type = Template<Parameters1 ...>;
-	};
-
-		// Obtain parameter from class
-
-	template <class>
-	struct class_parameter;
-
-	template <template <class ...> class Template, class ... Parameters>
-	struct class_parameter<Template<Parameters ...>>
-	{
-		template <size_t N>
-		using type = typename pack<Parameters ...>::template pop<N>::first;
-	};
-
-	template <template <auto ...> class Template, auto ... Parameters>
-	struct class_parameter<Template<Parameters ...>>
-	{
-		template <size_t N>
-		using type = val<valpack<Parameters ...>::template pop<N>::first>;
-	};
-*/
 		// Cast from one type to another, if they are convertible
 
 	template <class Type1, class Type2>
@@ -255,7 +225,165 @@ namespace stdx::meta // TODO Consider further subdivision of file into nested na
 	template <class Class, template <class ...> class Template>
 	inline constexpr bool is_template_instantiation_v = is_template_instantiation<Class, Template>::value;
 
-	// Function traits
+	// Logic traits
+
+		// If statement, takes the first type for which corresponding condition is true, or _implementation::_void (an incomplete type) if all are false
+
+	template <bool, class>
+	struct _type_if;
+
+	template <class Type>
+	struct _type_then
+	{
+		template <bool>
+		using else_if = _type_if<false, Type>;
+
+		template <class>
+		using else_then = _type_then<Type>;
+
+		using endif = Type;
+	};
+
+	template <>
+	struct _type_then<_implementation::_void>
+	{
+		template <bool Condition>
+		using else_if = _type_if<Condition, _implementation::_void>;
+
+		template <class Type>
+		using else_then = _type_then<Type>;
+
+		using endif = _implementation::_void;
+	};
+
+	template <bool, class Type>
+	struct _type_if
+	{
+		template <class>
+		using then = _type_then<Type>;
+	};
+
+	template <>
+	struct _type_if<false, _implementation::_void>
+	{
+		template <class Type>
+		using then = _type_then<_implementation::_void>;
+	};
+
+	template <>
+	struct _type_if<true, _implementation::_void>
+	{
+		template <class Type>
+		using then = _type_then<Type>;
+	};
+
+	template <bool Condition>
+	using type_if = _type_if<Condition, _implementation::_void>;
+
+		// Conjunction // Review this (make interface more similar to std versions)
+
+	template <class ... BoolTypes>
+	constexpr bool _conjunction(BoolTypes ... booleans)
+	{
+		return (... && booleans);
+	}
+
+	template <template <class> class Trait>
+	struct conjunction
+	{
+		template <class ... Types>
+		using trait = std::bool_constant<_conjunction(Trait<Types>::value ...)>;
+	};
+
+		// Disjunction // Review this (make interface more similar to std versions)
+
+	template <class ... BoolTypes>
+	constexpr bool _disjunction(BoolTypes ... booleans)
+	{
+		return (... || booleans);
+	}
+
+	template <template <class> class Trait>
+	struct disjunction
+	{
+		template <class ... Types>
+		using trait = std::bool_constant<_disjunction(Trait<Types>::value ...)>;
+	};
+
+	// Numeric traits
+
+		// Boolean checks
+
+	template <class Type>
+	struct is_complex : std::false_type
+	{
+	};
+
+	template <class Type>
+	struct is_complex<std::complex<Type>> : std::true_type
+	{
+	};
+
+	template <class Type>
+	inline constexpr bool is_complex_v = is_complex<Type>::value;
+
+		// Addition
+
+	template <auto Y>
+	struct addition
+	{
+		template <auto X>
+		using trait = std::integral_constant<decltype(X + Y), X + Y>;
+	};
+
+		// Subtraction
+
+	template <auto Y>
+	struct subtraction
+	{
+		template <auto X>
+		using trait = std::integral_constant<decltype(X - Y), X - Y>;
+	};
+
+		// Multiplication
+
+	template <auto Y>
+	struct multiplication
+	{
+		using _auto = decltype(Y); // Workaround for VC++ bug
+		template <_auto X>
+		using trait = std::integral_constant<_auto, X * Y>;
+	};
+
+		// Division
+
+	template <auto Y>
+	struct division
+	{
+		using _auto = decltype(Y); // Workaround for VC++ bug
+		template <_auto X>
+		using trait = std::integral_constant<_auto, X / Y>;
+	};
+
+		// Range
+
+	template <auto Min, auto Max>
+	struct inside
+	{
+		using _auto = decltype(Min); // Workaround for VC++ bug
+		template <_auto N>
+		using trait = std::bool_constant<Min <= N && N <= Max>;
+	};
+
+	template <auto Min, auto Max>
+	struct outside
+	{
+		using _auto = decltype(Min); // Workaround for VC++ bug
+		template <_auto N>
+		using trait = std::bool_constant<N < Min || Max < N>;
+	};
+
+	// Functional traits
 
 		// Function signature
 
@@ -314,7 +442,7 @@ namespace stdx::meta // TODO Consider further subdivision of file into nested na
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) &&> : _function_signature<RetType(ParamTypes ...), qualifiers::_r>
+	struct function_signature<RetType(ParamTypes ...) && > : _function_signature<RetType(ParamTypes ...), qualifiers::_r>
 	{
 	};
 
@@ -460,7 +588,7 @@ namespace stdx::meta // TODO Consider further subdivision of file into nested na
 	template <class RetType, class ... ParamTypes>
 	struct _make_function_signature<RetType, pack<ParamTypes ...>, qualifiers::_r>
 	{
-		using _type = RetType(ParamTypes ...) &&;
+		using _type = RetType(ParamTypes ...) && ;
 	};
 
 	template <class RetType, class ... ParamTypes>
@@ -582,275 +710,109 @@ namespace stdx::meta // TODO Consider further subdivision of file into nested na
 		using invoke = typename _bind<Template, pack<BoundTypes ..., _implementation::_void>, pack<Types ...>>::_invoke;
 	};
 
-	// Numeric traits
+	// Atomic traits
 
-		// Boolean checks (may be deprecated)
-
-/*	template <class Type>
-	struct is_complex : std::false_type
-	{
-	};
-
-	template <class Type>
-	struct is_complex<std::complex<Type>> : std::true_type
-	{
-	};
-
-	template <class Type>
-	inline constexpr bool is_complex_v = is_complex<Type>::value;
-*/
-		// Addition
-
-	template <auto Y>
-	struct addition
-	{
-		template <auto X>
-		using trait = std::integral_constant<decltype(X + Y), X + Y>;
-	};
-
-		// Subtraction
-
-	template <auto Y>
-	struct subtraction
-	{
-		template <auto X>
-		using trait = std::integral_constant<decltype(X - Y), X - Y>;
-	};
-
-		// Multiplication
-
-	template <auto Y>
-	struct multiplication
-	{
-		using _auto = decltype(Y); // Workaround for VC++ bug
-		template <_auto X>
-		using trait = std::integral_constant<_auto, X * Y>;
-	};
-
-		// Division
-
-	template <auto Y>
-	struct division
-	{
-		using _auto = decltype(Y); // Workaround for VC++ bug
-		template <_auto X>
-		using trait = std::integral_constant<_auto, X / Y>;
-	};
-
-		// Range
-
-	template <auto Min, auto Max>
-	struct inside
-	{
-		using _auto = decltype(Min); // Workaround for VC++ bug
-		template <_auto N>
-		using trait = std::bool_constant<Min <= N && N <= Max>;
-	};
-
-	template <auto Min, auto Max>
-	struct outside
-	{
-		using _auto = decltype(Min); // Workaround for VC++ bug
-		template <_auto N>
-		using trait = std::bool_constant<N < Min || Max < N>;
-	};
-
-	// Logic traits
-	
-		// If statement, takes the first type for which corresponding condition is true, or _implementation::_void (an incomplete type) if all are false
-
-	template <bool, class>
-	struct _type_if;
-
-	template <class Type>
-	struct _type_then
-	{
-		template <bool>
-		using else_if = _type_if<false, Type>;
-
-		template <class>
-		using else_then = _type_then<Type>;
-
-		using endif = Type;
-	};
-
-	template <>
-	struct _type_then<_implementation::_void>
-	{
-		template <bool Condition>
-		using else_if = _type_if<Condition, _implementation::_void>;
-
-		template <class Type>
-		using else_then = _type_then<Type>;
-
-		using endif = _implementation::_void;
-	};
-
-	template <bool, class Type>
-	struct _type_if
-	{
-		template <class>
-		using then = _type_then<Type>;
-	};
-
-	template <>
-	struct _type_if<false, _implementation::_void>
-	{
-		template <class Type>
-		using then = _type_then<_implementation::_void>;
-	};
-
-	template <>
-	struct _type_if<true, _implementation::_void>
-	{
-		template <class Type>
-		using then = _type_then<Type>;
-	};
-
-	template <bool Condition>
-	using type_if = _type_if<Condition, _implementation::_void>;
-
-		// Conjunction // Review this (make interface more similar to std versions)
-
-	template <class ... BoolTypes>
-	constexpr bool _conjunction(BoolTypes ... booleans)
-	{
-		return (... && booleans);
-	}
-
-	template <template <class> class Trait>
-	struct conjunction
-	{
-		template <class ... Types>
-		using trait = std::bool_constant<_conjunction(Trait<Types>::value ...)>;
-	};
-
-		// Disjunction // Review this (make interface more similar to std versions)
-
-	template <class ... BoolTypes>
-	constexpr bool _disjunction(BoolTypes ... booleans)
-	{
-		return (... || booleans);
-	}
-
-	template <template <class> class Trait>
-	struct disjunction
-	{
-		template <class ... Types>
-		using trait = std::bool_constant<_disjunction(Trait<Types>::value ...)>;
-	};
-
-		// False assertion, evaluating this function will result in a compile-time error
-
-	template <class Type = void>
-	constexpr Type false_assertion()
-	{
-		static_assert(false);
-	}
-
-	// Atomic traits (move this to own header)
-
-		// Determines if built-in atomic type is lock-free, assuming that it is properly aligned
+		// Is lock free, determines if built-in atomic type is lock-free, assuming that it is properly aligned (needs reviewing)
 
 	template <class>
 	struct is_lock_free;
 
 	template <class Type>
-	struct is_lock_free<std::atomic<Type>> : std::false_type // Review this (hint: determine by appropriate is_lock_free<std::atomic<integral> based on sizeof(Type))
+	struct is_lock_free<std::atomic<Type>> : std::false_type
 	{
 	};
 
 #ifdef ATOMIC_BOOL_LOCK_FREE
 	template <>
-	struct is_lock_free<std::atomic<bool>> : std::integral_constant<int, ATOMIC_BOOL_LOCK_FREE>
+	struct is_lock_free<std::atomic<bool>> : std::bool_constant<bool(ATOMIC_BOOL_LOCK_FREE)>
 	{
 	};
 #endif
 
 #ifdef ATOMIC_CHAR_LOCK_FREE
 	template <>
-	struct is_lock_free<std::atomic<char>> : std::integral_constant<int, ATOMIC_CHAR_LOCK_FREE>
+	struct is_lock_free<std::atomic<char>> : std::bool_constant<bool(ATOMIC_CHAR_LOCK_FREE)>
 	{
 	};
 
 	template <>
-	struct is_lock_free<std::atomic<unsigned char>> : std::integral_constant<int, ATOMIC_CHAR_LOCK_FREE>
+	struct is_lock_free<std::atomic<unsigned char>> : std::bool_constant<bool(ATOMIC_CHAR_LOCK_FREE)>
 	{
 	};
 #endif
 
 #ifdef ATOMIC_CHAR16_T_LOCK_FREE
 	template <>
-	struct is_lock_free<std::atomic<char16_t>> : std::integral_constant<int, ATOMIC_CHAR16_T_LOCK_FREE>
+	struct is_lock_free<std::atomic<char16_t>> : std::bool_constant<bool(ATOMIC_CHAR16_T_LOCK_FREE)>
 	{
 	};
 #endif
 
 #ifdef ATOMIC_CHAR32_T_LOCK_FREE
 	template <>
-	struct is_lock_free<std::atomic<char32_t>> : std::integral_constant<int, ATOMIC_CHAR32_T_LOCK_FREE>
+	struct is_lock_free<std::atomic<char32_t>> : std::bool_constant<bool(ATOMIC_CHAR32_T_LOCK_FREE)>
 	{
 	};
 #endif
 
 #ifdef ATOMIC_WCHAR_T_LOCK_FREE
 	template <>
-	struct is_lock_free<std::atomic<wchar_t>> : std::integral_constant<int, ATOMIC_WCHAR_T_LOCK_FREE>
+	struct is_lock_free<std::atomic<wchar_t>> : std::bool_constant<bool(ATOMIC_WCHAR_T_LOCK_FREE)>
 	{
 	};
 #endif
 
 #ifdef ATOMIC_SHORT_LOCK_FREE
 	template <>
-	struct is_lock_free<std::atomic<short>> : std::integral_constant<int, ATOMIC_SHORT_LOCK_FREE>
+	struct is_lock_free<std::atomic<short>> : std::bool_constant<bool(ATOMIC_SHORT_LOCK_FREE)>
 	{
 	};
 
 	template <>
-	struct is_lock_free<std::atomic<unsigned short>> : std::integral_constant<int, ATOMIC_SHORT_LOCK_FREE>
+	struct is_lock_free<std::atomic<unsigned short>> : std::bool_constant<bool(ATOMIC_SHORT_LOCK_FREE)>
 	{
 	};
 #endif
 
 #ifdef ATOMIC_INT_LOCK_FREE
 	template <>
-	struct is_lock_free<std::atomic<int>> : std::integral_constant<int, ATOMIC_INT_LOCK_FREE>
+	struct is_lock_free<std::atomic<int>> : std::bool_constant<bool(ATOMIC_INT_LOCK_FREE)>
 	{
 	};
 
 	template <>
-	struct is_lock_free<std::atomic<unsigned int>> : std::integral_constant<int, ATOMIC_INT_LOCK_FREE>
+	struct is_lock_free<std::atomic<unsigned int>> : std::bool_constant<bool(ATOMIC_INT_LOCK_FREE)>
 	{
 	};
 #endif
 
 #ifdef ATOMIC_LONG_LOCK_FREE
 	template <>
-	struct is_lock_free<std::atomic<long>> : std::integral_constant<int, ATOMIC_LONG_LOCK_FREE>
+	struct is_lock_free<std::atomic<long>> : std::bool_constant<bool(ATOMIC_LONG_LOCK_FREE)>
 	{
 	};
 
 	template <>
-	struct is_lock_free<std::atomic<unsigned long>> : std::integral_constant<int, ATOMIC_LONG_LOCK_FREE>
+	struct is_lock_free<std::atomic<unsigned long>> : std::bool_constant<bool(ATOMIC_LONG_LOCK_FREE)>
 	{
 	};
 #endif
 
 #ifdef ATOMIC_LLONG_LOCK_FREE
 	template <>
-	struct is_lock_free<std::atomic<long long>> : std::integral_constant<int, ATOMIC_LLONG_LOCK_FREE>
+	struct is_lock_free<std::atomic<long long>> : std::bool_constant<bool(ATOMIC_LLONG_LOCK_FREE)>
 	{
 	};
 
 	template <>
-	struct is_lock_free<std::atomic<unsigned long long>> : std::integral_constant<int, ATOMIC_LLONG_LOCK_FREE>
+	struct is_lock_free<std::atomic<unsigned long long>> : std::bool_constant<bool(ATOMIC_LLONG_LOCK_FREE)>
 	{
 	};
 #endif
 
 #ifdef ATOMIC_POINTER_LOCK_FREE
 	template <class Type>
-	struct is_lock_free<std::atomic<Type *>> : std::integral_constant<int, ATOMIC_POINTER_LOCK_FREE>
+	struct is_lock_free<std::atomic<Type *>> : std::bool_constant<bool(ATOMIC_POINTER_LOCK_FREE)>
 	{
 	};
 #endif

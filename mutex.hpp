@@ -37,7 +37,7 @@ namespace stdx::mutex
 		std::atomic_flag _lock = ATOMIC_FLAG_INIT;
 	};
 
-	class spin_shared_mutex
+	class shared_spin_mutex
 	{
 		using _atomic_int_largest_lock_free_t =
 			typename stdx::meta::constrained_pack<
@@ -54,11 +54,11 @@ namespace stdx::mutex
 		using _int_largest_lock_free_t =
 			typename _atomic_int_largest_lock_free_t::value_type;
 	public:
-		spin_shared_mutex() noexcept = default;
-		spin_shared_mutex(spin_shared_mutex const &) = delete;
-		spin_shared_mutex & operator=(spin_shared_mutex const &) = delete;
-		spin_shared_mutex(spin_shared_mutex &&) = delete;
-		spin_shared_mutex & operator=(spin_shared_mutex &&) = delete;
+		shared_spin_mutex() noexcept = default;
+		shared_spin_mutex(shared_spin_mutex const &) = delete;
+		shared_spin_mutex & operator=(shared_spin_mutex const &) = delete;
+		shared_spin_mutex(shared_spin_mutex &&) = delete;
+		shared_spin_mutex & operator=(shared_spin_mutex &&) = delete;
 
 		void lock()
 		{

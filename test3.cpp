@@ -14,7 +14,7 @@ struct ClassTemplate
 {
 };
 
-int main3()
+int test3()
 {
 	[[maybe_unused]] stdx::constrained_pack<stdx::pack_trait<std::is_placeholder>::first, stdx::pack<stdx::pack<int &, int>, stdx::pack<double, double>, stdx::pack<decltype(std::placeholders::_1), bool>, stdx::pack<char, char &&>>> t1;
 
