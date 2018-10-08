@@ -6,7 +6,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#if STDX_USING_CPP2A
+#if STDX_USING_CXX2A
 #include <syncstream>
 #endif
 
@@ -14,7 +14,7 @@
 
 namespace stdx::stream
 {
-#if STDX_USING_CPP2A
+#if STDX_USING_CXX2A
 	template <class CharType, class Traits>
 	inline auto _initialize_osyncstream(std::basic_ostream<CharType, Traits> & stream)
 	{
@@ -23,6 +23,7 @@ namespace stdx::stream
 		return osyncstream;
 	}
 
+	// Is thread_local necessary?
 	thread_local inline auto csout = _initialize_osyncstream(std::cout);
 	thread_local inline auto wcsout = _initialize_osyncstream(std::wcout);
 	thread_local inline auto cserr = _initialize_osyncstream(std::cerr);
@@ -189,8 +190,7 @@ namespace stdx::stream
 			// TODO
 			return traits_type::eof();
 		}
-*/
-	private:
+*/	private:
 		std::vector<base_type *> _streams;
 	};
 
