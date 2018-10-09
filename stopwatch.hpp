@@ -69,10 +69,10 @@ namespace stdx::chrono
 		thread_local static std::list<double>						_split_times;
 		thread_local static double									_total_time;
 #else
-		thread_local inline static bool										_is_ticking = false;
-		thread_local inline static std::chrono::steady_clock::time_point	_split_point;
-		thread_local inline static std::list<double>						_split_times;
-		thread_local inline static double									_total_time = 0.0;
+		thread_local static inline bool										_is_ticking = false;
+		thread_local static inline std::chrono::steady_clock::time_point	_split_point;
+		thread_local static inline std::list<double>						_split_times;
+		thread_local static inline double									_total_time = 0.0;
 #endif
 	};
 }

@@ -76,7 +76,7 @@ namespace stdx::mutex
 			}
 		}
 
-		thread_local inline static ranked_mutex * _current_mutex = nullptr;
+		thread_local static inline ranked_mutex * _current_mutex = nullptr;
 		ranked_mutex * _previous_mutex = nullptr;
 		size_t const _rank;
 		mutex_type _mutex;
