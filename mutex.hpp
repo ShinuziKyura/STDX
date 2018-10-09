@@ -3,12 +3,85 @@
 
 #include <limits>
 #include <thread>
+#include <mutex>
 #include <atomic>
 
 #include "meta.hpp"
 
 namespace stdx::mutex
 {	
+	template <class MutexType>
+	class ranked_mutex
+	{
+	public:
+		using mutex_type = MutexType;
+
+		ranked_mutex(size_t rank) noexcept :
+			_rank(rank)
+		{
+		}
+		ranked_mutex(ranked_mutex const &) = delete;
+		ranked_mutex & operator=(ranked_mutex const &) = delete;
+		ranked_mutex(ranked_mutex &&) = delete;
+		ranked_mutex & operator=(ranked_mutex &&) = delete;
+
+		void lock()
+		{
+			_check_next_mutex();
+			_mutex.lock();
+			_previous_mutex = _current_mutex;
+			_current_mutex = this;
+		}
+		bool try_lock()
+		{
+			_check_next_mutex();
+			if (_mutex.try_lock())
+			{
+				_previous_mutex = _current_mutex;
+				_current_mutex = this;
+				return true;
+			}
+			return false;
+		}
+		void unlock()
+		{
+			_check_current_mutex();
+			_current_mutex = _previous_mutex;
+			_mutex.unlock();
+		}
+
+	private:
+		void _check_next_mutex()
+		{
+			if (_current_mutex->_rank >= _rank) // Only allows totally ordered mutexes
+			{
+				_unlock_previous_mutexes();
+				std::logic_error("Thread rank invariant violated on lock / try_lock!");
+			}
+		}
+		void _check_current_mutex()
+		{
+			if (_current_mutex->_rank != _rank)
+			{
+				_unlock_previous_mutexes();
+				std::logic_error("Thread rank invariant violated on unlock!");
+			}
+		}
+		void _unlock_previous_mutexes()
+		{
+			while (auto mutex = _current_mutex)
+			{
+				_current_mutex = _previous_mutex;
+				mutex->unlock();
+			}
+		}
+
+		thread_local inline static ranked_mutex * _current_mutex = nullptr;
+		ranked_mutex * _previous_mutex = nullptr;
+		size_t const _rank;
+		mutex_type _mutex;
+	};
+
 	class spin_mutex
 	{
 	public:
@@ -20,21 +93,21 @@ namespace stdx::mutex
 	
 		void lock()
 		{
-			while (_lock.test_and_set(std::memory_order_acquire))
+			while (_flag.test_and_set(std::memory_order_acquire))
 			{
 				std::this_thread::yield();
 			}
 		}
 		bool try_lock()
 		{
-			return !_lock.test_and_set(std::memory_order_acquire);
+			return !_flag.test_and_set(std::memory_order_acquire);
 		}
 		void unlock()
 		{
-			_lock.clear(std::memory_order_release);
+			_flag.clear(std::memory_order_release);
 		}
 	private:
-		std::atomic_flag _lock = ATOMIC_FLAG_INIT;
+		std::atomic_flag _flag = ATOMIC_FLAG_INIT;
 	};
 
 	class shared_spin_mutex
@@ -64,7 +137,7 @@ namespace stdx::mutex
 		{
 			_int_largest_lock_free_t available = 0;
 
-			while (!_lock.compare_exchange_weak(available, std::numeric_limits<_int_largest_lock_free_t>::min(), std::memory_order_acquire))
+			while (!_flag.compare_exchange_weak(available, std::numeric_limits<_int_largest_lock_free_t>::min(), std::memory_order_acquire))
 			{
 				std::this_thread::yield();
 				available = 0;
@@ -74,15 +147,15 @@ namespace stdx::mutex
 		{
 			_int_largest_lock_free_t available = 0;
 
-			return _lock.compare_exchange_weak(available, std::numeric_limits<_int_largest_lock_free_t>::min(), std::memory_order_acquire);
+			return _flag.compare_exchange_weak(available, std::numeric_limits<_int_largest_lock_free_t>::min(), std::memory_order_acquire);
 		}
 		void unlock()
 		{
-			_lock.store(0, std::memory_order_release);
+			_flag.store(0, std::memory_order_release);
 		}
 		void lock_shared()
 		{
-			_int_largest_lock_free_t available = _lock.load(std::memory_order_relaxed);
+			_int_largest_lock_free_t available = _flag.load(std::memory_order_relaxed);
 
 			do
 			{
@@ -98,11 +171,11 @@ namespace stdx::mutex
 						break;
 				}
 			}
-			while (!_lock.compare_exchange_weak(available, available + 1, std::memory_order_acquire));
+			while (!_flag.compare_exchange_weak(available, available + 1, std::memory_order_acquire));
 		}
 		bool try_lock_shared()
 		{
-			_int_largest_lock_free_t available = _lock.load(std::memory_order_relaxed);
+			_int_largest_lock_free_t available = _flag.load(std::memory_order_relaxed);
 
 			switch (available)
 			{
@@ -114,11 +187,11 @@ namespace stdx::mutex
 					break;
 			}
 
-			return _lock.compare_exchange_weak(available, available + 1, std::memory_order_acquire);
+			return _flag.compare_exchange_weak(available, available + 1, std::memory_order_acquire);
 		}
 		void unlock_shared()
 		{
-			_lock.fetch_sub(1, std::memory_order_release);
+			_flag.fetch_sub(1, std::memory_order_release);
 		}
 
 		static constexpr bool is_lock_free()
@@ -130,7 +203,7 @@ namespace stdx::mutex
 			return std::numeric_limits<_int_largest_lock_free_t>::max();
 		}
 	private:
-		_atomic_int_largest_lock_free_t _lock = 0;
+		_atomic_int_largest_lock_free_t _flag = 0;
 	};
 }
 
