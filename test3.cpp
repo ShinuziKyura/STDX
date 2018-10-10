@@ -16,13 +16,13 @@ struct ClassTemplate
 
 int test3()
 {
-	[[maybe_unused]] stdx::constrained_pack<stdx::pack_trait<std::is_placeholder>::first, stdx::pack<stdx::pack<int &, int>, stdx::pack<double, double>, stdx::pack<decltype(std::placeholders::_1), bool>, stdx::pack<char, char &&>>> t1;
+	[[maybe_unused]] stdx::constrained_pack<stdx::apply_to_pack<std::is_placeholder>::first, stdx::pack<stdx::pack<int &, int>, stdx::pack<double, double>, stdx::pack<decltype(std::placeholders::_1), bool>, stdx::pack<char, char &&>>> t1;
 
 	[[maybe_unused]] stdx::transformed_pack<std::add_const, stdx::pack<stdx::pack<unsigned int, Class, double>, stdx::pack<float, bool>>> t2;
 
 	[[maybe_unused]] stdx::permutated_pack<stdx::pack<short, int, long, long long>, stdx::valpack<1, 3, 0, 2>> t3;
 
-	[[maybe_unused]] stdx::constrained_pack<stdx::value_trait<stdx::outside<2, 4>::trait>::value, stdx::as_pack_val<stdx::valpack<0, 2, 5, 6, 3, 4, 1, 3>>> t4;
+	[[maybe_unused]] stdx::constrained_pack<stdx::apply_to_value<stdx::outside<2, 4>::trait>::trait, stdx::as_pack_val<stdx::valpack<0, 2, 5, 6, 3, 4, 1, 3>>> t4;
 
 	[[maybe_unused]] stdx::transformed_pack<std::is_class, stdx::pack<Class, long, unsigned char>> t5;
 

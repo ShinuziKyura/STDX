@@ -874,25 +874,25 @@ namespace stdx::meta
 		// Apply a trait that takes a type parameter to the type from a Val
 
 	template <template <class> class Trait>
-	struct type_trait
+	struct apply_to_type
 	{
 		template <class Val>
-		using type = Trait<typename Val::type>;
+		using trait = Trait<typename Val::type>;
 	};
 
 		// Apply a trait that takes a non-type parameter to the value from a Val
 
 	template <template <auto> class Trait>
-	struct value_trait
+	struct apply_to_value
 	{
 		template <class Val>
-		using value = Trait<Val::value>;
+		using trait = Trait<Val::value>;
 	};
 
 		// Apply a trait that takes a type parameter to a type from a Pack
 
 	template <template <class> class Trait, size_t Index = 0>
-	struct pack_trait
+	struct apply_to_pack
 	{
 		template <class Pack>
 		using first = Trait<typename Pack::first>;
@@ -905,7 +905,7 @@ namespace stdx::meta
 		// Apply a trait that takes a non-type parameter to a value from a Valpack
 
 	template <template <auto> class Trait, size_t Index = 0>
-	struct valpack_trait
+	struct apply_to_valpack
 	{
 		template <class Valpack>
 		using first = Trait<Valpack::first>;
@@ -977,7 +977,7 @@ namespace stdx::meta
 	};
 
 	template <class IndexPack>
-	struct _assert_index_values_permutated_pack : std::is_same<IndexPack, constrained_pack<value_trait<inside<0, IndexPack::size - 1>::template trait>::template value, constrained_pack<type_trait<std::is_integral>::template type, IndexPack>>>
+	struct _assert_index_values_permutated_pack : std::is_same<IndexPack, constrained_pack<apply_to_value<inside<0, IndexPack::size - 1>::template trait>::template trait, constrained_pack<apply_to_type<std::is_integral>::template trait, IndexPack>>>
 	{
 	};
 
