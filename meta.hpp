@@ -1029,8 +1029,15 @@ namespace stdx::meta
 	using merged_pack = typename _assert_merged_pack<InPack ...>::_type;
 }
 
-#if defined(STDX_USING_META) || defined(STDX_USING_ALL)
-namespace stdx { using namespace meta; }
 #endif
+
+//=====
+
+#if defined(STDX_USING_META) || defined(STDX_USING_ALL)
+
+namespace stdx 
+{
+	using namespace meta; 
+}
 
 #endif

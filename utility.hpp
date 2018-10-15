@@ -6,10 +6,10 @@
 
 #include "language.hpp"
 
-// May be declared only inside functions or at the global scope, one per line
+// Declares an anonymous variable whose lifetime is limited to the scope where it is declared; should be declared only inside functions or at the global scope, one per line
 #define STDX_SCOPED_VARIABLE(...) STDX_CONCATENATE(STDX_SCOPED_VARIABLE_, __LINE__)(__VA_ARGS__)
 
-// May be declared in base clause of any class
+// Marks a class as polymorphic; should be declared in base clause of the class
 #define STDX_POLYMORPHIC_CLASS protected virtual stdx::_polymorphic
 
 namespace stdx
@@ -21,13 +21,13 @@ namespace stdx
 		virtual ~_polymorphic() = default;
 	};
 
-	// May be called only once, inside a non-reentrant function, before any IO operation has happened
+	// [Note: Currently calling this function is a no-op --end note] Should be called only once, inside a non-reentrant function, before any IO operation has happened
 	inline void unsynced_ios()
 	{
-		std::setvbuf(stdin, NULL, _IOFBF, BUFSIZ);
+	/*	std::setvbuf(stdin, NULL, _IOFBF, BUFSIZ);
 		std::setvbuf(stdout, NULL, _IOFBF, BUFSIZ);
 		std::setvbuf(stderr, NULL, _IOFBF, BUFSIZ);
-		std::ios_base::sync_with_stdio(false);
+		std::ios_base::sync_with_stdio(false); */
 	}
 
 	inline void ignoreline()

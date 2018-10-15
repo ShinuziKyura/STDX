@@ -52,8 +52,15 @@ namespace stdx::functional
 	}
 }
 
-#if defined(STDX_USING_FUNCTIONAL) || defined(STDX_USING_ALL)
-namespace stdx { using namespace functional; }
 #endif
+
+//=====
+
+#if defined(STDX_USING_FUNCTIONAL) || defined(STDX_USING_ALL)
+
+namespace stdx 
+{ 
+	using namespace functional;
+}
 
 #endif

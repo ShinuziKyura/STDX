@@ -1,7 +1,7 @@
+#ifdef STDX_WIP
+
 #ifndef STDX_RANDOM_HPP
 #define STDX_RANDOM_HPP
-
-#ifdef STDX_WIP
 
 #include <random>
 #include <array>
@@ -95,9 +95,17 @@ namespace stdx::random
 	using random_piecewise_linear_generator = random_number_generator<std::piecewise_linear_distribution<long double>>;
 }
 
-#if defined(STDX_USING_RANDOM) || defined(STDX_USING_ALL)
-namespace stdx { using namespace random; }
 #endif
 
+//=====
+
+#if defined(STDX_USING_RANDOM) || defined(STDX_USING_ALL)
+
+namespace stdx 
+{ 
+	using namespace random; 
+}
+
 #endif
+
 #endif

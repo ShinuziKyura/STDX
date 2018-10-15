@@ -269,8 +269,15 @@ namespace stdx::stream
 	};
 }
 
-#if defined(STDX_USING_STREAM) || defined(STDX_USING_ALL)
-namespace stdx { using namespace stream; }
 #endif
+
+//=====
+
+#if defined(STDX_USING_STREAM) || defined(STDX_USING_ALL)
+
+namespace stdx 
+{ 
+	using namespace stream;
+}
 
 #endif

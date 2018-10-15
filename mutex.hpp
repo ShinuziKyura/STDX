@@ -53,7 +53,7 @@ namespace stdx::mutex
 	private:
 		void _check_next_mutex()
 		{
-			if (_current_mutex->_rank >= _rank) // Only allows totally ordered mutexes
+			if (_current_mutex && _current_mutex->_rank >= _rank) // Only allows totally ordered mutexes
 			{
 				_unlock_previous_mutexes();
 				std::logic_error("Thread rank invariant violated on lock / try_lock!");
@@ -207,8 +207,15 @@ namespace stdx::mutex
 	};
 }
 
-#if defined(STDX_USING_MUTEX) || defined(STDX_USING_ALL)
-namespace stdx { using namespace mutex; }
 #endif
+
+
+
+#if defined(STDX_USING_MUTEX) || defined(STDX_USING_ALL)
+
+namespace stdx
+{ 
+	using namespace mutex; 
+}
 
 #endif
