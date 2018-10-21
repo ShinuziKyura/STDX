@@ -11,7 +11,7 @@ namespace stdx::meta
 {
 	namespace _implementation
 	{
-		struct _void;
+		struct _undefined;
 
 		template <size_t>
 		struct _placeholder;
@@ -414,10 +414,10 @@ namespace stdx::meta
 	};
 
 	template <>
-	struct _type_then<_implementation::_void>
+	struct _type_then<_implementation::_undefined>
 	{
 		template <bool Condition>
-		using else_if = _type_if<Condition, _implementation::_void>;
+		using else_if = _type_if<Condition, _implementation::_undefined>;
 
 		template <class Type>
 		using else_then = _type_then<Type>;
@@ -431,21 +431,21 @@ namespace stdx::meta
 	};
 
 	template <>
-	struct _type_if<false, _implementation::_void>
+	struct _type_if<false, _implementation::_undefined>
 	{
 		template <class Type>
-		using then = _type_then<_implementation::_void>;
+		using then = _type_then<_implementation::_undefined>;
 	};
 
 	template <>
-	struct _type_if<true, _implementation::_void>
+	struct _type_if<true, _implementation::_undefined>
 	{
 		template <class Type>
 		using then = _type_then<Type>;
 	};
 
 	template <bool Condition>
-	using type_if = _type_if<Condition, _implementation::_void>;
+	using type_if = _type_if<Condition, _implementation::_undefined>;
 	
 		// Value if statement, endif is an alias of the first value for which corresponding condition is true, or non-defined if all are false
 
@@ -465,10 +465,10 @@ namespace stdx::meta
 	};
 
 	template <>
-	struct _value_then<_implementation::_void>
+	struct _value_then<_implementation::_undefined>
 	{
 		template <bool Condition>
-		using else_if = _value_if<Condition, _implementation::_void>;
+		using else_if = _value_if<Condition, _implementation::_undefined>;
 
 		template <auto Value>
 		using else_then = _value_then<val<Value>>;
@@ -482,21 +482,21 @@ namespace stdx::meta
 	};
 
 	template <>
-	struct _value_if<false, _implementation::_void>
+	struct _value_if<false, _implementation::_undefined>
 	{
 		template <auto Value>
-		using then = _value_then<_implementation::_void>;
+		using then = _value_then<_implementation::_undefined>;
 	};
 
 	template <>
-	struct _value_if<true, _implementation::_void>
+	struct _value_if<true, _implementation::_undefined>
 	{
 		template <auto Value>
 		using then = _value_then<val<Value>>;
 	};
 
 	template <bool Condition>
-	using value_if = _value_if<Condition, _implementation::_void>;
+	using value_if = _value_if<Condition, _implementation::_undefined>;
 
 		// Conjunction // Review this (make interface more similar to std versions)
 
@@ -1042,7 +1042,7 @@ namespace stdx::meta
 	};
 
 	template <template <class ...> class Template, class ... Types1, class Pack2>
-	struct _bind<Template, pack<_implementation::_void, Types1 ...>, Pack2>
+	struct _bind<Template, pack<_implementation::_undefined, Types1 ...>, Pack2>
 	{
 		using _invoke = Template<Types1 ...>;
 	};
@@ -1051,7 +1051,7 @@ namespace stdx::meta
 	struct bind
 	{
 		template <class ... Types>
-		using invoke = typename _bind<Template, pack<BoundTypes ..., _implementation::_void>, pack<Types ...>>::_invoke;
+		using invoke = typename _bind<Template, pack<BoundTypes ..., _implementation::_undefined>, pack<Types ...>>::_invoke;
 	};
 
 	// Atomic traits

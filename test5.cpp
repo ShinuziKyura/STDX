@@ -33,7 +33,7 @@ bool test_greater(int i)
 }
 
 template <char ... Chars>
-constexpr auto operator "" _test()
+constexpr auto operator "" _n()
 {
 	return stdx::meta::intstring<Chars ...>;
 }

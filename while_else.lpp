@@ -1,3 +1,3 @@
 #undef while
-/** Proof of concept, implements while-else loops in the language; Warning: it breaks do-while loops! Incompatible with C++17 declaration inside while condition */
+/* Proof of concept, implements while-else loops in the language. Warning: breaks do-while loops! Incompatible with C++17 declaration in while condition */
 #define while(condition) if (bool STDX_WHILE_ELSE_CONDITION = condition) while (STDX_WHILE_ELSE_CONDITION ? (STDX_WHILE_ELSE_CONDITION = false), true : condition)
