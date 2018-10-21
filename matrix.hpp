@@ -157,7 +157,7 @@ namespace stdx::math
 		/* Matrix member access operator, one-indexed */
 		constexpr Type const & operator()(size_t const & i, size_t const & j) const
 		{
-			return const_cast<stdx::meta::remove_const_through_ref_t<decltype(*this)>>(*this).operator()(i, j);
+			return const_cast<stdx::meta::remove_const_through_ref_t<decltype(*this)>>(*this)(i, j);
 		}
 
 		constexpr size_t rows() const

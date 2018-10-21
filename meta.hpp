@@ -12,6 +12,9 @@ namespace stdx::meta
 	namespace _implementation
 	{
 		struct _undefined;
+		struct _defined
+		{
+		};
 
 		template <size_t>
 		struct _placeholder;
@@ -289,14 +292,6 @@ namespace stdx::meta
 		using type = Type;
 	};
 
-		// False assertion, evaluating this function will result in a compile-time error (needs reviewing)
-
-/*	template <class Type = void>
-	constexpr Type false_assertion()
-	{
-		static_assert(false);
-	} */
-
 		// Cast from one type to another, if they are convertible
 
 	template <class Type1, class Type2>
@@ -317,7 +312,88 @@ namespace stdx::meta
 	template <class Class, template <class ...> class Template>
 	constexpr bool is_template_instantiation_v = is_template_instantiation<Class, Template>::value;
 
-		// Remove cv through ref, provides type alias for Type, where if Type is a reference to a possibly cv-qualified type T, the type alias is of a reference to that type T with its cv-qualifiers removed
+		// Apply type parameters from template class instance to class template
+
+	template <template <class ...> class, class>
+	struct _apply_type_parameters;
+
+	template <template <class ...> class Template1, template <class ...> class Template2, class ... Parameters>
+	struct _apply_type_parameters<Template1, Template2<Parameters ...>>
+	{
+		using _type = Template1<Parameters ...>;
+	};
+
+	template <template <class ...> class Template, class Class>
+	using apply_type_parameters = typename _apply_type_parameters<Template, Class>::_type;
+
+		// Apply value parameters from template class instance to class template
+
+	template <template <auto ...> class, class>
+	struct _apply_value_parameters;
+
+	template <template <auto ...> class Template1, template <auto ...> class Template2, auto ... Parameters>
+	struct _apply_value_parameters<Template1, Template2<Parameters ...>>
+	{
+		using _type = Template1<Parameters ...>;
+	};
+
+	template <template <auto ...> class Template, class Class>
+	using apply_value_parameters = typename _apply_value_parameters<Template, Class>::_type;
+
+		// Add cv through ref, provides type alias for Type, where if Type is a reference to a possibly cv-qualified type T, the type alias is of reference to that type T with added cv-qualifiers
+
+	template <class Type>
+	struct add_const_through_ref
+	{
+		using type = Type;
+	};
+
+	template <class Type>
+	struct add_const_through_ref<Type &>
+	{
+		using type = Type const &;
+	};
+
+	template <class Type>
+	struct add_const_through_ref<Type &&>
+	{
+		using type = Type const &&;
+	};
+
+	template <class Type>
+	using add_const_through_ref_t = typename add_const_through_ref<Type>::type;
+
+	template <class Type>
+	struct add_volatile_through_ref
+	{
+		using type = Type;
+	};
+
+	template <class Type>
+	struct add_volatile_through_ref<Type &>
+	{
+		using type = Type volatile &;
+	};
+
+	template <class Type>
+	struct add_volatile_through_ref<Type &&>
+	{
+		using type = Type volatile &&;
+	};
+
+	template <class Type>
+	using add_volatile_through_ref_t = typename add_volatile_through_ref<Type>::type;
+
+	template <class Type>
+	struct add_cv_through_ref
+	{
+		using type = typename add_const_through_ref<typename add_volatile_through_ref<Type>::type>::type;
+	};
+
+	template <class Type>
+	using add_cv_through_ref_t = typename add_cv_through_ref<Type>::type;
+
+		// Remove cv through ref, provides type alias for Type, where if Type is a reference to a possibly cv-qualified type T, the type alias is of reference to that type T with its cv-qualifiers removed
 
 	template <class Type>
 	struct remove_const_through_ref
@@ -723,6 +799,121 @@ namespace stdx::meta
 
 	template <char ... Chars>
 	constexpr size_t intstring = _intstring<as_reverse_valpack<valpack<Chars ...>>, 1>::_value;
+
+	// Container types
+
+		// Constrained pack, applies a trait to each element of a pack, constructing a new pack with the elements of the old one for which bool(trait<element>::value) == true
+
+	template <template <class> class Trait, class InPack, class OutPack>
+	struct _constrained_pack : _constrained_pack<Trait, typename InPack::template pop<1>, std::conditional_t<bool(Trait<typename InPack::first>::value), typename OutPack::template push<typename InPack::first>, OutPack>>
+	{
+	};
+
+	template <template <class> class Trait, class OutPack>
+	struct _constrained_pack<Trait, pack<>, OutPack>
+	{
+		using _type = OutPack;
+	};
+
+	template <template <class> class Trait, class InPack>
+	struct _assert_constrained_pack : _constrained_pack<Trait, InPack, pack<>>
+	{
+		static_assert(is_template_instantiation_v<InPack, pack>,
+					  "'stdx::meta::constrained_pack<Trait, InPack>': "
+					  "InPack must be of type stdx::meta::pack<T ...> where T are any type parameters");
+	};
+
+	template <template <class> class Trait, class InPack>
+	using constrained_pack = typename _assert_constrained_pack<Trait, InPack>::_type;
+
+		// Transformed pack, applies a trait to each element of a pack, constructing a new pack of the same size as the old one and with the corresponding elements as trait<element>::type
+
+	template <template <class> class Trait, class InPack, class OutPack>
+	struct _transformed_pack : _transformed_pack<Trait, typename InPack::template pop<1>, typename OutPack::template push<typename Trait<typename InPack::first>::type>>
+	{
+	};
+
+	template <template <class> class Trait, class OutPack>
+	struct _transformed_pack<Trait, pack<>, OutPack>
+	{
+		using _type = OutPack;
+	};
+
+	template <template <class> class Trait, class InPack>
+	struct _assert_transformed_pack : _transformed_pack<Trait, InPack, pack<>>
+	{
+		static_assert(is_template_instantiation_v<InPack, pack>,
+					  "'stdx::meta::transformed_pack<Trait, InPack>': "
+					  "InPack must be of type stdx::meta::pack<T ...> where T are any type parameters");
+	};
+
+	template <template <class> class Trait, class InPack>
+	using transformed_pack = typename _assert_transformed_pack<Trait, InPack>::_type;
+
+		// Permutated pack, permutates the elements of a pack based on a valpack with integral values in the interval [0, N) where N is the number of elements in the pack
+
+	template <class InPack, class OutPack, class IndexPack>
+	struct _permutated_pack : _permutated_pack<InPack, typename OutPack::template push<typename InPack::template pop<IndexPack::first>::first>, typename IndexPack::template pop<1>>
+	{
+	};
+
+	template <class InPack, class OutPack>
+	struct _permutated_pack<InPack, OutPack, valpack<>>
+	{
+		using _type = OutPack;
+	};
+
+	template <class IndexPack>
+	struct _assert_index_values_permutated_pack : std::is_same<IndexPack, constrained_pack<apply_to_value<inside<0, IndexPack::size - 1>::template trait>::template trait, constrained_pack<apply_to_type<std::is_integral>::template trait, IndexPack>>>
+	{
+	};
+
+	template <class InPack, class IndexPack>
+	struct _assert_permutated_pack : _permutated_pack<InPack, pack<>, as_valpack<IndexPack>>
+	{
+		static_assert(is_template_instantiation_v<InPack, pack>,
+					  "'stdx::meta::permutated_pack<InPack, IndexPack>': "
+					  "InPack must be of type stdx::meta::pack<T ...> where T is any type parameter");
+		static_assert(InPack::size == IndexPack::size,
+					  "'stdx::meta::permutated_pack<InPack, IndexPack>': "
+					  "InPack::size must be equal to IndexPack::size");
+		static_assert(_assert_index_values_permutated_pack<as_pack_val<IndexPack>>::value,
+					  "'stdx::meta::permutated_pack<InPack, IndexPack>': "
+					  "IndexPack must be of type stdx::template::valpack<V ...> where V are unique integral value parameters in the interval of [0, IndexPack::size)");
+	};
+
+	template <class InPack, class IndexPack>
+	using permutated_pack = typename _assert_permutated_pack<InPack, IndexPack>::_type;
+
+		// Merged pack, merges several packs of the same size into one pack of packs where the nth pack contains the nth elements of each original pack
+
+	template <size_t N, class OutPack, class ... InPack>
+	struct _merged_pack : _merged_pack<N - 1, typename OutPack::template push<pack<typename InPack::first ...>>, typename InPack::template pop<1> ...>
+	{
+	};
+
+	template <class OutPack, class ... InPack>
+	struct _merged_pack<0, OutPack, InPack ...>
+	{
+		using _type = OutPack;
+	};
+
+	template <class SizeType, class ... SizeTypes>
+	constexpr bool _assert_pack_sizes_merged_pack(SizeType size, SizeTypes ... sizes)
+	{
+		return (... && (size == sizes));
+	};
+
+	template <class ... InPack>
+	struct _assert_merged_pack : _merged_pack<pack<InPack ...>::first::size, pack<>, InPack ...>
+	{
+		static_assert(_assert_pack_sizes_merged_pack(InPack::size ...),
+					  "'stdx::meta::merged_pack<InPack ...>': "
+					  "InPack::size must be equal for all packs");
+	};
+
+	template <class ... InPack>
+	using merged_pack = typename _assert_merged_pack<InPack ...>::_type;
 
 	// Functional traits
 
@@ -1160,121 +1351,6 @@ namespace stdx::meta
 	{
 	};
 #endif
-
-	// Container modifiers (continuation)
-
-		// Constrained pack, applies a trait to each element of a pack, constructing a new pack with the elements of the old one for which bool(trait<element>::value) == true
-
-	template <template <class> class Trait, class InPack, class OutPack>
-	struct _constrained_pack : _constrained_pack<Trait, typename InPack::template pop<1>, std::conditional_t<bool(Trait<typename InPack::first>::value), typename OutPack::template push<typename InPack::first>, OutPack>>
-	{
-	};
-
-	template <template <class> class Trait, class OutPack>
-	struct _constrained_pack<Trait, pack<>, OutPack>
-	{
-		using _type = OutPack;
-	};
-
-	template <template <class> class Trait, class InPack>
-	struct _assert_constrained_pack : _constrained_pack<Trait, InPack, pack<>>
-	{
-		static_assert(is_template_instantiation_v<InPack, pack>,
-					  "'stdx::meta::constrained_pack<Trait, InPack>': "
-					  "InPack must be of type stdx::meta::pack<T ...> where T are any type parameters");
-	};
-
-	template <template <class> class Trait, class InPack>
-	using constrained_pack = typename _assert_constrained_pack<Trait, InPack>::_type;
-
-		// Transformed pack, applies a trait to each element of a pack, constructing a new pack of the same size as the old one and with the corresponding elements as trait<element>::type
-	
-	template <template <class> class Trait, class InPack, class OutPack>
-	struct _transformed_pack : _transformed_pack<Trait, typename InPack::template pop<1>, typename OutPack::template push<typename Trait<typename InPack::first>::type>>
-	{
-	};
-
-	template <template <class> class Trait, class OutPack>
-	struct _transformed_pack<Trait, pack<>, OutPack>
-	{
-		using _type = OutPack;
-	};
-
-	template <template <class> class Trait, class InPack>
-	struct _assert_transformed_pack : _transformed_pack<Trait, InPack, pack<>>
-	{
-		static_assert(is_template_instantiation_v<InPack, pack>,
-					  "'stdx::meta::transformed_pack<Trait, InPack>': "
-					  "InPack must be of type stdx::meta::pack<T ...> where T are any type parameters");
-	};
-
-	template <template <class> class Trait, class InPack>
-	using transformed_pack = typename _assert_transformed_pack<Trait, InPack>::_type;
-
-		// Permutated pack, permutates the elements of a pack based on a valpack with integral values in the interval [0, N) where N is the number of elements in the pack
-
-	template <class InPack, class OutPack, class IndexPack>
-	struct _permutated_pack : _permutated_pack<InPack, typename OutPack::template push<typename InPack::template pop<IndexPack::first>::first>, typename IndexPack::template pop<1>>
-	{
-	};
-
-	template <class InPack, class OutPack>
-	struct _permutated_pack<InPack, OutPack, valpack<>>
-	{
-		using _type = OutPack;
-	};
-
-	template <class IndexPack>
-	struct _assert_index_values_permutated_pack : std::is_same<IndexPack, constrained_pack<apply_to_value<inside<0, IndexPack::size - 1>::template trait>::template trait, constrained_pack<apply_to_type<std::is_integral>::template trait, IndexPack>>>
-	{
-	};
-
-	template <class InPack, class IndexPack>
-	struct _assert_permutated_pack : _permutated_pack<InPack, pack<>, as_valpack<IndexPack>>
-	{
-		static_assert(is_template_instantiation_v<InPack, pack>,
-					  "'stdx::meta::permutated_pack<InPack, IndexPack>': "
-					  "InPack must be of type stdx::meta::pack<T ...> where T is any type parameter");
-		static_assert(InPack::size == IndexPack::size,
-					  "'stdx::meta::permutated_pack<InPack, IndexPack>': "
-					  "InPack::size must be equal to IndexPack::size");
-		static_assert(_assert_index_values_permutated_pack<as_pack_val<IndexPack>>::value,
-					  "'stdx::meta::permutated_pack<InPack, IndexPack>': "
-					  "IndexPack must be of type stdx::template::valpack<V ...> where V are unique integral value parameters in the interval of [0, IndexPack::size)");
-	};
-
-	template <class InPack, class IndexPack>
-	using permutated_pack = typename _assert_permutated_pack<InPack, IndexPack>::_type;
-
-		// Merged pack, merges several packs of the same size into one pack of packs where the nth pack contains the nth elements of each original pack
-
-	template <size_t N, class OutPack, class ... InPack>
-	struct _merged_pack : _merged_pack<N - 1, typename OutPack::template push<pack<typename InPack::first ...>>, typename InPack::template pop<1> ...>
-	{
-	};
-
-	template <class OutPack, class ... InPack>
-	struct _merged_pack<0, OutPack, InPack ...>
-	{
-		using _type = OutPack;
-	};
-
-	template <class SizeType, class ... SizeTypes>
-	constexpr bool _assert_pack_sizes_merged_pack(SizeType size, SizeTypes ... sizes)
-	{
-		return (... && (size == sizes));
-	};
-
-	template <class ... InPack>
-	struct _assert_merged_pack : _merged_pack<pack<InPack ...>::first::size, pack<>, InPack ...>
-	{
-		static_assert(_assert_pack_sizes_merged_pack(InPack::size ...),
-					  "'stdx::meta::merged_pack<InPack ...>': "
-					  "InPack::size must be equal for all packs");
-	};
-
-	template <class ... InPack>
-	using merged_pack = typename _assert_merged_pack<InPack ...>::_type;
 }
 
 #endif
