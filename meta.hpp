@@ -74,7 +74,7 @@ namespace stdx::meta
 	namespace placeholders
 	{
 		template <size_t>
-		struct _p;
+		struct _p; // Maybe rename this to _placeholder
 		
 		using _1 = _p<1>;
 		using _2 = _p<2>;
@@ -158,7 +158,7 @@ namespace stdx::meta
 		template <auto ... Values>
 		using push = valpack<Values ...>;
 		template <size_t N>
-		using pop = pack<>;
+		using pop = valpack<>;
 	};
 
 	template <auto Value>
@@ -185,6 +185,142 @@ namespace stdx::meta
 		using push = valpack<Value, Values ..., Values1 ...>;
 		template <size_t N>
 		using pop = std::conditional_t<bool(N), typename valpack<Values ...>::template pop<N - 1>, valpack<Value, Values ...>>;
+	};
+
+	// Container modifiers
+
+		// Convert from Pack of Vals to Valpack
+
+	template <class>
+	struct _as_valpack;
+
+	template <auto ... Values>
+	struct _as_valpack<valpack<Values ...>>
+	{
+		using _type = valpack<Values ...>;
+	};
+
+	template <auto ... Values>
+	struct _as_valpack<pack<val<Values> ...>>
+	{
+		using _type = valpack<Values ...>;
+	};
+
+	template <>
+	struct _as_valpack<pack<>>
+	{
+		using _type = valpack<>;
+	};
+
+	template <class Pack>
+	using as_valpack = typename _as_valpack<Pack>::_type;
+
+		// Convert from Valpack to Pack of Vals
+
+	template <class>
+	struct _as_pack_val;
+
+	template <auto ... Values>
+	struct _as_pack_val<pack<val<Values> ...>>
+	{
+		using _type = pack<val<Values> ...>;
+	};
+
+	template <>
+	struct _as_pack_val<pack<>>
+	{
+		using _type = pack<>;
+	};
+
+	template <auto ... Values>
+	struct _as_pack_val<valpack<Values ...>>
+	{
+		using _type = pack<val<Values> ...>;
+	};
+
+	template <class Valpack>
+	using as_pack_val = typename _as_pack_val<Valpack>::_type;
+
+		// Reverse pack elements
+
+	template <class, class>
+	struct _as_reverse_pack;
+
+	template <class Pack, class ... ReverseTypes>
+	struct _as_reverse_pack<Pack, pack<ReverseTypes ...>> : _as_reverse_pack<typename Pack::template pop<1>, pack<typename Pack::first, ReverseTypes ...>>
+	{
+	};
+
+	template <class ReversePack>
+	struct _as_reverse_pack<pack<>, ReversePack>
+	{
+		using _type = ReversePack;
+	};
+
+	template <class Pack>
+	using as_reverse_pack = typename _as_reverse_pack<Pack, pack<>>::_type;
+
+		// Reverse valpack elements
+
+	template <class, class>
+	struct _as_reverse_valpack;
+
+	template <class Valpack, auto ... ReverseValues>
+	struct _as_reverse_valpack<Valpack, valpack<ReverseValues ...>> : _as_reverse_valpack<typename Valpack::template pop<1>, valpack<Valpack::first, ReverseValues ...>>
+	{
+	};
+
+	template <auto ... ReverseValues>
+	struct _as_reverse_valpack<valpack<>, valpack<ReverseValues ...>>
+	{
+		using _type = valpack<ReverseValues ...>;
+	};
+
+	template <class Valpack>
+	using as_reverse_valpack = typename _as_reverse_valpack<Valpack, valpack<>>::_type;
+
+		// Apply a trait that takes a type parameter to the type from a Val
+
+	template <template <class> class Trait>
+	struct apply_to_type
+	{
+		template <class Val>
+		using trait = Trait<typename Val::type>;
+	};
+
+		// Apply a trait that takes a non-type parameter to the value from a Val
+
+	template <template <auto> class Trait>
+	struct apply_to_value
+	{
+		template <class Val>
+		using trait = Trait<Val::value>;
+	};
+
+		// Apply a trait that takes a type parameter to a type from a Pack
+
+	template <template <class> class Trait, size_t Index = 0>
+	struct apply_to_pack
+	{
+		template <class Pack>
+		using first = Trait<typename Pack::first>;
+		template <class Pack>
+		using nth = Trait<typename Pack::template pop<Index>::first>;
+		template <class Pack>
+		using last = Trait<typename Pack::last>;
+	};
+
+		// Apply a trait that takes a non-type parameter to a value from a Valpack
+
+	template <template <auto> class Trait, size_t Index = 0>
+	struct apply_to_valpack
+	{
+		template <class Valpack>
+		using first = Trait<Valpack::first>;
+		template <class Valpack>
+		using nth = Trait<Valpack::template pop<Index>::first>;
+		template <class Valpack>
+		using last = Trait<Valpack::last>;
 	};
 
 	// Type traits
@@ -223,11 +359,88 @@ namespace stdx::meta
 	};
 
 	template <class Class, template <class ...> class Template>
-	inline constexpr bool is_template_instantiation_v = is_template_instantiation<Class, Template>::value;
+	constexpr bool is_template_instantiation_v = is_template_instantiation<Class, Template>::value;
+
+		// Remove cv through ref, provides type alias for Type, where if Type is a reference to a possibly cv-qualified type T, the type alias is of a reference to that type T with its cv-qualifiers removed
+
+	template <class Type>
+	struct remove_const_through_ref
+	{
+		using type = Type;
+	};
+
+	template <class Type>
+	struct remove_const_through_ref<Type const &>
+	{
+		using type = Type &;
+	};
+
+	template <class Type>
+	struct remove_const_through_ref<Type const volatile &>
+	{
+		using type = Type volatile &;
+	};
+
+	template <class Type>
+	struct remove_const_through_ref<Type const &&>
+	{
+		using type = Type &&;
+	};
+
+	template <class Type>
+	struct remove_const_through_ref<Type const volatile &&>
+	{
+		using type = Type volatile &&;
+	};
+
+	template <class Type>
+	using remove_const_through_ref_t = typename remove_const_through_ref<Type>::type;
+
+	template <class Type>
+	struct remove_volatile_through_ref
+	{
+		using type = Type;
+	};
+
+	template <class Type>
+	struct remove_volatile_through_ref<Type volatile &>
+	{
+		using type = Type &;
+	};
+
+	template <class Type>
+	struct remove_volatile_through_ref<Type const volatile &>
+	{
+		using type = Type const &;
+	};
+
+	template <class Type>
+	struct remove_volatile_through_ref<Type volatile &&>
+	{
+		using type = Type &&;
+	};
+
+	template <class Type>
+	struct remove_volatile_through_ref<Type const volatile &&>
+	{
+		using type = Type const &&;
+	};
+
+	template <class Type>
+	using remove_volatile_through_ref_t = typename remove_volatile_through_ref<Type>::type;
+
+	template <class Type>
+	struct remove_cv_through_ref
+	{
+		using type = typename remove_const_through_ref<typename remove_volatile_through_ref<Type>::type>::type;
+	};
+
+	template <class Type>
+	using remove_cv_through_ref_t = typename remove_cv_through_ref<Type>::type;
 
 	// Logic traits
 
-		// If statement, takes the first type for which corresponding condition is true, or _implementation::_void (an incomplete type) if all are false
+		// Type if statement, endif is an alias of the first type for which corresponding condition is true, or non-defined if all are false
 
 	template <bool, class>
 	struct _type_if;
@@ -252,8 +465,6 @@ namespace stdx::meta
 
 		template <class Type>
 		using else_then = _type_then<Type>;
-
-		using endif = _implementation::_void;
 	};
 
 	template <bool, class Type>
@@ -279,6 +490,57 @@ namespace stdx::meta
 
 	template <bool Condition>
 	using type_if = _type_if<Condition, _implementation::_void>;
+	
+		// Value if statement, endif is an alias of the first value for which corresponding condition is true, or non-defined if all are false
+
+	template <bool, class>
+	struct _value_if;
+
+	template <class Val>
+	struct _value_then
+	{
+		template <bool>
+		using else_if = _value_if<false, Val>;
+
+		template <auto>
+		using else_then = _value_then<Val>;
+
+		static constexpr auto endif = Val::value;
+	};
+
+	template <>
+	struct _value_then<_implementation::_void>
+	{
+		template <bool Condition>
+		using else_if = _value_if<Condition, _implementation::_void>;
+
+		template <auto Value>
+		using else_then = _value_then<val<Value>>;
+	};
+
+	template <bool, class Val>
+	struct _value_if
+	{
+		template <auto>
+		using then = _value_then<Val>;
+	};
+
+	template <>
+	struct _value_if<false, _implementation::_void>
+	{
+		template <auto Value>
+		using then = _value_then<_implementation::_void>;
+	};
+
+	template <>
+	struct _value_if<true, _implementation::_void>
+	{
+		template <auto Value>
+		using then = _value_then<val<Value>>;
+	};
+
+	template <bool Condition>
+	using value_if = _value_if<Condition, _implementation::_void>;
 
 		// Conjunction // Review this (make interface more similar to std versions)
 
@@ -312,6 +574,101 @@ namespace stdx::meta
 
 	// Numeric traits
 
+		// Aliases
+
+	using i_literal_t = unsigned long long;
+
+	using fp_literal_t = long double;
+
+	using ssize_t = 
+		type_if<sizeof(size_t) == sizeof(unsigned long long)>::then<
+			long long
+		>::else_if<sizeof(size_t) == sizeof(unsigned long)>::then<
+			long
+		>::else_if<sizeof(size_t) == sizeof(unsigned int)>::then<
+			int
+		>::else_if<sizeof(size_t) == sizeof(unsigned short)>::then<
+			short
+		>::else_then<
+			char
+		>::endif;
+
+	template <class ArithmeticType>
+	using hsize_t = 
+		typename type_if<std::is_unsigned_v<ArithmeticType>>::template then<
+			typename type_if<bool(sizeof(ArithmeticType) == sizeof(unsigned long long))>::template then<
+				type_if<bool(sizeof(unsigned long) < sizeof(unsigned long long))>::then<
+					unsigned long
+				>::else_if<bool(sizeof(unsigned int) < sizeof(unsigned long long))>::then<
+					unsigned int
+				>::else_if<bool(sizeof(unsigned short) < sizeof(unsigned long long))>::then<
+					unsigned short
+				>::else_if<bool(sizeof(unsigned char) < sizeof(unsigned long long))>::then<
+					unsigned char
+				>::endif
+			>::template else_if<bool(sizeof(ArithmeticType) == sizeof(unsigned long))>::template then<
+				type_if<bool(sizeof(unsigned int) < sizeof(unsigned long))>::then<
+					unsigned int
+				>::else_if<bool(sizeof(unsigned short) < sizeof(unsigned long))>::then<
+					unsigned short
+				>::else_if<bool(sizeof(unsigned char) < sizeof(unsigned long))>::then<
+					unsigned char
+				>::endif
+			>::template else_if<bool(sizeof(ArithmeticType) == sizeof(unsigned int))>::template then<
+				type_if<bool(sizeof(unsigned short) < sizeof(unsigned int))>::then<
+					unsigned short
+				>::else_if<bool(sizeof(unsigned char) < sizeof(unsigned int))>::then<
+					unsigned char
+				>::endif
+			>::template else_if<bool(sizeof(ArithmeticType) == sizeof(unsigned short))>::template then<
+				type_if<bool(sizeof(unsigned char) < sizeof(unsigned short))>::then<
+					unsigned char
+				>::endif
+			>::endif
+		>::template else_if<std::is_integral_v<ArithmeticType>>::template then<
+			typename type_if<bool(sizeof(ArithmeticType) == sizeof(long long))>::template then<
+				type_if<bool(sizeof(long) < sizeof(long long))>::then<
+					long
+				>::else_if<bool(sizeof(int) < sizeof(long long))>::then<
+					int
+				>::else_if<bool(sizeof(short) < sizeof(long long))>::then<
+					short
+				>::else_if<bool(sizeof(char) < sizeof(long long))>::then<
+					char
+				>::endif
+			>::template else_if<bool(sizeof(ArithmeticType) == sizeof(long))>::template then<
+				type_if<bool(sizeof(int) < sizeof(long))>::then<
+					int
+				>::else_if<bool(sizeof(short) < sizeof(long))>::then<
+					short
+				>::else_if<bool(sizeof(char) < sizeof(long))>::then<
+					char
+				>::endif
+			>::template else_if<bool(sizeof(ArithmeticType) == sizeof(int))>::template then<
+				type_if<bool(sizeof(short) < sizeof(int))>::then<
+					short
+				>::else_if<bool(sizeof(char) < sizeof(int))>::then<
+					char
+				>::endif
+			>::template else_if<bool(sizeof(ArithmeticType) == sizeof(short))>::template then<
+				type_if<bool(sizeof(char) < sizeof(short))>::then<
+					char
+				>::endif
+			>::endif
+		>::template else_if<std::is_floating_point_v<ArithmeticType>>::template then<
+			typename type_if<bool(sizeof(ArithmeticType) == sizeof(long double))>::template then<
+				type_if<bool(sizeof(double) < sizeof(long double))>::then<
+					double
+				>::else_if<bool(sizeof(float) < sizeof(long double))>::then<
+					float
+				>::endif
+			>::template else_if<bool(sizeof(ArithmeticType) == sizeof(double))>::template then<
+				type_if<bool(sizeof(float) < sizeof(double))>::then<
+					float
+				>::endif
+			>::endif
+		>::endif;
+
 		// Boolean checks
 
 	template <class Type>
@@ -325,7 +682,7 @@ namespace stdx::meta
 	};
 
 	template <class Type>
-	inline constexpr bool is_complex_v = is_complex<Type>::value;
+	constexpr bool is_complex_v = is_complex<Type>::value;
 
 		// Addition
 
@@ -382,6 +739,34 @@ namespace stdx::meta
 		template <_auto N>
 		using trait = std::bool_constant<N < Min || Max < N>;
 	};
+
+		// Conversions
+
+	template <char Char>
+	struct _intchar
+	{
+		static_assert(Char >= '0' && Char <= '9', "Invalid character in number representation!");
+
+		static constexpr size_t _value = Char - '0';
+	};
+
+	template <char Char>
+	constexpr size_t intchar = _intchar<Char>::_value;
+
+	template <class CharPack, size_t Position>
+	struct _intstring
+	{
+		static constexpr size_t _value = _intstring<typename CharPack::template pop<1>, Position * 10>::_value + _intchar<CharPack::first>::_value * Position;
+	};
+
+	template <size_t Position>
+	struct _intstring<valpack<>, Position>
+	{
+		static constexpr size_t _value = 0;
+	};
+
+	template <char ... Chars>
+	constexpr size_t intstring = _intstring<as_reverse_valpack<valpack<Chars ...>>, 1>::_value;
 
 	// Functional traits
 
@@ -817,103 +1202,7 @@ namespace stdx::meta
 	};
 #endif
 
-	// Container modifiers
-
-		// Convert from Pack of Vals to Valpack
-
-	template <class>
-	struct _as_valpack;
-
-	template <auto ... Values>
-	struct _as_valpack<valpack<Values ...>>
-	{
-		using _type = valpack<Values ...>;
-	};
-
-	template <auto ... Values>
-	struct _as_valpack<pack<val<Values> ...>>
-	{
-		using _type = valpack<Values ...>;
-	};
-
-	template <>
-	struct _as_valpack<pack<>>
-	{
-		using _type = valpack<>;
-	};
-
-	template <class Pack>
-	using as_valpack = typename _as_valpack<Pack>::_type;
-
-		// Convert from Valpack to Pack of Vals
-
-	template <class>
-	struct _as_pack_val;
-
-	template <auto ... Values>
-	struct _as_pack_val<pack<val<Values> ...>>
-	{
-		using _type = pack<val<Values> ...>;
-	};
-
-	template <>
-	struct _as_pack_val<pack<>>
-	{
-		using _type = pack<>;
-	};
-
-	template <auto ... Values>
-	struct _as_pack_val<valpack<Values ...>>
-	{
-		using _type = pack<val<Values> ...>;
-	};
-
-	template <class Pack>
-	using as_pack_val = typename _as_pack_val<Pack>::_type;
-
-		// Apply a trait that takes a type parameter to the type from a Val
-
-	template <template <class> class Trait>
-	struct apply_to_type
-	{
-		template <class Val>
-		using trait = Trait<typename Val::type>;
-	};
-
-		// Apply a trait that takes a non-type parameter to the value from a Val
-
-	template <template <auto> class Trait>
-	struct apply_to_value
-	{
-		template <class Val>
-		using trait = Trait<Val::value>;
-	};
-
-		// Apply a trait that takes a type parameter to a type from a Pack
-
-	template <template <class> class Trait, size_t Index = 0>
-	struct apply_to_pack
-	{
-		template <class Pack>
-		using first = Trait<typename Pack::first>;
-		template <class Pack>
-		using nth = Trait<typename Pack::template pop<Index>::first>;
-		template <class Pack>
-		using last = Trait<typename Pack::last>;
-	};
-
-		// Apply a trait that takes a non-type parameter to a value from a Valpack
-
-	template <template <auto> class Trait, size_t Index = 0>
-	struct apply_to_valpack
-	{
-		template <class Valpack>
-		using first = Trait<Valpack::first>;
-		template <class Valpack>
-		using nth = Trait<Valpack::template pop<Index>::first>;
-		template <class Valpack>
-		using last = Trait<Valpack::last>;
-	};
+	// Container modifiers (continuation)
 
 		// Constrained pack, applies a trait to each element of a pack, constructing a new pack with the elements of the old one for which bool(trait<element>::value) == true
 

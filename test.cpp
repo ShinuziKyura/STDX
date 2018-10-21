@@ -1,6 +1,6 @@
 #include "test.hpp"
 
-#define TEST test6
+#define TEST test5
 
 int main()
 {

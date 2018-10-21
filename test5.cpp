@@ -5,7 +5,9 @@
 #include "meta.hpp"
 #include "language.hpp"
 #include "utility.hpp"
+#include "matrix.hpp"
 
+//#define STDX_STOPWATCH_RESOLUTION std::chrono::microseconds
 #include "stopwatch.hpp"
 #include "stream.hpp"
 
@@ -30,9 +32,35 @@ bool test_greater(int i)
 	return test;
 }
 
+template <char ... Chars>
+constexpr auto operator "" _test()
+{
+	return stdx::meta::intstring<Chars ...>;
+}
+
 int test5()
 {
 	stdx::unsynced_ios();
+
+	STDX_USING_STOPWATCH(std::chrono::microseconds);
+
+	constexpr stdx::math::matrix<int, 9> m1(stdx::math::matrix_name::pascal_upper);
+	[[maybe_unused]] 
+	constexpr stdx::math::matrix<int, 2, 3> m2({ 1, 2, 3,
+											     4, 5, 6 });
+	[[maybe_unused]]
+	constexpr stdx::math::matrix<int, 6, 4> m3;
+
+	for (size_t i = 1; i <= m1.rows(); ++i)
+	{
+		for (size_t j = 1; j <= m1.columns(); ++j)
+		{
+			auto const m = m1(i, j);
+			std::cout << (j != 1 ? (m < 10 ? "  " : " ") : "") << m;
+		}
+		std::cout << std::endl;
+	}
+	std::cout << std::endl;
 
 	std::fstream fout("test5.txt", std::ios::out | std::ios::trunc);
 	stdx::stream_traits<std::ostream>::route<stdx::policy::replicate> STDX_SCOPED_VARIABLE(std::cout, fout);
@@ -42,7 +70,7 @@ int test5()
 
 #include STDX_WHILE_ELSE
 
-	stdx::stopwatch::start();
+	stopwatch::start();
 
 	while (test_less(i))
 	{
@@ -53,13 +81,13 @@ int test5()
 		std::cout << "Never executed loop!" << std::endl;
 	}
 
-	std::cout << "Elapsed time in while-else loop: " << stdx::stopwatch::split() << std::endl << std::endl;
+	std::cout << "Elapsed time in while-else loop: " << stopwatch::split() << std::endl << std::endl;
 
 	stdx::memzero(s);
 
 #include STDX_DO_WHILE
 
-	stdx::stopwatch::split();
+	stopwatch::split();
 
 	do
 	{
@@ -67,9 +95,9 @@ int test5()
 	}
 	while (test_greater(i));
 
-	std::cout << "Elapsed time in do-while loop: " << stdx::stopwatch::stop() << std::endl << std::endl;
+	std::cout << "Elapsed time in do-while loop: " << stopwatch::stop() << std::endl << std::endl;
 
-	std::cout << "Elapsed time in total: " << stdx::stopwatch::total_time() << std::endl;
+	std::cout << "Elapsed time in total: " << stopwatch::total_time() << std::endl;
 
 	fout.close();
 

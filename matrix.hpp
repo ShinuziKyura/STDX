@@ -1,182 +1,100 @@
 #ifndef STDX_MATRIX_HPP
 #define STDX_MATRIX_HPP
 
-#include <vector>
-#include <valarray>
+#include <limits>
+#include <array>
 
 #include "meta.hpp"
 
 // Note to self: check https://en.wikipedia.org/wiki/Expression_templates
 
-#if defined(STDX_INDEXING_RESERVED_LITERALS) // defined(STDX_MATH_INDEXING_RESERVED_LITERALS)
-#if defined(_MSC_VER)
-#pragma warning(disable: 4455)
-#elif // TODO other compilers (at least gcc and clang)
-#endif
-#endif
-
-namespace stdx // math
+namespace stdx::math
 {
-	namespace indexing
+	enum class matrix_name
 	{
-		struct _i_index
-		{
-			constexpr _i_index(unsigned long long index) : _index(index)
-			{
-			}
-
-			unsigned long long const _index;
-		};
-
-		constexpr _i_index operator "" _i(unsigned long long index)
-		{
-			return _i_index(index - 1);
-		}
-#if defined(STDX_INDEXING_RESERVED_LITERALS) // defined(STDX_MATH_INDEXING_RESERVED_LITERALS)
-		constexpr _i_index operator "" i(size_t index)
-		{
-			return _i_index(index - 1);
-		}
-#endif
-
-		struct _j_index
-		{
-			constexpr _j_index(unsigned long long index) : _index(index)
-			{
-			}
-
-			unsigned long long const _index;
-		};
-
-		constexpr _j_index operator "" _j(unsigned long long index)
-		{
-			return _j_index(index - 1);
-		}
-#if defined(STDX_INDEXING_RESERVED_LITERALS) // defined(STDX_MATH_INDEXING_RESERVED_LITERALS)
-		constexpr _j_index operator "" j(size_t index)
-		{
-			return _j_index(index - 1);
-		}
-#endif
-
-		struct _index
-		{
-			constexpr _index(_i_index i, _j_index j) : _i(i._index), _j(j._index)
-			{
-			}
-
-			unsigned long long const _i;
-			unsigned long long const _j;
-		};
-
-		_index operator ,(_i_index i, _j_index j)
-		{
-			return _index(i, j);
-		}
-	}
-
-	enum class matrix_type : int
-	{
+		/*	Zero matrix, i.e.:
+			0 0 0 0 0
+			0 0 0 0 0
+			0 0 0 0 0
+			0 0 0 0 0
+			0 0 0 0 0 */
+		zero,
+		/*	One matrix, i.e.:
+			1 1 1 1 1
+			1 1 1 1 1
+			1 1 1 1 1
+			1 1 1 1 1
+			1 1 1 1 1 */
+		one,
 		/*	Identity matrix, i.e.:
 			1 0 0 0 0
 			0 1 0 0 0
 			0 0 1 0 0
 			0 0 0 1 0
-			0 0 0 0 1
-		*/
-		identity = 2,
+			0 0 0 0 1 */
+		identity,
 		/*	Exchange matrix, i.e.:
 			0 0 0 0 1
 			0 0 0 1 0
 			0 0 1 0 0
 			0 1 0 0 0
-			1 0 0 0 0
-		*/
+			1 0 0 0 0 */
 		exchange,
 		/*	Shift upper matrix, i.e.:
 			0 1 0 0 0
 			0 0 1 0 0
 			0 0 0 1 0
 			0 0 0 0 1
-			0 0 0 0 0
-		*/
+			0 0 0 0 0 */
 		shift_upper,
 		/*	Shift lower matrix, i.e.:
 			0 0 0 0 0
 			1 0 0 0 0
 			0 1 0 0 0
 			0 0 1 0 0
-			0 0 0 1 0
-		*/
+			0 0 0 1 0 */
 		shift_lower,
+		/*	Pascal upper matrix, i.e.:
+			1  1  1  1  1
+			0  1  2  3  4
+			0  0  1  3  6
+			0  0  0  1  4
+			0  0  0  0  1 */
+		pascal_upper,
+		/*	Pascal lower matrix, i.e.:
+			1  0  0  0  0
+			1  1  0  0  0
+			1  2  1  0  0
+			1  3  3  1  0
+			1  4  6  4  1 */
+		pascal_lower,
 		/*	Pascal matrix, i.e.:
 			1  1  1  1  1
 			1  2  3  4  5
 			1  3  6 10 15
 			1  4 10 20 35
-			1  5 15 35 70
-		*/
-		pascal,
+			1  5 15 35 70 */
+//		pascal,
 		/*	Hilbert matrix, i.e.:
 			1/1 1/2 1/3 1/4 1/5
 			1/2 1/3 1/4 1/5 1/6
 			1/3 1/4 1/5 1/6 1/7
 			1/4 1/5 1/6 1/7 1/8
-			1/5 1/6 1/7 1/8 1/9
-		*/
+			1/5 1/6 1/7 1/8 1/9 */
 		hilbert,
 		/*	Lehmer matrix, i.e.:
 			1/1 1/2 1/3 1/4 1/5
 			1/2 2/2 2/3 2/4 2/5
 			1/3 2/3 3/3 3/4 3/5
 			1/4 2/4 3/4 4/4 4/5
-			1/5 2/5 3/5 4/5 5/5
-		*/
+			1/5 2/5 3/5 4/5 5/5 */
 		lehmer,
-		/*	One matrix, i.e.:
-			1 1 1 1 1
-			1 1 1 1 1
-			1 1 1 1 1
-			1 1 1 1 1
-			1 1 1 1 1
-		*/
-		one = 1,
-		/*	Zero matrix, i.e.:
-			0 0 0 0 0
-			0 0 0 0 0
-			0 0 0 0 0
-			0 0 0 0 0
-			0 0 0 0 0
-		*/
-		zero = 0,
 	};
 
-	template <class Type>
-	class matrix
+	template <class MatrixType>
+	class _matrix//_expression
 	{
-		static_assert(std::disjunction_v<std::is_arithmetic<Type>, stdx::meta::is_complex<Type>>, "'stdx::matrix<Type>': Type must be an arithmetic or std::complex type");
-	public:
-		
-		matrix(size_t rows, size_t columns, matrix_type type = matrix_type::zero) :
-			_matrix(rows, std::valarray<Type>(Type(type), columns))
-		{
-			if (rows != columns && type != matrix_type::one && type != matrix_type::zero)
-			{
-				throw std::invalid_argument("'stdx::matrix<Type>::matrix(size_t rows, size_t columns, stdx::matrix_type type)': "
-											"Only one and zero matrices can be created when rows != columns");
-			}
-
-			if constexpr (std::negation_v<stdx::meta::is_complex<Type>>)
-			{
-				_initialize(type);
-			}
-		}
-		matrix(std::initializer_list<std::initializer_list<Type>>)
-		{
-			// TODO
-		}
-
-		matrix<Type> operator+(matrix<Type> other)
+		/*matrix<Type> operator+(_matrix<Type> other)
 		{
 			// TODO
 			return *this;
@@ -186,7 +104,7 @@ namespace stdx // math
 			// TODO
 			return *this;
 		}
-		matrix<Type> operator-(matrix<Type> other)
+		matrix<Type> operator-(_matrix<Type> other)
 		{
 			// TODO
 			return *this;
@@ -196,7 +114,7 @@ namespace stdx // math
 			// TODO
 			return *this;
 		}
-		matrix<Type> operator*(matrix<Type> other)
+		matrix<Type> operator*(_matrix<Type> other)
 		{
 			// TODO
 			return *this;
@@ -205,61 +123,144 @@ namespace stdx // math
 		{
 			// TODO
 			return *this;
-		}
-		// first row, then column
-		Type operator[](indexing::_index index)
+		} */
+	};
+
+	template <class Type, size_t Rows, size_t Columns = Rows>
+	class matrix : public _matrix<matrix<Type, Rows, Columns>>
+	{
+		static_assert(std::is_arithmetic_v<Type>, "'stdx::math::matrix<Type, Rows, Columns>': Type must be an arithmetic type");
+		static_assert(Rows > 0, "'stdx::math::matrix<Type, Rows, Columns>': Rows must be greater than 0");
+		static_assert(Columns > 0, "'stdx::math::matrix<Type, Rows, Columns>': Columns must be greater than 0");
+	public:
+		constexpr matrix(std::array<std::array<Type, Columns>, Rows> matrix = {}) :
+			_matrix(matrix)
 		{
-			// TODO
-			(void) index;
-			return Type(); // _matrix[index._i][index._j];
+		}
+		constexpr matrix(matrix_name name) :
+			_matrix({})
+		{
+			static_assert(Rows == Columns, "");
+			_initialize_matrix(name);
+		}
+
+		/* Matrix member access operator, one-indexed */
+		constexpr Type & operator()(size_t const & i, size_t const & j)
+		{
+			if (i == 0 || j == 0 || i > Rows || j > Columns)
+			{
+				throw std::invalid_argument("'stdx::math::matrix<Type, Rows, Columns>::operator()(i, j)': " 
+											"Member access operators' arguments 'i' and 'j' must be in the range of [1, Rows] and [1, Columns], respectively");
+			}
+			return _matrix[i - 1][j - 1];
+		}
+		/* Matrix member access operator, one-indexed */
+		constexpr Type const & operator()(size_t const & i, size_t const & j) const
+		{
+			return const_cast<stdx::meta::remove_const_through_ref_t<decltype(*this)>>(*this).operator()(i, j);
+		}
+
+		constexpr size_t rows() const
+		{
+			return Rows;
+		}
+		constexpr size_t columns() const
+		{
+			return Columns;
 		}
 	private:
-		struct _matrix_row
+		constexpr void _initialize_matrix(matrix_name name)
 		{
-
-		};
-
-		void _initialize(matrix_type type)
-		{
-			// TODO
-			switch (type)
+			switch (name)
 			{
-				case matrix_type::identity:
+				case matrix_name::one:
+					for (size_t ij = 0; ij != Rows; ++ij)
+					{
+						for (size_t index = ij; index != Rows; ++index)
+						{
+							_matrix[ij][index] = _matrix[index][ij] = Type(1);
+						}
+					}
 					break;
-				case matrix_type::exchange:
+				case matrix_name::identity:
+					for (size_t index = 0; index != Rows; ++index)
+					{
+						_matrix[index][index] = Type(1);
+					}
 					break;
-				case matrix_type::shift_upper:
+				case matrix_name::exchange:
+					for (size_t index = 0; index != Rows; ++index)
+					{
+						_matrix[index][Rows - index - 1] = Type(1);
+					}
 					break;
-				case matrix_type::shift_lower:
+				case matrix_name::shift_upper:
+					for (size_t index = 1; index != Rows; ++index)
+					{
+						_matrix[index - 1][index] = Type(1);
+					}
 					break;
-				case matrix_type::pascal:
+				case matrix_name::shift_lower:
+					for (size_t index = 1; index != Rows; ++index)
+					{
+						_matrix[index][index - 1] = Type(1);
+					}
 					break;
-				case matrix_type::hilbert:
+				case matrix_name::pascal_upper:
+					for (size_t i = 0; i != (Rows + 1) / 2; ++i)
+					{
+						for (size_t index = i * 2; index != Rows; ++index)
+						{
+							_matrix[i][index] = _matrix[index - i][index] = (i != 0 ? _matrix[i - 1][index - 1] + _matrix[i][index - 1] : Type(1));
+						}
+					}
 					break;
-				case matrix_type::lehmer:
+				case matrix_name::pascal_lower:
+					for (size_t j = 0; j != (Rows + 1) / 2; ++j)
+					{
+						for (size_t index = j * 2; index != Rows; ++index)
+						{
+							_matrix[index][j] = _matrix[index][index - j] = (j != 0 ? _matrix[index - 1][j - 1] + _matrix[index - 1][j] : Type(1));
+						}
+					}
 					break;
-				case matrix_type::one:
-				case matrix_type::zero:
+			/*	case matrix_name::pascal:
+					for (size_t ij = 0; ij != Rows; ++ij)
+					{
+						for (size_t index = ij; index != Rows; ++index)
+						{
+							_matrix[ij][index] = _matrix[index][ij] = (ij != 0 ? _matrix[ij - 1][index] + _matrix[ij][index - 1] : Type(1));
+						}
+					}
+					break; */
+				case matrix_name::hilbert:
+					if constexpr (std::is_floating_point_v<Type>)
+					{
+						for (size_t ij = 0; ij != Rows; ++ij)
+						{
+							for (size_t index = ij; index != Rows; ++index)
+							{
+								_matrix[ij][index] = _matrix[index][ij] = Type(1.0) / (ij + index + 1);
+							}
+						}
+					}
+					break;
+				case matrix_name::lehmer:
+					if constexpr (std::is_floating_point_v<Type>)
+					{
+						for (size_t ij = 0; ij != Rows; ++ij)
+						{
+							for (size_t index = ij; index != Rows; ++index)
+							{
+								_matrix[ij][index] = _matrix[index][ij] = Type(ij + 1.0) / (index + 1);
+							}
+						}
+					}
 					break;
 			}
 		}
 		
-		std::vector<std::valarray<Type>> _matrix;
-	/*
-		int _matrix[10][10] = 
-		{
-			{  0,  1,  2,  3,  4,  5,  6,  7,  8,  9 },
-			{ 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 },
-			{ 20, 21, 22, 23, 24, 25, 26, 27, 28, 29 },
-			{ 30, 31, 32, 33, 34, 35, 36, 37, 38, 39 },
-			{ 40, 41, 42, 43, 44, 45, 46, 47, 48, 49 },
-			{ 50, 51, 52, 53, 54, 55, 56, 57, 58, 59 },
-			{ 60, 61, 62, 63, 64, 65, 66, 67, 68, 69 },
-			{ 70, 71, 72, 73, 74, 75, 76, 77, 78, 79 },
-			{ 80, 81, 82, 83, 84, 85, 86, 87, 88, 89 },
-			{ 90, 91, 92, 93, 94, 95, 96, 97, 98, 99 }
-		};
-	*/
+		std::array<std::array<Type, Columns>, Rows> _matrix;
 	};
 }
 

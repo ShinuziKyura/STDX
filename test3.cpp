@@ -30,7 +30,7 @@ int test3()
 
 	[[maybe_unused]] stdx::merged_pack<stdx::pack<int, double, char>, stdx::pack<int, double, char>> t7;
 
-	using f1 = stdx::bind<ClassTemplate, stdx::placeholders::_2, bool, stdx::placeholders::_1, stdx::placeholders::_1>;
+	using f1 = stdx::bind<ClassTemplate, stdx::placeholders::_3, bool, stdx::placeholders::_1, stdx::placeholders::_1>;
 
 	using r1 = f1::invoke<int, char, double, double, unsigned>;
 
