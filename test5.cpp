@@ -44,12 +44,21 @@ int test5()
 
 	STDX_USING_STOPWATCH(std::chrono::microseconds);
 
-	constexpr stdx::math::matrix<int, 9> m1(stdx::math::matrix_name::pascal_upper);
-	[[maybe_unused]] 
-	constexpr stdx::math::matrix<int, 2, 3> m2({ 1, 2, 3,
-											     4, 5, 6 });
+	constexpr stdx::math::matrix<int, 9> m0(stdx::math::matrix_name::pascal_upper);
 	[[maybe_unused]]
-	constexpr stdx::math::matrix<int, 6, 4> m3;
+	constexpr stdx::math::matrix<int, 2> m1({ 1, 2,
+											  3, 4 });
+	[[maybe_unused]]
+	constexpr stdx::math::matrix<int, 2> m2({ 1, 2,
+											  3, 4 });
+//	MSVC can't compile this, G++ can
+//	constexpr stdx::math::matrix m3 = m1 + m2;	
+//	constexpr auto e = m3(1, 1);
+
+//	On the other hand, MSVC can compile this, while G++ can't
+//	constexpr auto m3 = m1 + m2;
+
+//	Which compiler is right (if any)? 
 
 	for (size_t i = 1; i <= m1.rows(); ++i)
 	{

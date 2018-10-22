@@ -91,86 +91,65 @@ namespace stdx::math
 		lehmer,
 	};
 
-	template <class MatrixType>
-	class _matrix//_expression
-	{
-		/*matrix<Type> operator+(_matrix<Type> other)
-		{
-			// TODO
-			return *this;
-		}
-		matrix<Type> operator+(Type scalar)
-		{
-			// TODO
-			return *this;
-		}
-		matrix<Type> operator-(_matrix<Type> other)
-		{
-			// TODO
-			return *this;
-		}
-		matrix<Type> operator-(Type scalar)
-		{
-			// TODO
-			return *this;
-		}
-		matrix<Type> operator*(_matrix<Type> other)
-		{
-			// TODO
-			return *this;
-		}
-		matrix<Type> operator*(Type scalar)
-		{
-			// TODO
-			return *this;
-		} */
-	};
+	template <class>
+	class _matrix_expression;
 
-	template <class Type, size_t Rows, size_t Columns = Rows>
-	class matrix : public _matrix<matrix<Type, Rows, Columns>>
+	template <class ValueType, size_t Rows, size_t Columns = Rows>
+	class matrix : public _matrix_expression<matrix<ValueType, Rows, Columns>>
 	{
-		static_assert(std::is_arithmetic_v<Type>, "'stdx::math::matrix<Type, Rows, Columns>': Type must be an arithmetic type");
-		static_assert(Rows > 0, "'stdx::math::matrix<Type, Rows, Columns>': Rows must be greater than 0");
-		static_assert(Columns > 0, "'stdx::math::matrix<Type, Rows, Columns>': Columns must be greater than 0");
+		static_assert(std::is_arithmetic_v<std::decay_t<ValueType>>, "'stdx::math::matrix<ValueType, Rows, Columns>': ValueType must be an arithmetic type");
+		static_assert(Rows > 0, "'stdx::math::matrix<ValueType, Rows, Columns>': Rows must be greater than 0");
+		static_assert(Columns > 0, "'stdx::math::matrix<ValueType, Rows, Columns>': Columns must be greater than 0");
 	public:
-		constexpr matrix(std::array<std::array<Type, Columns>, Rows> matrix = {}) :
+		using value_type = std::decay_t<ValueType>;
+
+		constexpr matrix(std::array<std::array<ValueType, Columns>, Rows> matrix = {}) :
 			_matrix(matrix)
 		{
 		}
 		constexpr matrix(matrix_name name) :
-			_matrix({})
+			_matrix(_initialize_matrix(name))
 		{
-			static_assert(Rows == Columns, "");
-			_initialize_matrix(name);
+			static_assert(Rows == Columns, 
+						  "'stdx::math::matrix<ValueType, Rows, Columns>::matrix(Name)': Rows must be equal to Columns");
+		}
+		template <class MatrixType>
+		constexpr matrix(_matrix_expression<MatrixType> const & expression) :
+			_matrix(_initialize_matrix(expression))
+		{
+			static_assert(std::is_same_v<value_type, typename MatrixType::value_type>,
+						  "'stdx::math::matrix<ValueType, Rows, Columns>::matrix(Expression)': ValueType must be the same type as Expression::value_type");
+			static_assert(Rows == MatrixType::rows() && Columns == MatrixType::columns(),
+						  "'stdx::math::matrix<ValueType, Rows, Columns>::matrix(Expression)': This matrix and Expression must have the same dimensions");
 		}
 
-		/* Matrix member access operator, one-indexed */
-		constexpr Type & operator()(size_t const & i, size_t const & j)
+		// Member access operator
+		constexpr value_type const & operator()(size_t const & i, size_t const & j) const
 		{
 			if (i == 0 || j == 0 || i > Rows || j > Columns)
 			{
-				throw std::invalid_argument("'stdx::math::matrix<Type, Rows, Columns>::operator()(i, j)': " 
-											"Member access operators' arguments 'i' and 'j' must be in the range of [1, Rows] and [1, Columns], respectively");
+				throw std::invalid_argument("'stdx::math::matrix<ValueType, Rows, Columns>::operator()(i, j)': i and j must be in the range of [1, Rows] and [1, Columns], respectively");
 			}
 			return _matrix[i - 1][j - 1];
 		}
-		/* Matrix member access operator, one-indexed */
-		constexpr Type const & operator()(size_t const & i, size_t const & j) const
+		// Member access operator
+		value_type & operator()(size_t const & i, size_t const & j)
 		{
-			return const_cast<stdx::meta::remove_const_through_ref_t<decltype(*this)>>(*this)(i, j);
+			return const_cast<value_type &>(stdx::meta::add_const_through_ref_t<decltype(*this)>(*this)(i, j));
 		}
 
-		constexpr size_t rows() const
+		static constexpr size_t rows()
 		{
 			return Rows;
 		}
-		constexpr size_t columns() const
+		static constexpr size_t columns()
 		{
 			return Columns;
 		}
 	private:
-		constexpr void _initialize_matrix(matrix_name name)
+		static constexpr std::array<std::array<ValueType, Columns>, Rows> _initialize_matrix(matrix_name name)
 		{
+			std::array<std::array<ValueType, Columns>, Rows> matrix{};
 			switch (name)
 			{
 				case matrix_name::one:
@@ -178,32 +157,32 @@ namespace stdx::math
 					{
 						for (size_t index = ij; index != Rows; ++index)
 						{
-							_matrix[ij][index] = _matrix[index][ij] = Type(1);
+							matrix[ij][index] = matrix[index][ij] = value_type(1);
 						}
 					}
 					break;
 				case matrix_name::identity:
 					for (size_t index = 0; index != Rows; ++index)
 					{
-						_matrix[index][index] = Type(1);
+						matrix[index][index] = value_type(1);
 					}
 					break;
 				case matrix_name::exchange:
 					for (size_t index = 0; index != Rows; ++index)
 					{
-						_matrix[index][Rows - index - 1] = Type(1);
+						matrix[index][Rows - index - 1] = value_type(1);
 					}
 					break;
 				case matrix_name::shift_upper:
 					for (size_t index = 1; index != Rows; ++index)
 					{
-						_matrix[index - 1][index] = Type(1);
+						matrix[index - 1][index] = value_type(1);
 					}
 					break;
 				case matrix_name::shift_lower:
 					for (size_t index = 1; index != Rows; ++index)
 					{
-						_matrix[index][index - 1] = Type(1);
+						matrix[index][index - 1] = value_type(1);
 					}
 					break;
 				case matrix_name::pascal_upper:
@@ -211,7 +190,7 @@ namespace stdx::math
 					{
 						for (size_t index = i * 2; index != Rows; ++index)
 						{
-							_matrix[i][index] = _matrix[index - i][index] = (i != 0 ? _matrix[i - 1][index - 1] + _matrix[i][index - 1] : Type(1));
+							matrix[i][index] = matrix[index - i][index] = (i != 0 ? matrix[i - 1][index - 1] + matrix[i][index - 1] : value_type(1));
 						}
 					}
 					break;
@@ -220,7 +199,7 @@ namespace stdx::math
 					{
 						for (size_t index = j * 2; index != Rows; ++index)
 						{
-							_matrix[index][j] = _matrix[index][index - j] = (j != 0 ? _matrix[index - 1][j - 1] + _matrix[index - 1][j] : Type(1));
+							matrix[index][j] = matrix[index][index - j] = (j != 0 ? matrix[index - 1][j - 1] + matrix[index - 1][j] : value_type(1));
 						}
 					}
 					break;
@@ -229,38 +208,134 @@ namespace stdx::math
 					{
 						for (size_t index = ij; index != Rows; ++index)
 						{
-							_matrix[ij][index] = _matrix[index][ij] = (ij != 0 ? _matrix[ij - 1][index] + _matrix[ij][index - 1] : Type(1));
+							matrix[ij][index] = matrix[index][ij] = (ij != 0 ? matrix[ij - 1][index] + matrix[ij][index - 1] : value_type(1));
 						}
 					}
 					break; */
 				case matrix_name::hilbert:
-					if constexpr (std::is_floating_point_v<Type>)
+					if constexpr (std::is_floating_point_v<value_type>)
 					{
 						for (size_t ij = 0; ij != Rows; ++ij)
 						{
 							for (size_t index = ij; index != Rows; ++index)
 							{
-								_matrix[ij][index] = _matrix[index][ij] = Type(1.0) / (ij + index + 1);
+								matrix[ij][index] = matrix[index][ij] = value_type(1.0) / (ij + index + 1);
 							}
 						}
 					}
 					break;
 				case matrix_name::lehmer:
-					if constexpr (std::is_floating_point_v<Type>)
+					if constexpr (std::is_floating_point_v<value_type>)
 					{
 						for (size_t ij = 0; ij != Rows; ++ij)
 						{
 							for (size_t index = ij; index != Rows; ++index)
 							{
-								_matrix[ij][index] = _matrix[index][ij] = Type(ij + 1.0) / (index + 1);
+								matrix[ij][index] = matrix[index][ij] = value_type(ij + 1.0) / (index + 1);
 							}
 						}
 					}
 					break;
 			}
+			return matrix;
+		}
+		template <class MatrixType>
+		static constexpr std::array<std::array<ValueType, Columns>, Rows> _initialize_matrix(_matrix_expression<MatrixType> const & expression)
+		{
+			std::array<std::array<ValueType, Columns>, Rows> matrix{};
+			for (size_t i = 0; i != Rows; ++i)
+			{
+				for (size_t j = 0; j != Columns; ++j)
+				{
+					matrix[i][j] = expression(i + 1, j + 1);
+				}
+			}
+			return matrix;
 		}
 		
-		std::array<std::array<Type, Columns>, Rows> _matrix;
+		std::array<std::array<ValueType, Columns>, Rows> _matrix;
+	};
+
+	template <class MatrixType>
+	matrix(_matrix_expression<MatrixType>) -> matrix<typename MatrixType::value_type, MatrixType::rows(), MatrixType::columns()>;
+
+	template <class Matrix1, class Matrix2>
+	class _matrix_addition : public _matrix_expression<_matrix_addition<Matrix1, Matrix2>>
+	{
+		static_assert(Matrix1::rows() == Matrix2::rows() && Matrix1::columns() == Matrix2::columns(), 
+					  "'stdx::math::_matrix_addition<Matrix1, Matrix2>': Matrix1 and Matrix2 must have the same dimensions");
+	
+		constexpr _matrix_addition(Matrix1 const & a, Matrix2 const & b) :
+			_matrix1(a),
+			_matrix2(b)
+		{
+		}
+	public:
+		using value_type = decltype(std::declval<typename Matrix1::value_type const &>() + std::declval<typename Matrix2::value_type const &>());
+
+		// Member access operator
+		constexpr value_type operator()(size_t const & i, size_t const & j) const
+		{
+			return _matrix1(i, j) + _matrix2(i, j);
+		}
+
+		static constexpr size_t rows()
+		{
+			return Matrix1::rows();
+		}
+		static constexpr size_t columns()
+		{
+			return Matrix1::columns();
+		}
+	private:
+		Matrix1 const & _matrix1;
+		Matrix2 const & _matrix2;
+
+		template <class MatrixType>
+		friend class _matrix_expression;
+	};
+
+	template <class MatrixType>
+	class _matrix_expression
+	{
+	public:
+		/* This is a constant expression when the operands have static storage duration */
+		template <class OtherMatrixType>
+		constexpr _matrix_addition<MatrixType, OtherMatrixType> operator+(_matrix_expression<OtherMatrixType> const & other) const
+		{
+			return _matrix_addition(static_cast<MatrixType const &>(*this), static_cast<OtherMatrixType const &>(other));
+		}
+
+	/*	matrix<ValueType> operator+(ValueType scalar)
+		{
+			// TODO
+			return *this;
+		}
+		matrix<ValueType> operator-(_matrix_expression<ValueType> other)
+		{
+			// TODO
+			return *this;
+		}
+		matrix<ValueType> operator-(ValueType scalar)
+		{
+			// TODO
+			return *this;
+		}
+		matrix<ValueType> operator*(_matrix_expression<ValueType> other)
+		{
+			// TODO
+			return *this;
+		}
+		matrix<ValueType> operator*(ValueType scalar)
+		{
+			// TODO
+			return *this;
+		} */
+
+		constexpr auto operator()(size_t const & i, size_t const & j) const
+		{
+			return static_cast<MatrixType const &>(*this)(i, j);
+		}
 	};
 }
 
