@@ -6,7 +6,7 @@
 #include <chrono>
 
 // Defines stopwatch alias with std::chrono::duration<Rep, Period> as the stopwatch resolution. Defaults to std::chrono::nanoseconds if no resolution is specified.
-#define STDX_USING_STOPWATCH(resolution) using stopwatch = ::stdx::chrono::_stopwatch<resolution>
+#define STDX_DEFINE_STOPWATCH(resolution) using stopwatch = ::stdx::chrono::_stopwatch<resolution>
 
 namespace stdx::chrono
 {	

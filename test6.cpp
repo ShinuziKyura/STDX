@@ -11,7 +11,7 @@ int test6()
 {
 	stdx::unsynced_ios();
 
-	STDX_USING_STOPWATCH(std::chrono::nanoseconds);
+	STDX_DEFINE_STOPWATCH(std::chrono::nanoseconds);
 
 	std::mutex mtx;
 	std::shared_mutex sh_mtx;

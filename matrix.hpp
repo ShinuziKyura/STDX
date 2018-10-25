@@ -12,20 +12,6 @@ namespace stdx::math
 {
 	enum class matrix_name
 	{
-		/*	Zero matrix, i.e.:
-			0 0 0 0 0
-			0 0 0 0 0
-			0 0 0 0 0
-			0 0 0 0 0
-			0 0 0 0 0 */
-		zero,
-		/*	One matrix, i.e.:
-			1 1 1 1 1
-			1 1 1 1 1
-			1 1 1 1 1
-			1 1 1 1 1
-			1 1 1 1 1 */
-		one,
 		/*	Identity matrix, i.e.:
 			1 0 0 0 0
 			0 1 0 0 0
@@ -97,14 +83,18 @@ namespace stdx::math
 	template <class ValueType, size_t Rows, size_t Columns = Rows>
 	class matrix : public _matrix_expression<matrix<ValueType, Rows, Columns>>
 	{
-		static_assert(std::is_arithmetic_v<std::decay_t<ValueType>>, "'stdx::math::matrix<ValueType, Rows, Columns>': ValueType must be an arithmetic type");
+		static_assert(std::is_arithmetic_v<ValueType>, "'stdx::math::matrix<ValueType, Rows, Columns>': ValueType must be an arithmetic type");
 		static_assert(Rows > 0, "'stdx::math::matrix<ValueType, Rows, Columns>': Rows must be greater than 0");
 		static_assert(Columns > 0, "'stdx::math::matrix<ValueType, Rows, Columns>': Columns must be greater than 0");
 	public:
-		using value_type = std::decay_t<ValueType>;
+		using value_type = ValueType;
 
 		constexpr matrix(std::array<std::array<ValueType, Columns>, Rows> matrix = {}) :
 			_matrix(matrix)
+		{
+		}
+		constexpr matrix(value_type value) :
+			_matrix(_initialize_matrix(value))
 		{
 		}
 		constexpr matrix(matrix_name name) :
@@ -115,12 +105,12 @@ namespace stdx::math
 		}
 		template <class MatrixType>
 		constexpr matrix(_matrix_expression<MatrixType> const & expression) :
-			_matrix(_initialize_matrix(expression))
+			_matrix(expression.matrix())
 		{
 			static_assert(std::is_same_v<value_type, typename MatrixType::value_type>,
-						  "'stdx::math::matrix<ValueType, Rows, Columns>::matrix(Expression)': ValueType must be the same type as Expression::value_type");
+						  "'stdx::math::matrix<ValueType, Rows, Columns>::matrix(expression)': ValueType must be the same type as decltype(expression)::value_type");
 			static_assert(Rows == MatrixType::rows() && Columns == MatrixType::columns(),
-						  "'stdx::math::matrix<ValueType, Rows, Columns>::matrix(Expression)': This matrix and Expression must have the same dimensions");
+						  "'stdx::math::matrix<ValueType, Rows, Columns>::matrix(expression)': This matrix and expression must have the same dimensions");
 		}
 
 		// Member access operator
@@ -147,20 +137,23 @@ namespace stdx::math
 			return Columns;
 		}
 	private:
+		static constexpr std::array<std::array<ValueType, Columns>, Rows> _initialize_matrix(value_type value)
+		{
+			std::array<std::array<ValueType, Columns>, Rows> matrix = {};
+			for (size_t i = 0; i != Rows; ++i)
+			{
+				for (size_t j = 0; j != Columns; ++j)
+				{
+					matrix[i][j] = value;
+				}
+			}
+			return matrix;
+		}
 		static constexpr std::array<std::array<ValueType, Columns>, Rows> _initialize_matrix(matrix_name name)
 		{
-			std::array<std::array<ValueType, Columns>, Rows> matrix{};
+			std::array<std::array<ValueType, Columns>, Rows> matrix = {};
 			switch (name)
 			{
-				case matrix_name::one:
-					for (size_t ij = 0; ij != Rows; ++ij)
-					{
-						for (size_t index = ij; index != Rows; ++index)
-						{
-							matrix[ij][index] = matrix[index][ij] = value_type(1);
-						}
-					}
-					break;
 				case matrix_name::identity:
 					for (size_t index = 0; index != Rows; ++index)
 					{
@@ -239,19 +232,6 @@ namespace stdx::math
 			}
 			return matrix;
 		}
-		template <class MatrixType>
-		static constexpr std::array<std::array<ValueType, Columns>, Rows> _initialize_matrix(_matrix_expression<MatrixType> const & expression)
-		{
-			std::array<std::array<ValueType, Columns>, Rows> matrix{};
-			for (size_t i = 0; i != Rows; ++i)
-			{
-				for (size_t j = 0; j != Columns; ++j)
-				{
-					matrix[i][j] = expression(i + 1, j + 1);
-				}
-			}
-			return matrix;
-		}
 		
 		std::array<std::array<ValueType, Columns>, Rows> _matrix;
 	};
@@ -291,7 +271,7 @@ namespace stdx::math
 		Matrix1 const & _matrix1;
 		Matrix2 const & _matrix2;
 
-		template <class MatrixType>
+		template <class>
 		friend class _matrix_expression;
 	};
 
@@ -331,12 +311,35 @@ namespace stdx::math
 			// TODO
 			return *this;
 		} */
-
-		constexpr auto operator()(size_t const & i, size_t const & j) const
+	private:
+		constexpr auto matrix() const
 		{
-			return static_cast<MatrixType const &>(*this)(i, j);
+			auto this_matrix = static_cast<MatrixType const &>(*this);
+			std::array<std::array<MatrixType::value_type, MatrixType::columns()>, MatrixType::rows()> matrix = {};
+			for (size_t i = 0; i != MatrixType::rows(); ++i)
+			{
+				for (size_t j = 0; j != MatrixType::columns(); ++j)
+				{
+					matrix[i][j] = this_matrix(i + 1, j + 1);
+				}
+			}
+			return matrix;
 		}
+
+		template <class, size_t, size_t>
+		friend class matrix;
 	};
+}
+
+#endif
+
+//=====
+
+#if defined(STDX_USING_MATH) || defined(STDX_USING_ALL)
+
+namespace stdx
+{
+	using namespace math;
 }
 
 #endif

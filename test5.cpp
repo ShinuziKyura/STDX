@@ -38,33 +38,37 @@ constexpr auto operator "" _n()
 	return stdx::meta::intstring<Chars ...>;
 }
 
+[[maybe_unused]]
+constexpr stdx::math::matrix<int, 2> m1({ 1, 2,
+										  3, 4 });
+[[maybe_unused]]
+constexpr stdx::math::matrix<int, 2> m2({ 1, 2,
+										  3, 4 });
+
 int test5()
 {
 	stdx::unsynced_ios();
 
-	STDX_USING_STOPWATCH(std::chrono::microseconds);
+	STDX_DEFINE_STOPWATCH(std::chrono::microseconds);
 
 	constexpr stdx::math::matrix<int, 9> m0(stdx::math::matrix_name::pascal_upper);
-	[[maybe_unused]]
-	constexpr stdx::math::matrix<int, 2> m1({ 1, 2,
-											  3, 4 });
-	[[maybe_unused]]
-	constexpr stdx::math::matrix<int, 2> m2({ 1, 2,
-											  3, 4 });
+
 //	MSVC can't compile this, G++ can
-//	constexpr stdx::math::matrix m3 = m1 + m2;	
+//	constexpr stdx::math::matrix m3 = m1 + m2;
 //	constexpr auto e = m3(1, 1);
 
 //	On the other hand, MSVC can compile this, while G++ can't
 //	constexpr auto m3 = m1 + m2;
 
-//	Which compiler is right (if any)? 
+//	Which compiler is right (if any)?
 
-	for (size_t i = 1; i <= m1.rows(); ++i)
+	stdx::matrix<int, 2> m4 = m1 + m2;
+
+	for (size_t i = 1; i <= m4.rows(); ++i)
 	{
-		for (size_t j = 1; j <= m1.columns(); ++j)
+		for (size_t j = 1; j <= m4.columns(); ++j)
 		{
-			auto const m = m1(i, j);
+			auto const m = m4(i, j);
 			std::cout << (j != 1 ? (m < 10 ? "  " : " ") : "") << m;
 		}
 		std::cout << std::endl;
