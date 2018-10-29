@@ -2,6 +2,7 @@
 #define STDX_META_HPP
 
 #include <type_traits>
+#include <utility>
 #include <complex>
 #include <atomic>
 
@@ -716,61 +717,37 @@ namespace stdx::meta
 	template <class Type>
 	constexpr bool is_complex_v = is_complex<Type>::value;
 
-		// Addition
-
-	template <auto Y>
-	struct addition
-	{
-		template <auto X>
-		using trait = std::integral_constant<decltype(X + Y), X + Y>;
-	};
-
-		// Subtraction
-
-	template <auto Y>
-	struct subtraction
-	{
-		template <auto X>
-		using trait = std::integral_constant<decltype(X - Y), X - Y>;
-	};
-
-		// Multiplication
-
-	template <auto Y>
-	struct multiplication
-	{
-		using _auto = decltype(Y); // Workaround for VC++ bug
-		template <_auto X>
-		using trait = std::integral_constant<_auto, X * Y>;
-	};
-
-		// Division
-
-	template <auto Y>
-	struct division
-	{
-		using _auto = decltype(Y); // Workaround for VC++ bug
-		template <_auto X>
-		using trait = std::integral_constant<_auto, X / Y>;
-	};
-
 		// Range
 
-	template <auto Min, auto Max>
+	template <auto Min, decltype(Min) Max>
 	struct inside
 	{
-		using _auto = decltype(Min); // Workaround for VC++ bug
-		template <_auto N>
-		using trait = std::bool_constant<Min <= N && N <= Max>;
+		template <decltype(Min) N>
+		using exclusive = std::bool_constant<Min < N && N < Max>;
+		template <decltype(Min) N>
+		using inclusive = std::bool_constant<Min <= N && N <= Max>;
 	};
 
-	template <auto Min, auto Max>
+	template <auto Min, decltype(Min) Max>
 	struct outside
 	{
-		using _auto = decltype(Min); // Workaround for VC++ bug
-		template <_auto N>
-		using trait = std::bool_constant<N < Min || Max < N>;
+		template <decltype(Min) N>
+		using exclusive = std::bool_constant<N < Min || Max < N>;
+		template <decltype(Min) N>
+		using inclusive = std::bool_constant<N <= Min || Max <= N>;
 	};
+
+	template <class, auto>
+	struct _make_integer_sequence;
+
+	template <class Type, Type ... Elements, Type Offset>
+	struct _make_integer_sequence<std::integer_sequence<Type, Elements ...>, Offset>
+	{
+		using _type = std::integer_sequence<Type, (Elements + Offset) ...>;
+	};
+
+	template <class Type, Type Min, Type Max>
+	using make_integer_sequence = typename _make_integer_sequence<std::make_integer_sequence<Type, Type(Max - Min + 1)>, Min>::_type;
 
 		// Conversions
 
@@ -864,7 +841,7 @@ namespace stdx::meta
 	};
 
 	template <class IndexPack>
-	struct _assert_index_values_permutated_pack : std::is_same<IndexPack, constrained_pack<apply_to_value<inside<0, IndexPack::size - 1>::template trait>::template trait, constrained_pack<apply_to_type<std::is_integral>::template trait, IndexPack>>>
+	struct _assert_index_values_permutated_pack : std::is_same<IndexPack, constrained_pack<apply_to_value<inside<0, IndexPack::size - 1>::template inclusive>::template trait, constrained_pack<apply_to_type<std::is_integral>::template trait, IndexPack>>>
 	{
 	};
 

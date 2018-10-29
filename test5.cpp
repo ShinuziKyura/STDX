@@ -18,20 +18,22 @@ struct S // : STDX_POLYMORPHIC_CLASS
 	char c = ' ';
 };
 
-bool test_less(int i)
+namespace
 {
-	bool test = i < 10;
-	std::cout << std::boolalpha << "Evaluated i < 10: " << test << std::endl;
-	return test;
-}
+	bool test_less(int i)
+	{
+		bool test = i < 10;
+		std::cout << std::boolalpha << "Evaluated i < 10: " << test << std::endl;
+		return test;
+	}
 
-bool test_greater(int i)
-{
-	bool test = i > 0;
-	std::cout << std::boolalpha << "Evaluated i > 0: " << test << std::endl;
-	return test;
+	bool test_greater(int i)
+	{
+		bool test = i > 0;
+		std::cout << std::boolalpha << "Evaluated i > 0: " << test << std::endl;
+		return test;
+	}
 }
-
 template <char ... Chars>
 constexpr auto operator "" _n()
 {
@@ -39,11 +41,11 @@ constexpr auto operator "" _n()
 }
 
 [[maybe_unused]]
-constexpr stdx::math::matrix<int, 2> m1({ 1, 2,
-										  3, 4 });
+constexpr stdx::matrix<int, 2> m1({ 1, 2,
+									3, 4 });
 [[maybe_unused]]
-constexpr stdx::math::matrix<int, 2> m2({ 1, 2,
-										  3, 4 });
+constexpr stdx::matrix<int, 2> m2({ 1, 3,
+									2, 4 });
 
 int test5()
 {
@@ -51,29 +53,11 @@ int test5()
 
 	STDX_DEFINE_STOPWATCH(std::chrono::microseconds);
 
-	constexpr stdx::math::matrix<int, 9> m0(stdx::math::matrix_name::pascal_upper);
+//	VC++ can't compile this but G++ can
+//	constexpr stdx::matrix m3 = m1 * m2;
+//	constexpr auto e3 = m3(1, 1);
 
-//	MSVC can't compile this, G++ can
-//	constexpr stdx::math::matrix m3 = m1 + m2;
-//	constexpr auto e = m3(1, 1);
-
-//	On the other hand, MSVC can compile this, while G++ can't
-//	constexpr auto m3 = m1 + m2;
-
-//	Which compiler is right (if any)?
-
-	stdx::matrix<int, 2> m4 = m1 + m2;
-
-	for (size_t i = 1; i <= m4.rows(); ++i)
-	{
-		for (size_t j = 1; j <= m4.columns(); ++j)
-		{
-			auto const m = m4(i, j);
-			std::cout << (j != 1 ? (m < 10 ? "  " : " ") : "") << m;
-		}
-		std::cout << std::endl;
-	}
-	std::cout << std::endl;
+	constexpr bool t1 = m1.is_triangular();
 
 	std::fstream fout("test5.txt", std::ios::out | std::ios::trunc);
 	stdx::stream_traits<std::ostream>::route<stdx::policy::replicate> STDX_SCOPED_VARIABLE(std::cout, fout);
@@ -94,13 +78,13 @@ int test5()
 		std::cout << "Never executed loop!" << std::endl;
 	}
 
-	std::cout << "Elapsed time in while-else loop: " << stopwatch::split() << std::endl << std::endl;
+	std::cout << "Elapsed time in while-else loop: " << stopwatch::stop() << std::endl << std::endl;
 
 	stdx::memzero(s);
 
 #include STDX_DO_WHILE
 
-	stopwatch::split();
+	stopwatch::start();
 
 	do
 	{

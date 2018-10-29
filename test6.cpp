@@ -17,8 +17,8 @@ int test6()
 	std::shared_mutex sh_mtx;
 	stdx::spin_mutex sp_mtx;
 	stdx::shared_spin_mutex sh_sp_mtx;
-	stopwatch::rep_type split = 0;
-	stopwatch::rep_type sp_split = 0;
+	stopwatch::rep_type elapsed = 0;
+	stopwatch::rep_type sp_elapsed = 0;
 
 	// ==============================
 	//             Mutexes
@@ -26,130 +26,130 @@ int test6()
 
 	stopwatch::start();
 	mtx.lock();
-	split = stopwatch::split();
+	elapsed = stopwatch::stop();
 
 	std::cout <<
-		"Elapsed time locking std::mutex: " << split
+		"Elapsed time locking std::mutex: " << elapsed
 	<< std::endl;
 
-	stopwatch::split();
+	stopwatch::start();
 	sp_mtx.lock();
-	sp_split = stopwatch::split();
+	sp_elapsed = stopwatch::stop();
 
 	std::cout << 
-		"Elapsed time locking stdx::spin_mutex: " << sp_split
+		"Elapsed time locking stdx::spin_mutex: " << sp_elapsed
 	<< std::endl;
 
 	std::cout <<
-		(split < sp_split ? "std::mutex" : (split > sp_split ? "stdx::spin_mutex" : "std::mutex and stdx::spin_mutex")) << (split == sp_split ? " are equal\n" : " is faster\n")
+		(elapsed < sp_elapsed ? "std::mutex" : (elapsed > sp_elapsed ? "stdx::spin_mutex" : "std::mutex and stdx::spin_mutex")) << (elapsed == sp_elapsed ? " are equal\n" : " is faster\n")
 	<< std::endl;
 
-	stopwatch::split();
+	stopwatch::start();
 	mtx.unlock();
-	split = stopwatch::split();
+	elapsed = stopwatch::stop();
 
 	std::cout <<
-		"Elapsed time unlocking std::mutex: " << split
+		"Elapsed time unlocking std::mutex: " << elapsed
 	<< std::endl;
 
-	stopwatch::split();
+	stopwatch::start();
 	sp_mtx.unlock();
-	sp_split = stopwatch::split();
+	sp_elapsed = stopwatch::stop();
 
 	std::cout <<
-		"Elapsed time unlocking stdx::spin_mutex: " << sp_split
+		"Elapsed time unlocking stdx::spin_mutex: " << sp_elapsed
 	<< std::endl;
 
 	std::cout <<
-		(split < sp_split ? "std::mutex" : (split > sp_split ? "stdx::spin_mutex" : "std::mutex and stdx::spin_mutex")) << (split == sp_split ? " are equal\n" : " is faster\n")
+		(elapsed < sp_elapsed ? "std::mutex" : (elapsed > sp_elapsed ? "stdx::spin_mutex" : "std::mutex and stdx::spin_mutex")) << (elapsed == sp_elapsed ? " are equal\n" : " is faster\n")
 	<< std::endl;
 
 	// ==============================
 	//   Shared mutexes (exclusive)
 	// ==============================
 
-	stopwatch::split();
+	stopwatch::start();
 	sh_mtx.lock();
-	split = stopwatch::split();
+	elapsed = stopwatch::stop();
 
 	std::cout <<
-		"Elapsed time locking (exclusive) std::shared_mutex: " << split
+		"Elapsed time locking (exclusive) std::shared_mutex: " << elapsed
 	<< std::endl;
 
-	stopwatch::split();
+	stopwatch::start();
 	sh_sp_mtx.lock();
-	sp_split = stopwatch::split();
+	sp_elapsed = stopwatch::stop();
 
 	std::cout <<
-		"Elapsed time locking (exclusive) stdx::shared_spin_mutex: " << sp_split
+		"Elapsed time locking (exclusive) stdx::shared_spin_mutex: " << sp_elapsed
 	<< std::endl;
 
 	std::cout << 
-		(split < sp_split ? "std::shared_mutex" : (split > sp_split ? "stdx::shared_spin_mutex" : "std::shared_mutex and stdx::shared_spin_mutex")) << (split == sp_split ? " are equal\n" : " is faster\n")
+		(elapsed < sp_elapsed ? "std::shared_mutex" : (elapsed > sp_elapsed ? "stdx::shared_spin_mutex" : "std::shared_mutex and stdx::shared_spin_mutex")) << (elapsed == sp_elapsed ? " are equal\n" : " is faster\n")
 	<< std::endl;
 
-	stopwatch::split();
+	stopwatch::start();
 	sh_mtx.unlock();
-	split = stopwatch::split();
+	elapsed = stopwatch::stop();
 
 	std::cout <<
-		"Elapsed time unlocking (exclusive) std::shared_mutex: " << split
+		"Elapsed time unlocking (exclusive) std::shared_mutex: " << elapsed
 	<< std::endl;
 
-	stopwatch::split();
+	stopwatch::start();
 	sh_sp_mtx.unlock();
-	sp_split = stopwatch::split();
+	sp_elapsed = stopwatch::stop();
 
 	std::cout <<
-		"Elapsed time unlocking (exclusive) stdx::shared_spin_mutex: " << sp_split
+		"Elapsed time unlocking (exclusive) stdx::shared_spin_mutex: " << sp_elapsed
 	<< std::endl;
 
 	std::cout << 
-		(split < sp_split ? "std::shared_mutex" : (split > sp_split ? "stdx::shared_spin_mutex" : "std::shared_mutex and stdx::shared_spin_mutex")) << (split == sp_split ? " are equal\n" : " is faster\n")
+		(elapsed < sp_elapsed ? "std::shared_mutex" : (elapsed > sp_elapsed ? "stdx::shared_spin_mutex" : "std::shared_mutex and stdx::shared_spin_mutex")) << (elapsed == sp_elapsed ? " are equal\n" : " is faster\n")
 	<< std::endl;
 
 	// ==============================
 	//     Shared mutexes (shared)
 	// ==============================
 
-	stopwatch::split();
+	stopwatch::start();
 	sh_mtx.lock_shared();
-	split = stopwatch::split();
+	elapsed = stopwatch::stop();
 
 	std::cout <<
-		"Elapsed time locking (shared) std::shared_mutex: " << split
+		"Elapsed time locking (shared) std::shared_mutex: " << elapsed
 	<< std::endl;
 
-	stopwatch::split();
+	stopwatch::start();
 	sh_sp_mtx.lock_shared();
-	sp_split = stopwatch::split();
+	sp_elapsed = stopwatch::stop();
 
 	std::cout <<
-		"Elapsed time locking (shared) stdx::shared_spin_mutex: " << sp_split
+		"Elapsed time locking (shared) stdx::shared_spin_mutex: " << sp_elapsed
 	<< std::endl;
 
 	std::cout <<
-		(split < sp_split ? "std::shared_mutex" : (split > sp_split ? "stdx::shared_spin_mutex" : "std::shared_mutex and stdx::shared_spin_mutex")) << (split == sp_split ? " are equal\n" : " is faster\n")
+		(elapsed < sp_elapsed ? "std::shared_mutex" : (elapsed > sp_elapsed ? "stdx::shared_spin_mutex" : "std::shared_mutex and stdx::shared_spin_mutex")) << (elapsed == sp_elapsed ? " are equal\n" : " is faster\n")
 	<< std::endl;
 
-	stopwatch::split();
+	stopwatch::start();
 	sh_mtx.unlock_shared();
-	split = stopwatch::split();
+	elapsed = stopwatch::stop();
 
 	std::cout <<
-		"Elapsed time unlocking (shared) std::shared_mutex: " << split
+		"Elapsed time unlocking (shared) std::shared_mutex: " << elapsed
 	<< std::endl;
 
-	stopwatch::split();
+	stopwatch::start();
 	sh_sp_mtx.unlock_shared();
-	sp_split = stopwatch::stop();
+	sp_elapsed = stopwatch::stop();
 
 	std::cout <<
-		"Elapsed time unlocking (shared) stdx::shared_spin_mutex: " << sp_split
+		"Elapsed time unlocking (shared) stdx::shared_spin_mutex: " << sp_elapsed
 	<< std::endl;
 
 	std::cout <<
-		(split < sp_split ? "std::shared_mutex" : (split > sp_split ? "stdx::shared_spin_mutex" : "std::shared_mutex and stdx::shared_spin_mutex")) << (split == sp_split ? " are equal\n" : " is faster\n")
+		(elapsed < sp_elapsed ? "std::shared_mutex" : (elapsed > sp_elapsed ? "stdx::shared_spin_mutex" : "std::shared_mutex and stdx::shared_spin_mutex")) << (elapsed == sp_elapsed ? " are equal\n" : " is faster\n")
 	<< std::endl;
 
 	stdx::ignoreline();

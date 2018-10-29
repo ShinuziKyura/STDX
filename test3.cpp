@@ -22,7 +22,7 @@ int test3()
 
 	[[maybe_unused]] stdx::permutated_pack<stdx::pack<short, int, long, long long>, stdx::valpack<1, 3, 0, 2>> t3;
 
-	[[maybe_unused]] stdx::constrained_pack<stdx::apply_to_value<stdx::outside<2, 4>::trait>::trait, stdx::as_pack_val<stdx::valpack<0, 2, 5, 6, 3, 4, 1, 3>>> t4;
+	[[maybe_unused]] stdx::constrained_pack<stdx::apply_to_value<stdx::outside<2, 4>::exclusive>::trait, stdx::as_pack_val<stdx::valpack<0, 2, 5, 6, 3, 4, 1, 3>>> t4;
 
 	[[maybe_unused]] stdx::transformed_pack<std::is_class, stdx::pack<Class, long, unsigned char>> t5;
 
@@ -33,6 +33,8 @@ int test3()
 	using f1 = stdx::bind<ClassTemplate, stdx::placeholders::_3, bool, stdx::placeholders::_1, stdx::placeholders::_1>;
 
 	using r1 = f1::invoke<int, char, double, double, unsigned>;
+
+	[[maybe_unused]] stdx::make_integer_sequence<int, -2, 3> seq;
 
 	stdx::type_if<1 + 2 == 2>::then<
 		int
