@@ -95,7 +95,7 @@ namespace stdx::math
 		template <size_t I, size_t J>
 		constexpr auto submatrix() const
 		{
-			return _matrix_submatrix(static_cast<MatrixType const &>(*this), stdx::meta::val<I>, stdx::meta::val<J>);
+			return _matrix_submatrix(static_cast<MatrixType const &>(*this), std::integral_constant<size_t, I>(), std::integral_constant<size_t, J>());
 		}
 		constexpr bool is_upper_triangular() const
 		{
@@ -437,7 +437,7 @@ namespace stdx::math
 					  "'stdx::math::_matrix_submatrix<Matrix, I, J>': Matrix::rows must be equal to Matrix::columns");
 		static_assert(1 <= I && I <= Matrix::rows && 1 <= J && J <= Matrix::columns,
 					  "'stdx::math::_matrix_submatrix<Matrix, I, J>': I and J must be in the range of [1, Matrix::rows] and [1, Matrix::columns], respectively");
-		constexpr _matrix_submatrix(Matrix const & a, stdx::meta::val<I>, stdx::meta::val<J>) :
+		constexpr _matrix_submatrix(Matrix const & a, std::integral_constant<size_t, I>, std::integral_constant<size_t, J>) :
 			_matrix(a)
 		{
 		}
