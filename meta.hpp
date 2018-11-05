@@ -614,13 +614,13 @@ namespace stdx::meta
 	using fp_literal_t = long double;
 
 	using ssize_t = 
-		type_if<sizeof(size_t) == sizeof(unsigned long long)>::then<
+		type_if<bool(sizeof(size_t) == sizeof(unsigned long long))>::then<
 			long long
-		>::else_if<sizeof(size_t) == sizeof(unsigned long)>::then<
+		>::else_if<bool(sizeof(size_t) == sizeof(unsigned long))>::then<
 			long
-		>::else_if<sizeof(size_t) == sizeof(unsigned int)>::then<
+		>::else_if<bool(sizeof(size_t) == sizeof(unsigned int))>::then<
 			int
-		>::else_if<sizeof(size_t) == sizeof(unsigned short)>::then<
+		>::else_if<bool(sizeof(size_t) == sizeof(unsigned short))>::then<
 			short
 		>::else_then<
 			char

@@ -110,7 +110,7 @@ namespace stdx::math
 		{
 			return _matrix_transposition(static_cast<MatrixType const &>(*this));
 		}
-		constexpr auto permutate() const // May be temporary
+		constexpr auto permutate() const
 		{
 			return _matrix_permutation(static_cast<MatrixType const &>(*this), _permutate());
 		}
@@ -147,7 +147,7 @@ namespace stdx::math
 			return _determinant(stdx::meta::make_integer_sequence<size_t, 1, MatrixType::columns>());
 		}
 	protected:
-		template <size_t Column = 0, size_t Rows = MatrixType::rows>
+		template <size_t I = 0, size_t Rows = MatrixType::rows>
 		constexpr auto _permutate(std::array<size_t, Rows> permutation = {}) const
 		{
 			auto max = std::numeric_limits<typename MatrixType::value_type>::lowest();
@@ -162,22 +162,22 @@ namespace stdx::math
 				}
 			}
 
-			permutation[Column] = max_i;
+			permutation[I] = max_i;
 
-			for (stdx::meta::ssize_t idx = Column - 1; idx >= 0; --idx)
+			if constexpr (I + 2 < Rows)
 			{
-				if (permutation[idx] <= permutation[Column])
-				{
-					++permutation[Column];
-				}
-			}
-
-			if constexpr (Column + 1 < Rows)
-			{
-				return submatrix(max_i, 1)._permutate<Column + 1>(permutation);
+				return submatrix(max_i, 1)._permutate<I + 1>(permutation);
 			}
 			else
 			{
+				permutation[I + 1] = 1;
+				for (stdx::meta::ssize_t idx1 = I + 1; idx1 >= 0; --idx1)
+				{
+					for (stdx::meta::ssize_t idx2 = idx1 - 1; idx2 >= 0; --idx2)
+					{
+						permutation[idx1] += size_t(permutation[idx2] <= permutation[idx1]);
+					}
+				}
 				return permutation;
 			}
 		}

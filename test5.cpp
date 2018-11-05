@@ -41,11 +41,11 @@ constexpr auto operator "" _n()
 }
 
 [[maybe_unused]]
-constexpr stdx::matrix<int, 3> m1({ 1, 2, 3,
+constexpr stdx::matrix<int, 3> A1({ 1, 2, 3,
 									4, 5, 6,
 									7, 8, 9 });
 [[maybe_unused]]
-constexpr stdx::matrix<int, 3> m2({ 1, 2, 3,
+constexpr stdx::matrix<int, 3> A2({ 1, 2, 3,
 									4, 5, 6,
 									7, 8, 9 });
 
@@ -55,11 +55,21 @@ int test5()
 
 	STDX_DEFINE_STOPWATCH(std::chrono::microseconds);
 
-	constexpr auto pm = m1.permutate();
+	stdx::matrix P1 = A1.permutate();
 
 //	VC++ can't compile this but G++ can
 //	constexpr stdx::matrix m3 = m1 * m2;
 //	constexpr auto e3 = m3(1, 1);
+
+	for (size_t i = 1; i <= P1.rows; ++i)
+	{
+		for (size_t j = 1; j <= P1.columns; ++j)
+		{
+			std::cout << P1(i, j) << " ";
+		}
+		std::cout << std::endl;
+	}
+	std::cout << std::endl;
 
 	std::fstream fout("test5.txt", std::ios::out | std::ios::trunc);
 
