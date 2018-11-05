@@ -41,11 +41,13 @@ constexpr auto operator "" _n()
 }
 
 [[maybe_unused]]
-constexpr stdx::matrix<int, 2> m1({ 1, 2,
-									3, 4 });
+constexpr stdx::matrix<int, 3> m1({ 1, 2, 3,
+									4, 5, 6,
+									7, 8, 9 });
 [[maybe_unused]]
-constexpr stdx::matrix<int, 2> m2({ 1, 3,
-									2, 4 });
+constexpr stdx::matrix<int, 3> m2({ 1, 2, 3,
+									4, 5, 6,
+									7, 8, 9 });
 
 int test5()
 {
@@ -53,14 +55,15 @@ int test5()
 
 	STDX_DEFINE_STOPWATCH(std::chrono::microseconds);
 
+	constexpr auto pm = m1.permutate();
+
 //	VC++ can't compile this but G++ can
 //	constexpr stdx::matrix m3 = m1 * m2;
 //	constexpr auto e3 = m3(1, 1);
 
-	constexpr bool t1 = m1.is_triangular();
-
 	std::fstream fout("test5.txt", std::ios::out | std::ios::trunc);
-	stdx::stream_traits<std::ostream>::route<stdx::policy::replicate> STDX_SCOPED_VARIABLE(std::cout, fout);
+
+	STDX_SCOPED_VARIABLE(stdx::streamroute<std::ostream, stdx::policy::replicate>(std::cout, fout));
 
 	S s;
 	int i = 0;

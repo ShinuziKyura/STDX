@@ -6,8 +6,14 @@
 
 #include "language.hpp"
 
+#if defined(__COUNTER__)
+#define STDX_COUNTER __COUNTER__
+#else
+#define STDX_COUNTER __LINE__
+#endif
+
 // Declares an anonymous variable whose lifetime is limited to the scope where it is declared; should be declared only inside functions or at the global scope, one per line
-#define STDX_SCOPED_VARIABLE(...) STDX_CONCATENATE(STDX_SCOPED_VARIABLE_, __LINE__)(__VA_ARGS__); static_cast<void>(STDX_CONCATENATE(STDX_SCOPED_VARIABLE_, __LINE__))
+#define STDX_SCOPED_VARIABLE(...) [[maybe_unused]] auto STDX_CONCATENATE(STDX_VARIABLE_, STDX_COUNTER)(__VA_ARGS__)
 
 // Marks a class as polymorphic; should be declared in base clause of the class
 #define STDX_POLYMORPHIC_CLASS protected virtual stdx::_polymorphic

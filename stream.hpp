@@ -23,13 +23,12 @@ namespace stdx::stream
 		return osyncstream;
 	}
 
-	// Is thread_local necessary?
-	thread_local inline auto csout = _initialize_osyncstream(std::cout);
-	thread_local inline auto wcsout = _initialize_osyncstream(std::wcout);
-	thread_local inline auto cserr = _initialize_osyncstream(std::cerr);
-	thread_local inline auto wcserr = _initialize_osyncstream(std::wcerr);
-	thread_local inline auto cslog = _initialize_osyncstream(std::clog);
-	thread_local inline auto wcslog = _initialize_osyncstream(std::wclog);
+	inline auto csout = _initialize_osyncstream(std::cout);
+	inline auto wcsout = _initialize_osyncstream(std::wcout);
+	inline auto cserr = _initialize_osyncstream(std::cerr);
+	inline auto wcserr = _initialize_osyncstream(std::wcerr);
+	inline auto cslog = _initialize_osyncstream(std::clog);
+	inline auto wcslog = _initialize_osyncstream(std::wclog);
 #endif
 
 	// Multibuf
@@ -203,68 +202,62 @@ namespace stdx::stream
 		struct redirect;
 	}
 
+	template <class, class>
+	class streamroute;
+
 	template <class StreamType>
-	struct stream_traits
+	class streamroute<StreamType, policy::replicate>
 	{
-		template <class>
-		class route;
+		static_assert(std::is_base_of_v<std::basic_ostream<typename StreamType::char_type, typename StreamType::traits_type>, StreamType>,
+					  "'stdx::stream::streamroute<StreamType, policy::replicate>': StreamType must be of type std::basic_ostream or derived from it");
 
-		template <>
-		class route<policy::replicate>
+		using streambuf_type = std::decay_t<decltype(*std::declval<StreamType>().rdbuf())>;
+	public:
+		template <class ... OutstreamTypes>
+		streamroute(StreamType & source, OutstreamTypes & ... destination) :
+			_source(source),
+			_buffer(source.rdbuf(new multibuf(source.rdbuf(), destination.rdbuf() ...)))
 		{
-			static_assert(std::is_base_of_v<stdx::meta::apply_type_parameters<std::basic_ostream, StreamType>, StreamType>,
-						  "'stdx::stream::stream_traits<StreamType>::route<policy::replicate>': StreamType must be an instance of or derived from type std::basic_ostream");
-
-			using stream_type = std::decay_t<StreamType>;
-			using streambuf_type = std::decay_t<decltype(*std::declval<StreamType>().rdbuf())>;
-		public:
-			template <class ... OstreamTypes>
-			route(stream_type & source, OstreamTypes & ... destination) :
-				_source(source),
-				_buffer(source.rdbuf(new multibuf(source.rdbuf(), destination.rdbuf() ...)))
-			{
-				static_assert(stdx::meta::conjunction<stdx::meta::bind<std::is_base_of, stdx::meta::apply_type_parameters<std::basic_ostream, StreamType>, stdx::meta::placeholders::_1>::invoke>::template trait<OstreamTypes ...>::value,
-							  "'stdx::stream::stream_traits<StreamType>::route<policy::replicate>::route(StreamType &, OstreamTypes & ...)': OstreamTypes must be of type or derived of type StreamType");
-			}
-			route(route const &) = delete;
-			route & operator=(route const &) = delete;
-			route(route &&) = delete;
-			route & operator=(route &&) = delete;
-			~route() noexcept
-			{
-				delete _source.rdbuf(_buffer);
-			}
-		private:
-			stream_type & _source;
-			streambuf_type * _buffer;
-		};
-
-		template <>
-		class route<policy::redirect>
+			static_assert(stdx::meta::conjunction<stdx::meta::bind<std::is_base_of, StreamType, stdx::meta::placeholders::_1>::invoke>::template trait<OutstreamTypes ...>::value,
+							"'stdx::stream::streamroute<StreamType, policy::replicate>::streamroute(StreamType &, OutstreamTypes & ...)': OstreamTypes must be an instance of or derived from type StreamType");
+		}
+		streamroute(streamroute const &) = delete;
+		streamroute & operator=(streamroute const &) = delete;
+		streamroute(streamroute &&) = delete;
+		streamroute & operator=(streamroute &&) = delete;
+		~streamroute() noexcept
 		{
-			static_assert(std::is_base_of_v<stdx::meta::apply_type_parameters<std::basic_ios, StreamType>, StreamType>,
-						  "'stdx::stream::stream_traits<StreamType>::route<policy::redirect>': StreamType must be an instance of or derived from type std::basic_ios");
+			delete _source.rdbuf(_buffer);
+		}
+	private:
+		StreamType & _source;
+		streambuf_type * _buffer;
+	};
 
-			using stream_type = std::decay_t<StreamType>;
-			using streambuf_type = std::decay_t<decltype(*std::declval<StreamType>().rdbuf())>;
-		public:
-			route(stream_type & source, stream_type & destination) :
-				_source(source),
-				_buffer(source.rdbuf(destination.rdbuf()))
-			{
-			}
-			route(route const &) = delete;
-			route & operator=(route const &) = delete;
-			route(route &&) = delete;
-			route & operator=(route &&) = delete;
-			~route() noexcept
-			{
-				_source.rdbuf(_buffer);
-			}
-		private:
-			stream_type & _source;
-			streambuf_type * _buffer;
-		};
+	template <class StreamType>
+	class streamroute<StreamType, policy::redirect>
+	{
+		static_assert(std::is_base_of_v<std::basic_ios<typename StreamType::char_type, typename StreamType::traits_type>, StreamType>,
+					  "'stdx::stream::streamroute<StreamType, policy::redirect>': StreamType must be of type std::basic_ios or derived from it");
+
+		using streambuf_type = std::decay_t<decltype(*std::declval<StreamType>().rdbuf())>;
+	public:
+		streamroute(StreamType & source, StreamType & destination) :
+			_source(source),
+			_buffer(source.rdbuf(destination.rdbuf()))
+		{
+		}
+		streamroute(streamroute const &) = delete;
+		streamroute & operator=(streamroute const &) = delete;
+		streamroute(streamroute &&) = delete;
+		streamroute & operator=(streamroute &&) = delete;
+		~streamroute() noexcept
+		{
+			_source.rdbuf(_buffer);
+		}
+	private:
+		StreamType & _source;
+		streambuf_type * _buffer;
 	};
 }
 

@@ -4,7 +4,7 @@
 #include <limits>
 #include <array>
 
-#include "meta.hpp"
+#include "meta.hpp" // Consider including necessary metafunctions only
 
 namespace stdx::math
 {
@@ -68,6 +68,24 @@ namespace stdx::math
 		lehmer,
 	};
 
+	template <class, class>
+	class _matrix_addition;
+	
+	template <class, class>
+	class _matrix_subtraction;
+	
+	template <class, class>
+	class _matrix_multiplication;
+	
+	template <class>
+	class _matrix_transposition;
+
+	template <class>
+	class _matrix_permutation;
+	
+	template <class>
+	class _matrix_submatrix;
+
 	template <class MatrixType>
 	class _matrix_expression
 	{
@@ -87,16 +105,20 @@ namespace stdx::math
 		{
 			return _matrix_multiplication(static_cast<MatrixType const &>(*this), static_cast<OtherMatrixType const &>(other));
 		}
-		constexpr auto operator!() const
+
+		constexpr auto transpose() const
 		{
 			return _matrix_transposition(static_cast<MatrixType const &>(*this));
 		}
-
-		template <size_t I, size_t J>
-		constexpr auto submatrix() const
+		constexpr auto permutate() const // May be temporary
 		{
-			return _matrix_submatrix(static_cast<MatrixType const &>(*this), std::integral_constant<size_t, I>(), std::integral_constant<size_t, J>());
+			return _matrix_permutation(static_cast<MatrixType const &>(*this), _permutate());
 		}
+		constexpr auto submatrix(size_t const & i, size_t const & j) const
+		{
+			return _matrix_submatrix(static_cast<MatrixType const &>(*this), i, j);
+		}
+
 		constexpr bool is_upper_triangular() const
 		{
 			static_assert(MatrixType::rows == MatrixType::columns,
@@ -120,39 +142,77 @@ namespace stdx::math
 			// Applying ri  -> a*ri has the effect of multiplying det(A) by a.
 			// Applying ri  -> ri + a*rj has no effect on det(A).
 			// Applying ri <-> rj has the effect of multiplying det(A) by -1.
+
+			// Use different method/overload depending on type of MatrixType
 			return _determinant(stdx::meta::make_integer_sequence<size_t, 1, MatrixType::columns>());
 		}
+	protected:
+		template <size_t Column = 0, size_t Rows = MatrixType::rows>
+		constexpr auto _permutate(std::array<size_t, Rows> permutation = {}) const
+		{
+			auto max = std::numeric_limits<typename MatrixType::value_type>::lowest();
+			size_t max_i = 0;
+
+			for (size_t i = 1; i <= MatrixType::rows; ++i)
+			{
+				if (auto element = static_cast<MatrixType const &>(*this)(i, 1); element > max)
+				{
+					max = element;
+					max_i = i;
+				}
+			}
+
+			permutation[Column] = max_i;
+
+			for (stdx::meta::ssize_t idx = Column - 1; idx >= 0; --idx)
+			{
+				if (permutation[idx] <= permutation[Column])
+				{
+					++permutation[Column];
+				}
+			}
+
+			if constexpr (Column + 1 < Rows)
+			{
+				return submatrix(max_i, 1)._permutate<Column + 1>(permutation);
+			}
+			else
+			{
+				return permutation;
+			}
+		}
 	private:
-		template <size_t J, size_t ... IJ>
-		constexpr bool _is_upper_triangular(std::index_sequence<J, IJ ...>) const
+		template <size_t J, size_t ... I>
+		constexpr bool _is_upper_triangular(std::index_sequence<J, I ...>) const
 		{
-			return (... && (static_cast<MatrixType const &>(*this)(IJ, J) == 0)) && _is_upper_triangular(std::index_sequence<IJ ...>());
+			return (... && (static_cast<MatrixType const &>(*this)(I, J) == 0)) && _is_upper_triangular(std::index_sequence<I ...>());
 		}
-		template <size_t Rows>
-		constexpr bool _is_upper_triangular(std::index_sequence<Rows>) const
-		{
-			return true;
-		}
-		template <size_t I, size_t ... IJ>
-		constexpr bool _is_lower_triangular(std::index_sequence<I, IJ ...>) const
-		{
-			return (... && (static_cast<MatrixType const &>(*this)(I, IJ) == 0)) && _is_lower_triangular(std::index_sequence<IJ ...>());
-		}
-		template <size_t Columns>
-		constexpr bool _is_lower_triangular(std::index_sequence<Columns>) const
+		template <size_t J>
+		constexpr bool _is_upper_triangular(std::index_sequence<J>) const
 		{
 			return true;
 		}
-		// WARNING: Uses cofactor expansion, which has a time complexity for n*n matrices of O(n!); will be improved once LU decomposition is implemented
+		template <size_t I, size_t ... J>
+		constexpr bool _is_lower_triangular(std::index_sequence<I, J ...>) const
+		{
+			return (... && (static_cast<MatrixType const &>(*this)(I, J) == 0)) && _is_lower_triangular(std::index_sequence<J ...>());
+		}
+		template <size_t I>
+		constexpr bool _is_lower_triangular(std::index_sequence<I>) const
+		{
+			return true;
+		}
+		// WARNING: Uses cofactor expansion, which has a time complexity for n*n matrices of O(n!); will be improved once LU decomposition is implemented (maybe maintain this method for matrices up to size 4)
 		template <size_t ... J>
 		constexpr auto _determinant(std::index_sequence<J ...>) const
 		{
-			return ((static_cast<MatrixType const &>(*this)(1, J) * submatrix<1, J>().determinant()) - ... - typename MatrixType::value_type(0));
+			return ((static_cast<MatrixType const &>(*this)(1, J) * submatrix(1, J).determinant()) - ... - typename MatrixType::value_type(0));
 		}
 		constexpr auto _determinant(std::index_sequence<1>) const
 		{
 			return static_cast<MatrixType const &>(*this)(1, 1);
 		}
+		
 /*		template <size_t ... IJ>
 		auto _determinant(std::index_sequence<IJ ...>)
 		{
@@ -324,8 +384,8 @@ namespace stdx::math
 					  "'stdx::math::_matrix_addition<Matrix1, Matrix2>': Matrix1 and Matrix2 must have the same dimensions");
 	
 		constexpr _matrix_addition(Matrix1 const & a, Matrix2 const & b) :
-			_matrix1(a),
-			_matrix2(b)
+			_a(a),
+			_b(b)
 		{
 		}
 	public:
@@ -335,11 +395,11 @@ namespace stdx::math
 
 		constexpr value_type operator()(size_t const & i, size_t const & j) const
 		{
-			return _matrix1(i, j) + _matrix2(i, j);
+			return _a(i, j) + _b(i, j);
 		}
 	private:
-		Matrix1 const & _matrix1;
-		Matrix2 const & _matrix2;
+		Matrix1 const & _a;
+		Matrix2 const & _b;
 
 		template <class>
 		friend class _matrix_expression;
@@ -352,8 +412,8 @@ namespace stdx::math
 					  "'stdx::math::_matrix_subtraction<Matrix1, Matrix2>': Matrix1 and Matrix2 must have the same dimensions");
 
 		constexpr _matrix_subtraction(Matrix1 const & a, Matrix2 const & b) :
-			_matrix1(a),
-			_matrix2(b)
+			_a(a),
+			_b(b)
 		{
 		}
 	public:
@@ -363,11 +423,11 @@ namespace stdx::math
 
 		constexpr value_type operator()(size_t const & i, size_t const & j) const
 		{
-			return _matrix1(i, j) - _matrix2(i, j);
+			return _a(i, j) - _b(i, j);
 		}
 	private:
-		Matrix1 const & _matrix1;
-		Matrix2 const & _matrix2;
+		Matrix1 const & _a;
+		Matrix2 const & _b;
 
 		template <class>
 		friend class _matrix_expression;
@@ -380,8 +440,8 @@ namespace stdx::math
 					  "'stdx::math::_matrix_multiplication<Matrix1, Matrix2>': Matrix1::columns() must equal Matrix2::rows()");
 
 		constexpr _matrix_multiplication(Matrix1 const & a, Matrix2 const & b) :
-			_matrix1(a),
-			_matrix2(b)
+			_a(a),
+			_b(b)
 		{
 		}
 	public:
@@ -397,11 +457,11 @@ namespace stdx::math
 		template <size_t ... IJ>
 		constexpr value_type _dot_product(size_t const & i, size_t const & j, std::index_sequence<IJ ...>) const
 		{
-			return (value_type(0) + ... + (_matrix1(i, IJ) * _matrix2(IJ, j)));
+			return (value_type(0) + ... + (_a(i, IJ) * _b(IJ, j)));
 		}
 
-		Matrix1 const & _matrix1;
-		Matrix2 const & _matrix2;
+		Matrix1 const & _a;
+		Matrix2 const & _b;
 
 		template <class>
 		friend class _matrix_expression;
@@ -411,7 +471,7 @@ namespace stdx::math
 	class _matrix_transposition : public _matrix_expression<_matrix_transposition<Matrix>>
 	{
 		constexpr _matrix_transposition(Matrix const & a) :
-			_matrix(a)
+			_a(a)
 		{
 		}
 	public:
@@ -421,25 +481,52 @@ namespace stdx::math
 
 		constexpr value_type const & operator()(size_t const & i, size_t const & j) const
 		{
-			return _matrix(j, i);
+			return _a(j, i);
 		}
 	private:
-		Matrix const & _matrix;
+		Matrix const & _a;
 
 		template <class>
 		friend class _matrix_expression;
 	};
 
-	template <class Matrix, size_t I, size_t J>
-	class _matrix_submatrix : public _matrix_expression<_matrix_submatrix<Matrix, I, J>>
+	template <class Matrix>
+	class _matrix_permutation : public _matrix_expression<_matrix_permutation<Matrix>>
 	{
-		static_assert(Matrix::rows == Matrix::columns,
-					  "'stdx::math::_matrix_submatrix<Matrix, I, J>': Matrix::rows must be equal to Matrix::columns");
-		static_assert(1 <= I && I <= Matrix::rows && 1 <= J && J <= Matrix::columns,
-					  "'stdx::math::_matrix_submatrix<Matrix, I, J>': I and J must be in the range of [1, Matrix::rows] and [1, Matrix::columns], respectively");
-		constexpr _matrix_submatrix(Matrix const & a, std::integral_constant<size_t, I>, std::integral_constant<size_t, J>) :
-			_matrix(a)
+		constexpr _matrix_permutation(Matrix const & a, std::array<size_t, Matrix::rows> const & p) :
+			_a(a),
+			_p(p)
 		{
+		}
+	public:
+		using value_type = typename Matrix::value_type;
+		static constexpr size_t rows = Matrix::columns;
+		static constexpr size_t columns = Matrix::rows;
+
+		constexpr value_type const & operator()(size_t const & i, size_t const & j) const
+		{
+			return _a(_p[i - 1], j);
+		}
+	private:
+		Matrix const & _a;
+		std::array<size_t, Matrix::rows> const _p;
+
+		template <class>
+		friend class _matrix_expression;
+	};
+
+	template <class Matrix>
+	class _matrix_submatrix : public _matrix_expression<_matrix_submatrix<Matrix>>
+	{
+		constexpr _matrix_submatrix(Matrix const & a, size_t const & i, size_t const & j) :
+			_a(a),
+			_i(i),
+			_j(j)
+		{
+			if (i == 0 || j == 0 || i > Matrix::rows || j > Matrix::columns)
+			{
+				throw std::invalid_argument("'stdx::math::_matrix_submatrix<Matrix>::_matrix_submatrix(m, i, j)': i and j must be in the range of [1, Matrix::rows] and [1, Matrix::columns], respectively");
+			}
 		}
 	public:
 		using value_type = typename Matrix::value_type;
@@ -448,10 +535,12 @@ namespace stdx::math
 
 		constexpr value_type const & operator()(size_t const & i, size_t const & j) const
 		{
-			return _matrix(i + size_t(i >= I), j + size_t(j >= J));
+			return _a(i + size_t(i >= _i), j + size_t(j >= _j));
 		}
 	private:
-		Matrix const & _matrix;
+		Matrix const & _a;
+		size_t const _i;
+		size_t const _j;
 
 		template <class>
 		friend class _matrix_expression;
