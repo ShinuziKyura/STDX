@@ -171,9 +171,9 @@ namespace stdx::math
 			else
 			{
 				permutation[I + 1] = 1;
-				for (stdx::meta::ssize_t idx1 = I + 1; idx1 >= 0; --idx1)
+				for (size_t idx1 = I + 1; idx1 > 0; --idx1)
 				{
-					for (stdx::meta::ssize_t idx2 = idx1 - 1; idx2 >= 0; --idx2)
+					for (size_t idx2 = idx1 - 1; idx2 > 0; --idx2)
 					{
 						permutation[idx1] += size_t(permutation[idx2] <= permutation[idx1]);
 					}
