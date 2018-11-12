@@ -49,7 +49,6 @@ namespace stdx::mutex
 			_current_mutex = _previous_mutex;
 			_mutex.unlock();
 		}
-
 	private:
 		void _check_next_mutex()
 		{

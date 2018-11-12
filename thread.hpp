@@ -15,8 +15,11 @@
 #pragma warning(disable: 4611)
 #pragma warning(disable: 4715)
 #else
+// TODO suppress warnings for other compilers
 #endif
 #endif
+
+// IDEA see https://stackoverflow.com/questions/18542804/global-static-initialization-threading
 
 // Checks if previous invoke returned without jumping
 #define STDX_THREAD_JUMP_CHECK_INVOKE() \
