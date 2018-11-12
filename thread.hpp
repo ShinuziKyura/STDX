@@ -33,7 +33,7 @@
 #define STDX_THREAD_JUMP_CHECK_RETURN() \
 []\
 {\
-	return !::stdx::thread::_ttable::access(std::this_thread::get_id())._stack.empty();\
+	return !::stdx::thread::_ttable::access(std::this_thread::get_id())._context.empty();\
 }\
 ()
 
@@ -41,33 +41,31 @@
 #define STDX_THREAD_JUMP_INVOKE(...) \
 [&] () -> decltype(__VA_ARGS__)\
 {\
-	auto & thread = ::stdx::thread::_ttable::access(std::this_thread::get_id());\
-	switch (int status = setjmp(thread._stack.emplace()))\
+	auto & STDX_CONCATENATE(STDX_THREAD_JUMP_INVOKE_THREAD_VARIABLE_, __LINE__) = ::stdx::thread::_ttable::access(std::this_thread::get_id());\
+	switch (int STDX_CONCATENATE(STDX_THREAD_JUMP_INVOKE_STATUS_VARIABLE_, __LINE__) = setjmp(STDX_CONCATENATE(STDX_THREAD_JUMP_INVOKE_THREAD_VARIABLE_, __LINE__)._context.emplace()))\
 	{\
 		case 0:\
 		{\
-			thread._status = 0;\
-			auto && ret = __VA_ARGS__;\
-			thread._stack.pop();\
-			return ret;\
+			STDX_CONCATENATE(STDX_THREAD_JUMP_INVOKE_THREAD_VARIABLE_, __LINE__)._status = 0;\
+			return __VA_ARGS__;\
 		}\
 		default:\
 		{\
-			thread._status = status;\
-			thread._stack.pop();\
+			STDX_CONCATENATE(STDX_THREAD_JUMP_INVOKE_THREAD_VARIABLE_, __LINE__)._status = STDX_CONCATENATE(STDX_THREAD_JUMP_INVOKE_STATUS_VARIABLE_, __LINE__);\
 		}\
 	}\
 }\
-()
+();\
+::stdx::thread::_ttable::access(std::this_thread::get_id())._context.pop()
 
 // Returns execution to last point in stack without returning from current function
 #define STDX_THREAD_JUMP_RETURN(...) \
-[] (int status = 0)\
+[] (int STDX_CONCATENATE(STDX_THREAD_JUMP_RETURN_STATUS_VARIABLE_, __LINE__) = 0)\
 {\
-	auto & thread = ::stdx::thread::_ttable::access(std::this_thread::get_id());\
-	if (!thread._stack.empty())\
+	auto & STDX_CONCATENATE(STDX_THREAD_JUMP_RETURN_THREAD_VARIABLE_, __LINE__) = ::stdx::thread::_ttable::access(std::this_thread::get_id());\
+	if (!STDX_CONCATENATE(STDX_THREAD_JUMP_RETURN_THREAD_VARIABLE_, __LINE__)._context.empty())\
 	{\
-		std::longjmp(thread._stack.top(), status);\
+		std::longjmp(STDX_CONCATENATE(STDX_THREAD_JUMP_RETURN_THREAD_VARIABLE_, __LINE__)._context.top(), STDX_CONCATENATE(STDX_THREAD_JUMP_RETURN_STATUS_VARIABLE_, __LINE__));\
 	}\
 }\
 (__VA_ARGS__)
@@ -78,7 +76,7 @@ namespace stdx::thread
 	{
 		struct _tjump //_thread_state
 		{
-			std::stack<std::jmp_buf> _stack;
+			std::stack<std::jmp_buf> _context;
 			int _status = 0;
 		};
 	public:

@@ -40,6 +40,14 @@ constexpr _index operator,(int const & lhs, _index const & rhs)
 
 */
 
+namespace
+{
+	void func()
+	{
+		stdx::ignoreline();
+	}
+}
+
 int b = 5;
 
 int & a(int count)
@@ -60,12 +68,12 @@ int test8()
 	while (count != 9)
 	{
 		int & b_ref = STDX_THREAD_JUMP_INVOKE(a(++count));
-
+		
 		if (STDX_THREAD_JUMP_CHECK_INVOKE())
 			std::cout << "b(" << b_ref << ")\n";
 	}
 
-	stdx::ignoreline();
+	STDX_THREAD_JUMP_INVOKE(func());
 
 	return 0;
 }
