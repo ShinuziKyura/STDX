@@ -171,6 +171,7 @@ namespace stdx::math
 			else
 			{
 				permutation[I + 1] = 1;
+
 				for (size_t idx1 = I + 1; idx1 > 0; --idx1)
 				{
 					for (size_t idx2 = idx1 - 1; idx2 > 0; --idx2)
@@ -178,6 +179,7 @@ namespace stdx::math
 						permutation[idx1] += size_t(permutation[idx2] <= permutation[idx1]);
 					}
 				}
+
 				return permutation;
 			}
 		}
@@ -213,11 +215,11 @@ namespace stdx::math
 			return static_cast<MatrixType const &>(*this)(1, 1);
 		}
 		
-/*		template <size_t ... IJ>
+	/*	template <size_t ... IJ>
 		auto _determinant(std::index_sequence<IJ ...>)
 		{
 			return (... * static_cast<MatrixType const &>(*this)(IJ, IJ));
-		} */
+		}	*/
 	};
 
 	template <class ValueType, size_t Rows, size_t Columns = Rows>
@@ -377,81 +379,81 @@ namespace stdx::math
 	template <class MatrixType>
 	matrix(_matrix_expression<MatrixType>) -> matrix<typename MatrixType::value_type, MatrixType::rows, MatrixType::columns>;
 
-	template <class Matrix1, class Matrix2>
-	class _matrix_addition : public _matrix_expression<_matrix_addition<Matrix1, Matrix2>>
+	template <class MatrixType1, class MatrixType2>
+	class _matrix_addition : public _matrix_expression<_matrix_addition<MatrixType1, MatrixType2>>
 	{
-		static_assert(Matrix1::rows == Matrix2::rows && Matrix1::columns == Matrix2::columns, 
+		static_assert(MatrixType1::rows == MatrixType2::rows && MatrixType1::columns == MatrixType2::columns, 
 					  "'stdx::math::_matrix_addition<Matrix1, Matrix2>': Matrix1 and Matrix2 must have the same dimensions");
 	
-		constexpr _matrix_addition(Matrix1 const & a, Matrix2 const & b) :
+		constexpr _matrix_addition(MatrixType1 const & a, MatrixType2 const & b) :
 			_a(a),
 			_b(b)
 		{
 		}
 	public:
-		using value_type = decltype(typename Matrix1::value_type() + typename Matrix2::value_type());
-		static constexpr size_t rows = Matrix1::rows;
-		static constexpr size_t columns = Matrix1::columns;
+		using value_type = decltype(typename MatrixType1::value_type() + typename MatrixType2::value_type());
+		static constexpr size_t rows = MatrixType1::rows;
+		static constexpr size_t columns = MatrixType1::columns;
 
 		constexpr value_type operator()(size_t const & i, size_t const & j) const
 		{
 			return _a(i, j) + _b(i, j);
 		}
 	private:
-		Matrix1 const & _a;
-		Matrix2 const & _b;
+		MatrixType1 const & _a;
+		MatrixType2 const & _b;
 
 		template <class>
 		friend class _matrix_expression;
 	};
 
-	template <class Matrix1, class Matrix2>
-	class _matrix_subtraction : public _matrix_expression<_matrix_subtraction<Matrix1, Matrix2>>
+	template <class MatrixType1, class MatrixType2>
+	class _matrix_subtraction : public _matrix_expression<_matrix_subtraction<MatrixType1, MatrixType2>>
 	{
-		static_assert(Matrix1::rows == Matrix2::rows && Matrix1::columns == Matrix2::columns,
+		static_assert(MatrixType1::rows == MatrixType2::rows && MatrixType1::columns == MatrixType2::columns,
 					  "'stdx::math::_matrix_subtraction<Matrix1, Matrix2>': Matrix1 and Matrix2 must have the same dimensions");
 
-		constexpr _matrix_subtraction(Matrix1 const & a, Matrix2 const & b) :
+		constexpr _matrix_subtraction(MatrixType1 const & a, MatrixType2 const & b) :
 			_a(a),
 			_b(b)
 		{
 		}
 	public:
-		using value_type = decltype(typename Matrix1::value_type() - typename Matrix2::value_type());
-		static constexpr size_t rows = Matrix1::rows;
-		static constexpr size_t columns = Matrix1::columns;
+		using value_type = decltype(typename MatrixType1::value_type() - typename MatrixType2::value_type());
+		static constexpr size_t rows = MatrixType1::rows;
+		static constexpr size_t columns = MatrixType1::columns;
 
 		constexpr value_type operator()(size_t const & i, size_t const & j) const
 		{
 			return _a(i, j) - _b(i, j);
 		}
 	private:
-		Matrix1 const & _a;
-		Matrix2 const & _b;
+		MatrixType1 const & _a;
+		MatrixType2 const & _b;
 
 		template <class>
 		friend class _matrix_expression;
 	};
 
-	template <class Matrix1, class Matrix2>
-	class _matrix_multiplication : public _matrix_expression<_matrix_multiplication<Matrix1, Matrix2>>
+	template <class MatrixType1, class MatrixType2>
+	class _matrix_multiplication : public _matrix_expression<_matrix_multiplication<MatrixType1, MatrixType2>>
 	{
-		static_assert(Matrix1::columns == Matrix2::rows,
+		static_assert(MatrixType1::columns == MatrixType2::rows,
 					  "'stdx::math::_matrix_multiplication<Matrix1, Matrix2>': Matrix1::columns() must equal Matrix2::rows()");
 
-		constexpr _matrix_multiplication(Matrix1 const & a, Matrix2 const & b) :
+		constexpr _matrix_multiplication(MatrixType1 const & a, MatrixType2 const & b) :
 			_a(a),
 			_b(b)
 		{
 		}
 	public:
-		using value_type = decltype((typename Matrix1::value_type() * typename Matrix2::value_type()) + (typename Matrix1::value_type() * typename Matrix2::value_type()));
-		static constexpr size_t rows = Matrix1::rows;
-		static constexpr size_t columns = Matrix2::columns;
+		using value_type = decltype((typename MatrixType1::value_type() * typename MatrixType2::value_type()) + (typename MatrixType1::value_type() * typename MatrixType2::value_type()));
+		static constexpr size_t rows = MatrixType1::rows;
+		static constexpr size_t columns = MatrixType2::columns;
 
 		constexpr value_type operator()(size_t const & i, size_t const & j) const
 		{
-			return _dot_product(i, j, stdx::meta::make_integer_sequence<size_t, 1, Matrix1::columns>());
+			return _dot_product(i, j, stdx::meta::make_integer_sequence<size_t, 1, MatrixType1::columns>());
 		}
 	private:
 		template <size_t ... IJ>
@@ -460,85 +462,85 @@ namespace stdx::math
 			return (value_type(0) + ... + (_a(i, IJ) * _b(IJ, j)));
 		}
 
-		Matrix1 const & _a;
-		Matrix2 const & _b;
+		MatrixType1 const & _a;
+		MatrixType2 const & _b;
 
 		template <class>
 		friend class _matrix_expression;
 	};
 
-	template <class Matrix>
-	class _matrix_transposition : public _matrix_expression<_matrix_transposition<Matrix>>
+	template <class MatrixType>
+	class _matrix_transposition : public _matrix_expression<_matrix_transposition<MatrixType>>
 	{
-		constexpr _matrix_transposition(Matrix const & a) :
+		constexpr _matrix_transposition(MatrixType const & a) :
 			_a(a)
 		{
 		}
 	public:
-		using value_type = typename Matrix::value_type;
-		static constexpr size_t rows = Matrix::columns;
-		static constexpr size_t columns = Matrix::rows;
+		using value_type = typename MatrixType::value_type;
+		static constexpr size_t rows = MatrixType::columns;
+		static constexpr size_t columns = MatrixType::rows;
 
 		constexpr value_type const & operator()(size_t const & i, size_t const & j) const
 		{
 			return _a(j, i);
 		}
 	private:
-		Matrix const & _a;
+		MatrixType const & _a;
 
 		template <class>
 		friend class _matrix_expression;
 	};
 
-	template <class Matrix>
-	class _matrix_permutation : public _matrix_expression<_matrix_permutation<Matrix>>
+	template <class MatrixType>
+	class _matrix_permutation : public _matrix_expression<_matrix_permutation<MatrixType>>
 	{
-		constexpr _matrix_permutation(Matrix const & a, std::array<size_t, Matrix::rows> const & p) :
+		constexpr _matrix_permutation(MatrixType const & a, std::array<size_t, MatrixType::rows> const & p) :
 			_a(a),
 			_p(p)
 		{
 		}
 	public:
-		using value_type = typename Matrix::value_type;
-		static constexpr size_t rows = Matrix::columns;
-		static constexpr size_t columns = Matrix::rows;
+		using value_type = typename MatrixType::value_type;
+		static constexpr size_t rows = MatrixType::columns;
+		static constexpr size_t columns = MatrixType::rows;
 
 		constexpr value_type const & operator()(size_t const & i, size_t const & j) const
 		{
 			return _a(_p[i - 1], j);
 		}
 	private:
-		Matrix const & _a;
-		std::array<size_t, Matrix::rows> const _p;
+		MatrixType const & _a;
+		std::array<size_t, rows> const _p;
 
 		template <class>
 		friend class _matrix_expression;
 	};
 
-	template <class Matrix>
-	class _matrix_submatrix : public _matrix_expression<_matrix_submatrix<Matrix>>
+	template <class MatrixType>
+	class _matrix_submatrix : public _matrix_expression<_matrix_submatrix<MatrixType>>
 	{
-		constexpr _matrix_submatrix(Matrix const & a, size_t const & i, size_t const & j) :
+		constexpr _matrix_submatrix(MatrixType const & a, size_t const & i, size_t const & j) :
 			_a(a),
 			_i(i),
 			_j(j)
 		{
-			if (i == 0 || j == 0 || i > Matrix::rows || j > Matrix::columns)
+			if (i == 0 || j == 0 || i > MatrixType::rows || j > MatrixType::columns)
 			{
 				throw std::invalid_argument("'stdx::math::_matrix_submatrix<Matrix>::_matrix_submatrix(m, i, j)': i and j must be in the range of [1, Matrix::rows] and [1, Matrix::columns], respectively");
 			}
 		}
 	public:
-		using value_type = typename Matrix::value_type;
-		static constexpr size_t rows = Matrix::rows - 1;
-		static constexpr size_t columns = Matrix::columns - 1;
+		using value_type = typename MatrixType::value_type;
+		static constexpr size_t rows = MatrixType::rows - 1;
+		static constexpr size_t columns = MatrixType::columns - 1;
 
 		constexpr value_type const & operator()(size_t const & i, size_t const & j) const
 		{
 			return _a(i + size_t(i >= _i), j + size_t(j >= _j));
 		}
 	private:
-		Matrix const & _a;
+		MatrixType const & _a;
 		size_t const _i;
 		size_t const _j;
 

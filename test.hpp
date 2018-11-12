@@ -9,5 +9,6 @@ int test4();
 int test5();
 int test6();
 int test7();
+int test8();
 
 #endif
