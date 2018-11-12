@@ -61,9 +61,11 @@ int test8()
 	{
 		int & b_ref = STDX_THREAD_JUMP_INVOKE(a(++count));
 
-		if (&b_ref == &b)
+		if (STDX_THREAD_JUMP_CHECK_INVOKE())
 			std::cout << "b(" << b_ref << ")\n";
 	}
+
+	stdx::ignoreline();
 
 	return 0;
 }
