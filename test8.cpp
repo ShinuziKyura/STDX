@@ -5,41 +5,6 @@
 #define STDX_THREAD_SUPPRESS_WARNINGS
 #include "thread.hpp"
 
-/*
-
-class _index
-{
-public:
-	constexpr _index(int const & value) :
-		_lhs(value),
-		_rhs(value)
-	{
-	}
-
-	constexpr operator int const &() const
-	{
-		return _rhs;
-	}
-private:
-	constexpr _index(int const & lhs, _index const & rhs) :
-		_lhs(lhs),
-		_rhs(rhs)
-	{
-	}
-
-	int const & _lhs;
-	int const & _rhs;
-
-	friend _index operator,(int const &, _index const &);
-};
-
-constexpr _index operator,(int const & lhs, _index const & rhs)
-{
-	return _index(lhs, rhs);
-}
-
-*/
-
 namespace
 {
 	void func()
@@ -72,7 +37,7 @@ int test8()
 		if (STDX_THREAD_JUMP_CHECK_INVOKE())
 			std::cout << "b(" << b_ref << ")\n";
 	}
-
+	
 	STDX_THREAD_JUMP_INVOKE(func());
 
 	return 0;

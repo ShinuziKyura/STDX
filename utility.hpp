@@ -6,7 +6,7 @@
 
 #include "language.hpp"
 
-#if defined(__COUNTER__) // FIXME improve this check to be made for compiler
+#if defined(_MSVC_LANG) || defined(__GNUG__) || defined(__clang__)
 #define STDX_UNIQUE __COUNTER__
 #else // Cannot guarantee uniqueness
 //#define STDX_UNIQUE __LINE__
@@ -18,8 +18,9 @@
 #define STDX_MACRO_FUNCTION_n_ary(function, ...) STDX_CONCATENATE(function, _)(function, STDX_UNIQUE, __VA_ARGS__)
 #define STDX_MACRO_VARIABLE(identifier, context, unique) STDX_MACRO_TYPE(identifier, context, unique) // Same as STDX_MACRO_TYPE
 
+#define STDX_SCOPED_VARIABLE_(context, unique, ...) [[maybe_unused]] auto STDX_MACRO_VARIABLE(variable, context, unique) = __VA_ARGS__
 // Declares an anonymous variable whose lifetime is limited to the scope where it is declared; should be declared only inside functions or at the global scope, one per line
-#define STDX_SCOPED_VARIABLE(...) [[maybe_unused]] auto STDX_CONCATENATE(STDX_VARIABLE_, STDX_COUNTER) = __VA_ARGS__
+#define STDX_SCOPED_VARIABLE(...) STDX_MACRO_FUNCTION_n_ary(STDX_SCOPED_VARIABLE, __VA_ARGS__)
 
 // Marks a class as polymorphic; should be declared in base clause of the class
 #define STDX_POLYMORPHIC_CLASS protected virtual ::stdx::_polymorphic
@@ -39,7 +40,7 @@ namespace stdx
 	template <class Type>
 	[[nodiscard]] constexpr bool _once(Type)
 	{
-		static bool once = true;
+		static bool once = true; // Would it make more sense for this to be thread_local?
 		return std::exchange(once, false);
 	}
 
