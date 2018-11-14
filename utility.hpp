@@ -6,6 +6,8 @@
 
 #include "language.hpp"
 
+// IDEA: create a variable macro that generates mostly unique variable names
+
 #if defined(__COUNTER__)
 #define STDX_COUNTER __COUNTER__
 #else
@@ -16,7 +18,9 @@
 #define STDX_SCOPED_VARIABLE(...) [[maybe_unused]] auto STDX_CONCATENATE(STDX_VARIABLE_, STDX_COUNTER) = __VA_ARGS__
 
 // Marks a class as polymorphic; should be declared in base clause of the class
-#define STDX_POLYMORPHIC_CLASS protected virtual stdx::_polymorphic
+#define STDX_POLYMORPHIC_CLASS protected virtual ::stdx::_polymorphic
+
+#define STDX_ONCE() ::stdx::_once([]{})
 
 namespace stdx
 {
@@ -26,6 +30,13 @@ namespace stdx
 		_polymorphic() = default;
 		virtual ~_polymorphic() = default;
 	};
+
+	template <class Type>
+	[[nodiscard]] constexpr bool _once(Type)
+	{
+		static bool once = true;
+		return std::exchange(once, false);
+	}
 
 	// [Note: Currently calling this function is a no-op --end note] Should be called only once, inside a non-reentrant function, before any IO operation has happened
 	inline void unsynced_ios()
