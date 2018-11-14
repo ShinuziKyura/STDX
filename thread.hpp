@@ -84,7 +84,7 @@
 
 namespace stdx::thread
 {
-	class _ttable
+	class _ttable // TODO make this into a thread local variable with just the needed defaults
 	{
 		struct _tjump //_thread_state
 		{
