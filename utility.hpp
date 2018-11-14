@@ -6,13 +6,17 @@
 
 #include "language.hpp"
 
-// IDEA: create a variable macro that generates mostly unique variable names
-
-#if defined(__COUNTER__)
-#define STDX_COUNTER __COUNTER__
-#else
-#define STDX_COUNTER __LINE__
+#if defined(__COUNTER__) // FIXME improve this check to be made for compiler
+#define STDX_UNIQUE __COUNTER__
+#else // Cannot guarantee uniqueness
+//#define STDX_UNIQUE __LINE__
 #endif
+
+// For internal usage only
+#define STDX_MACRO_TYPE(identifier, context, unique) STDX_CONCATENATE(STDX_CONCATENATE(STDX_CONCATENATE(identifier, _), STDX_CONCATENATE(context, _)), unique)
+#define STDX_MACRO_FUNCTION_0_ary(function) STDX_CONCATENATE(function, _)(function, STDX_UNIQUE)
+#define STDX_MACRO_FUNCTION_n_ary(function, ...) STDX_CONCATENATE(function, _)(function, STDX_UNIQUE, __VA_ARGS__)
+#define STDX_MACRO_VARIABLE(identifier, context, unique) STDX_MACRO_TYPE(identifier, context, unique) // Same as STDX_MACRO_TYPE
 
 // Declares an anonymous variable whose lifetime is limited to the scope where it is declared; should be declared only inside functions or at the global scope, one per line
 #define STDX_SCOPED_VARIABLE(...) [[maybe_unused]] auto STDX_CONCATENATE(STDX_VARIABLE_, STDX_COUNTER) = __VA_ARGS__
@@ -20,6 +24,7 @@
 // Marks a class as polymorphic; should be declared in base clause of the class
 #define STDX_POLYMORPHIC_CLASS protected virtual ::stdx::_polymorphic
 
+// Function call returns true on the first time execution passes through a particular invocation, and false on next invocations.
 #define STDX_ONCE() ::stdx::_once([]{})
 
 namespace stdx

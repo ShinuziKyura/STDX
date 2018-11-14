@@ -25,7 +25,7 @@
 #define STDX_THREAD_JUMP_CHECK_INVOKE() \
 []\
 {\
-	return !::stdx::thread::_ttable::access(std::this_thread::get_id())._status;\
+	return !::stdx::thread::_ttable::access(::std::this_thread::get_id())._status;\
 }\
 ()
 
@@ -33,54 +33,65 @@
 #define STDX_THREAD_JUMP_CHECK_RETURN() \
 []\
 {\
-	return !::stdx::thread::_ttable::access(std::this_thread::get_id())._context.empty();\
+	return !::stdx::thread::_ttable::access(::std::this_thread::get_id())._context.empty();\
 }\
 ()
 
-// Executes invocation passed as argument while setting a point to return to without actually returning from that function
-#define STDX_THREAD_JUMP_INVOKE(...) \
+#define STDX_THREAD_JUMP_INVOKE_(context, unique, ...) \
 [&] () -> decltype(__VA_ARGS__)\
 {\
-	auto & STDX_CONCATENATE(STDX_THREAD_JUMP_INVOKE_THREAD_VARIABLE_, __LINE__) = ::stdx::thread::_ttable::access(std::this_thread::get_id());\
-	struct STDX_CONCATENATE(STDX_THREAD_JUMP_INVOKE_STRUCT_TYPE_, __LINE__)\
+	auto & STDX_MACRO_VARIABLE(this_thread, context, unique) = ::stdx::thread::_ttable::access(::std::this_thread::get_id());\
+	struct STDX_MACRO_TYPE(scoped_thread, context, unique)\
 	{\
-		decltype(STDX_CONCATENATE(STDX_THREAD_JUMP_INVOKE_THREAD_VARIABLE_, __LINE__)) STDX_CONCATENATE(STDX_THREAD_JUMP_INVOKE_STRUCT_THREAD_VARIABLE_, __LINE__);\
-		STDX_CONCATENATE(STDX_THREAD_JUMP_INVOKE_STRUCT_TYPE_, __LINE__)(decltype(STDX_CONCATENATE(STDX_THREAD_JUMP_INVOKE_THREAD_VARIABLE_, __LINE__)) STDX_CONCATENATE(STDX_THREAD_JUMP_INVOKE_STRUCT_THREAD_VARIABLE_INITIALIZER_, __LINE__)) :\
-			STDX_CONCATENATE(STDX_THREAD_JUMP_INVOKE_STRUCT_THREAD_VARIABLE_, __LINE__)(STDX_CONCATENATE(STDX_THREAD_JUMP_INVOKE_STRUCT_THREAD_VARIABLE_INITIALIZER_, __LINE__))\
+		decltype(STDX_MACRO_VARIABLE(this_thread, context, unique)) STDX_MACRO_VARIABLE(_this_thread, context, unique);\
+		STDX_MACRO_TYPE(scoped_thread, context, unique)(decltype(STDX_MACRO_VARIABLE(this_thread, context, unique)) STDX_MACRO_VARIABLE(thread, context, unique)) :\
+			STDX_MACRO_VARIABLE(_this_thread, context, unique)(STDX_MACRO_VARIABLE(thread, context, unique))\
 		{\
 		}\
-		~STDX_CONCATENATE(STDX_THREAD_JUMP_INVOKE_STRUCT_TYPE_, __LINE__)()\
+		~STDX_MACRO_TYPE(scoped_thread, context, unique)()\
 		{\
-			STDX_CONCATENATE(STDX_THREAD_JUMP_INVOKE_STRUCT_THREAD_VARIABLE_, __LINE__)._context.pop();\
+			STDX_MACRO_VARIABLE(_this_thread, context, unique)._context.pop();\
 		}\
 	};\
-	STDX_SCOPED_VARIABLE(STDX_CONCATENATE(STDX_THREAD_JUMP_INVOKE_STRUCT_TYPE_, __LINE__)(STDX_CONCATENATE(STDX_THREAD_JUMP_INVOKE_THREAD_VARIABLE_, __LINE__)));\
-	switch (int volatile STDX_CONCATENATE(STDX_THREAD_JUMP_INVOKE_STATUS_VARIABLE_, __LINE__) = setjmp(STDX_CONCATENATE(STDX_THREAD_JUMP_INVOKE_THREAD_VARIABLE_, __LINE__)._context.emplace()))\
+	STDX_MACRO_TYPE(scoped_thread, context, unique) volatile STDX_MACRO_VARIABLE(scoped_this_thread, context, unique)(STDX_MACRO_VARIABLE(this_thread, context, unique));\
+	switch (int volatile STDX_MACRO_VARIABLE(status, context, unique) = setjmp(STDX_MACRO_VARIABLE(this_thread, context, unique)._context.emplace()))\
 	{\
 		case 0:\
 		{\
-			STDX_CONCATENATE(STDX_THREAD_JUMP_INVOKE_THREAD_VARIABLE_, __LINE__)._status = 0;\
+			STDX_MACRO_VARIABLE(this_thread, context, unique)._status = 0;\
 			return __VA_ARGS__;\
 		}\
 		default:\
 		{\
-			STDX_CONCATENATE(STDX_THREAD_JUMP_INVOKE_THREAD_VARIABLE_, __LINE__)._status = STDX_CONCATENATE(STDX_THREAD_JUMP_INVOKE_STATUS_VARIABLE_, __LINE__);\
+			STDX_MACRO_VARIABLE(this_thread, context, unique)._status = STDX_MACRO_VARIABLE(status, context, unique);\
 		}\
 	}\
 }\
 ()
+// Executes invocation passed as argument while setting a point to return to without actually returning from that function
+#define STDX_THREAD_JUMP_INVOKE(...) STDX_MACRO_FUNCTION_n_ary(STDX_THREAD_JUMP_INVOKE, __VA_ARGS__)
 
-// Returns execution to last point in stack without returning from current function
-#define STDX_THREAD_JUMP_RETURN(...) \
-[] (int volatile STDX_CONCATENATE(STDX_THREAD_JUMP_RETURN_STATUS_VARIABLE_, __LINE__) = 0)\
+#define STDX_THREAD_JUMP_RETURN_(context, unique, ...) \
+[] (int volatile STDX_MACRO_VARIABLE(status, context, unique) = 0)\
 {\
-	auto & STDX_CONCATENATE(STDX_THREAD_JUMP_RETURN_THREAD_VARIABLE_, __LINE__) = ::stdx::thread::_ttable::access(std::this_thread::get_id());\
-	if (!STDX_CONCATENATE(STDX_THREAD_JUMP_RETURN_THREAD_VARIABLE_, __LINE__)._context.empty())\
+	auto & STDX_MACRO_VARIABLE(this_thread, context, unique) = ::stdx::thread::_ttable::access(::std::this_thread::get_id());\
+	if (!STDX_MACRO_VARIABLE(this_thread, context, unique)._context.empty())\
 	{\
-		std::longjmp(STDX_CONCATENATE(STDX_THREAD_JUMP_RETURN_THREAD_VARIABLE_, __LINE__)._context.top(), STDX_CONCATENATE(STDX_THREAD_JUMP_RETURN_STATUS_VARIABLE_, __LINE__));\
+		std::longjmp(STDX_MACRO_VARIABLE(this_thread, context, unique)._context.top(), STDX_MACRO_VARIABLE(status, context, unique));\
 	}\
 }\
 (__VA_ARGS__)
+// Returns execution to last point in stack without returning from current function
+#define STDX_THREAD_JUMP_RETURN(...) STDX_MACRO_FUNCTION_n_ary(STDX_THREAD_JUMP_RETURN, __VA_ARGS__)
+
+namespace stdx
+{
+	struct this_thread
+	{
+		thread_local static inline std::stack<std::jmp_buf> jump_buffer; // jump_execution_context_stack
+		thread_local static inline int jump_status = 0;
+	};
+}
 
 namespace stdx::thread
 {
