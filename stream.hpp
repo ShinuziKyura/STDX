@@ -211,7 +211,7 @@ namespace stdx::stream
 		static_assert(std::is_base_of_v<std::basic_ostream<typename StreamType::char_type, typename StreamType::traits_type>, StreamType>,
 					  "'stdx::stream::streamroute<StreamType, policy::replicate>': StreamType must be of type std::basic_ostream or derived from it");
 
-		using streambuf_type = std::decay_t<decltype(*std::declval<StreamType>().rdbuf())>;
+		using StreambufType = std::decay_t<decltype(*std::declval<StreamType>().rdbuf())>;
 	public:
 		template <class ... OutstreamTypes>
 		streamroute(StreamType & source, OutstreamTypes & ... destination) :
@@ -231,7 +231,7 @@ namespace stdx::stream
 		}
 	private:
 		StreamType & _source;
-		streambuf_type * _buffer;
+		StreambufType * _buffer;
 	};
 
 	template <class StreamType>
@@ -240,7 +240,7 @@ namespace stdx::stream
 		static_assert(std::is_base_of_v<std::basic_ios<typename StreamType::char_type, typename StreamType::traits_type>, StreamType>,
 					  "'stdx::stream::streamroute<StreamType, policy::redirect>': StreamType must be of type std::basic_ios or derived from it");
 
-		using streambuf_type = std::decay_t<decltype(*std::declval<StreamType>().rdbuf())>;
+		using StreambufType = std::decay_t<decltype(*std::declval<StreamType>().rdbuf())>;
 	public:
 		streamroute(StreamType & source, StreamType & destination) :
 			_source(source),
@@ -257,7 +257,7 @@ namespace stdx::stream
 		}
 	private:
 		StreamType & _source;
-		streambuf_type * _buffer;
+		StreambufType * _buffer;
 	};
 }
 
