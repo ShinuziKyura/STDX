@@ -19,7 +19,7 @@
 #endif
 
 #define STDX_THREAD_JUMP_VARIABLE(...) STDX_MACRO_FUNCTION_n_ary(STDX_THREAD_JUMP_VARIABLE, __VA_ARGS__)
-#define STDX_THREAD_JUMP_VARIABLE_(context, unique, type, ...) stdx::_jmp_variable<type>(__VA_ARGS__); stdx::_jmp_scope<type> STDX_MACRO_VARIABLE(jmp_, context, unique);
+#define STDX_THREAD_JUMP_VARIABLE_(context, unique, type, ...) ::stdx::thread::_jmp_variable<type>(__VA_ARGS__); [[maybe_unused]] ::stdx::thread::_jmp_scope<type> STDX_MACRO_VARIABLE(jmp_, context, unique);
 
 // Checks if previous invoke returned without jumping
 #define STDX_THREAD_JUMP_CHECK_INVOKE() \
@@ -82,21 +82,41 @@ namespace stdx
 
 namespace stdx::thread
 {
-	template <class Type>
-	class _jmp_variable_implementation : public Type
+	class _jmp_final
 	{
-		
+		template <class ... ArgTypes>
+		_jmp_final(ArgTypes ...)
+		{
+			static_assert(false, "STDX_THREAD_JUMP_VARIABLE(type, args ...): type must be a non-final class!");
+		}
 	};
 
 	template <class Type>
-	using _jmp_variable = 
-		meta::type_if<bool(std::is_final_v<Type>)>::then<
-			// Error
-		>::else_if<bool(std::is_class_v<Type> && !std::is_trivially_destructible_v<Type>)>::then<
-			_jmp_variable_implementation<Type>
-		>::else_then<
+	class _jmp_scope
+	{
+		// TODO
+	};
+
+	template <class Type>
+	class _jmp_var : public Type
+	{
+		// TODO
+		template <class ... ArgTypes>
+		_jmp_var(ArgTypes && ... args)
+		{
+
+		}
+	};
+
+	template <class Type>
+	using _jmp_variable =
+		typename meta::type_if<bool(std::is_final_v<Type>)>::template then <
+			_jmp_final
+		>::template else_if<bool(std::is_class_v<Type> && !std::is_trivially_destructible_v<Type>)>::template then<
+			_jmp_var<Type>
+		>::template else_then<
 			Type
-		>;
+		>::endif;
 
 	template <class FuncType, class ... ArgTypes>
 	void daemon(FuncType func, ArgTypes && ... args)

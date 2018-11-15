@@ -4,6 +4,7 @@
 
 #define STDX_THREAD_SUPPRESS_WARNINGS
 #include "thread.hpp"
+#include "utility.hpp"
 
 namespace
 {
@@ -37,6 +38,10 @@ int test8()
 		if (STDX_THREAD_JUMP_CHECK_INVOKE())
 			std::cout << "b(" << b_ref << ")\n";
 	}
+
+	auto var = STDX_THREAD_JUMP_VARIABLE(int, 0);
+
+	std::cout << var;
 	
 	STDX_THREAD_JUMP_INVOKE(func());
 
