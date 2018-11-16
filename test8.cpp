@@ -21,7 +21,7 @@ int & a(int count)
 	if (count != b)
 	{
 		std::cout << "a(" << count << ")\n";
-		STDX_THREAD_JUMP_RETURN();
+		STDX_THREAD_JMP_RETURN();
 	}
 
 	return b;
@@ -33,17 +33,17 @@ int test8()
 	
 	while (count != 9)
 	{
-		int & b_ref = STDX_THREAD_JUMP_INVOKE(a(++count));
+		int & b_ref = STDX_THREAD_JMP_INVOKE(a(++count));
 		
-		if (STDX_THREAD_JUMP_CHECK_INVOKE())
+		if (STDX_THREAD_JMP_CHECK_INVOKE())
 			std::cout << "b(" << b_ref << ")\n";
 	}
 
-	auto var = STDX_THREAD_JUMP_VARIABLE(int, 0);
+	auto var = STDX_THREAD_JMP_VARIABLE(int, 0);
 
 	std::cout << var;
 	
-	STDX_THREAD_JUMP_INVOKE(func());
+	STDX_THREAD_JMP_INVOKE(func());
 
 	return 0;
 }
