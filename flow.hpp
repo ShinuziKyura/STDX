@@ -13,6 +13,7 @@
 	#elif defined(__GNUG__)
 		#pragma GCC diagnostic ignored "-Wreturn-type"
 	#elif defined(__clang__)
+		//#pragma clang diagnostic ignored "-Wreturn-type" // TODO test this
 	#else
 		// TODO suppress warnings for other compilers
 	#endif
@@ -45,7 +46,7 @@ namespace stdx::flow // This probably will be unnecessary
 		}
 	} */
 
-	// Executes invocation passed as argument while setting a point to return to without actually returning from that function
+	// Executes invocation passed as argument while defining a point to return to without actually returning from that function
 	#define STDX_FLOW_WAYPOINT_INVOKE(invocation) STDX_MACRO_FUNCTION_n_ary(STDX_FLOW_WAYPOINT_INVOKE, invocation)
 	#define STDX_FLOW_WAYPOINT_INVOKE_FUNCTION(context, unique, invocation) \
 	[&] () -> decltype(invocation)\
@@ -69,12 +70,13 @@ namespace stdx::flow // This probably will be unnecessary
 	}\
 	()
 
-	// TODO STDX_FLOW_INVOKE(invocation) 
+	#define STDX_FLOW_INVOKE(invocation) STDX_MACRO_FUNCTION_n_ary(STDX_FLOW_INVOKE, invocation)
+	#define STDX_FLOW_INVOKE_FUNCTION(context, unique, invocation)
 
 	// Returns execution to last point in stack without returning from current function
 	#define STDX_FLOW_RETURN(...) STDX_MACRO_FUNCTION_n_ary(STDX_FLOW_RETURN, __VA_ARGS__)
 	#define STDX_FLOW_RETURN_FUNCTION(context, unique, ...) \
-	[] (int volatile STDX_MACRO_VARIABLE(status, context, unique) = 0)\
+	[] (int STDX_MACRO_VARIABLE(status, context, unique) = 0)\
 	{\
 		if (!::stdx::this_thread::get_jmp_state().empty())\
 		{\
@@ -99,8 +101,8 @@ namespace stdx::flow // This probably will be unnecessary
 	}\
 	()
 	
-	#define STDX_FLOW_VARIABLE(...) STDX_MACRO_FUNCTION_n_ary(STDX_FLOW_VARIABLE, __VA_ARGS__)
-	#define STDX_FLOW_VARIABLE_FUNCTION(context, unique, type, ...) // TODO implementation
+	#define STDX_FLOW_DECLARE(...) STDX_MACRO_FUNCTION_n_ary(STDX_FLOW_DECLARE, __VA_ARGS__)
+	#define STDX_FLOW_DECLARE_FUNCTION(context, unique, type, ...) // TODO implementation
 }
 
 #endif
