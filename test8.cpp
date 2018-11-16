@@ -1,9 +1,7 @@
 #include <iostream>
-#include <csetjmp>
-#include <thread>
 
-#define STDX_THREAD_SUPPRESS_WARNINGS
-#include "thread.hpp"
+#define STDX_FLOW_SUPPRESS_WARNINGS
+#include "flow.hpp"
 #include "utility.hpp"
 
 namespace
@@ -21,7 +19,7 @@ int & a(int count)
 	if (count != b)
 	{
 		std::cout << "a(" << count << ")\n";
-		STDX_THREAD_JMP_RETURN();
+		STDX_FLOW_RETURN();
 	}
 
 	return b;
@@ -33,17 +31,13 @@ int test8()
 	
 	while (count != 9)
 	{
-		int & b_ref = STDX_THREAD_JMP_INVOKE(a(++count));
+		int & b_ref = STDX_FLOW_WAYPOINT_INVOKE(a(++count));
 		
-		if (STDX_THREAD_JMP_CHECK_INVOKE())
+		if (STDX_FLOW_CHECK_INVOKE())
 			std::cout << "b(" << b_ref << ")\n";
 	}
-
-	auto var = STDX_THREAD_JMP_VARIABLE(int, 0);
-
-	std::cout << var;
 	
-	STDX_THREAD_JMP_INVOKE(func());
+	STDX_FLOW_WAYPOINT_INVOKE(func());
 
 	return 0;
 }
