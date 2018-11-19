@@ -31,13 +31,13 @@ int test8()
 	
 	while (count != 9)
 	{
-		int & b_ref = STDX_FLOW_WAYPOINT_INVOKE(a(++count));
+		int & b_ref = STDX_FLOW_INVOKE(a(++count));
 		
 		if (STDX_FLOW_CHECK_INVOKE())
 			std::cout << "b(" << b_ref << ")\n";
 	}
-	
-	STDX_FLOW_WAYPOINT_INVOKE(func());
+
+	STDX_FLOW_INVOKE(func());
 
 	return 0;
 }
