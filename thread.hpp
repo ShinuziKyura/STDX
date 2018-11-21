@@ -3,8 +3,7 @@
 
 #include <csetjmp>
 
-#include <new>
-#include <any>
+#include <memory>
 #include <stack>
 #include <thread>
 
@@ -12,52 +11,64 @@ namespace stdx::thread
 {
 	class _jmp_state
 	{
-		struct _jmp_var_base
+		struct _jmp_var_object_base
 		{
-			virtual ~_jmp_var_base() = default;
+			virtual ~_jmp_var_object_base() = default;
 		};
 		template <class Type>
-		struct _jmp_var : public _jmp_var_base
+		struct _jmp_var_object : _jmp_var_object_base
 		{
-			~_jmp_var() override
+			~_jmp_var_object() override
 			{
 				std::launder(reinterpret_cast<Type *>(&_object))->~Type();
 			}
 
 			std::aligned_storage_t<sizeof(Type), alignof(Type)> _object;
 		};
-		struct _jmp_buffer
+
+		struct _jmp_var
+		{
+			template <class Type>
+			_jmp_var(std::unique_ptr<_jmp_var_object<Type>> && object) :
+				_object_base(object)
+			{
+			}
+
+			std::unique_ptr<_jmp_var_object_base> _object_base;
+		};
+		struct _jmp_buf
 		{
 			std::jmp_buf _env;
 		};
-		using _var_stack = std::stack<std::any, std::list<std::any>>;
+
+		using _jmp_var_stack = std::stack<std::stack<_jmp_var>>;
 	public:
 		void push_stack()
 		{
-			_locals.emplace();
+			_locals.top().emplace();
 		}
 		void pop_stack()
 		{
-			_locals.pop();
+			_locals.top().pop();
 		}
 
-		template <class Type, class ... ArgTypes>
-		std::decay_t<Type> & push_var(ArgTypes && ... args)
+		template <class Type>
+		void * push_var()
 		{
-			// return void *, remove args, emplace<_jmp_var<Type>>() // Need to erase type with _jmp_var_base
-			return _locals.top().emplace().emplace<Type>(std::forward<ArgTypes>(args) ...);
+			return &_locals.top().top().emplace(std::make_unique<_jmp_var_object<Type>>())._object;
 		}
 		void pop_var()
 		{
-			_locals.top().pop();
+			_locals.top().top().pop();
 		}
 		bool check_var()
 		{
-			return !_locals.top().empty();
+			return !_locals.top().top().empty();
 		}
 
 		std::jmp_buf & push_env()
 		{
+			_locals.emplace();
 			return _buffers.emplace()._env;
 		}
 		std::jmp_buf & get_env()
@@ -66,6 +77,7 @@ namespace stdx::thread
 		}
 		void pop_env()
 		{
+			_locals.pop();
 			_buffers.pop();
 		}
 		bool check_env()
@@ -81,9 +93,9 @@ namespace stdx::thread
 		{
 			_status = status;
 		}
-	private: // Imperfect system, needs work
-		std::stack<_var_stack, std::list<_var_stack>> _locals;
-		std::stack<_jmp_buffer, std::list<_jmp_buffer>> _buffers;
+	private:
+		std::stack<_jmp_var_stack> _locals;
+		std::stack<_jmp_buf> _buffers;
 		int _status;
 	};
 
