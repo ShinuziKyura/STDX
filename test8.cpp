@@ -1,4 +1,5 @@
 #include <iostream>
+#include <any>
 
 #define STDX_FLOW_SUPPRESS_WARNINGS
 #include "flow.hpp"
@@ -16,11 +17,15 @@ int b = 5;
 
 int & a(int count)
 {
+//	STDX_FLOW_SCOPE()
 	if (count != b)
 	{
-		std::cout << "a(" << count << ")\n";
+		auto & count_any = STDX_FLOW_DECLARE(std::any(count));
+		std::cout << "Will jump - a(" << std::any_cast<int>(count_any) << ")\n";
 		STDX_FLOW_JUMP();
 	}
+
+	std::cout << "Will not jump - ";
 
 	return b;
 }
@@ -34,10 +39,12 @@ int test8()
 		int & b_ref = STDX_FLOW_JUMP_POINT(a(++count));
 		
 		if (STDX_FLOW_JUMP_STATUS())
+		{
 			std::cout << "b(" << b_ref << ")\n";
+		}
 	}
 
-	func();
+	STDX_FLOW_JUMP_POINT(func());
 	
 	return 0;
 }
