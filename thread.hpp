@@ -11,51 +11,58 @@ namespace stdx::thread
 {
 	class _jmp_state
 	{
-		struct _jmp_var_object_base
+		struct _jmp_var_obj_base
 		{
-			virtual ~_jmp_var_object_base() = default;
+			virtual ~_jmp_var_obj_base() = default;
+
+			virtual void * get_obj() = 0;
 		};
 		template <class Type>
-		struct _jmp_var_object : _jmp_var_object_base
+		struct alignas(Type) _jmp_var_obj : _jmp_var_obj_base
 		{
-			~_jmp_var_object() override
+			~_jmp_var_obj() override
 			{
-				std::launder(reinterpret_cast<Type *>(&_object))->~Type();
+				std::launder(reinterpret_cast<Type *>(&_obj))->~Type();
 			}
 
-			std::aligned_storage_t<sizeof(Type), alignof(Type)> _object;
+			void * get_obj() override
+			{
+				return &_obj;
+			}
+
+			std::aligned_storage_t<sizeof(Type), alignof(Type)> _obj;
 		};
 
 		struct _jmp_var
 		{
-			template <class Type>
-			_jmp_var(std::unique_ptr<_jmp_var_object<Type>> && object) :
-				_object_base(object)
+			_jmp_var(std::unique_ptr<_jmp_var_obj_base> && obj_ptr) :
+				_obj_ptr(std::move(obj_ptr))
 			{
 			}
 
-			std::unique_ptr<_jmp_var_object_base> _object_base;
+			void * get_obj()
+			{
+				return _obj_ptr->get_obj();
+			}
+
+			std::unique_ptr<_jmp_var_obj_base> _obj_ptr;
 		};
 		struct _jmp_buf
 		{
+			std::jmp_buf & get_env()
+			{
+				return _env;
+			}
+
 			std::jmp_buf _env;
 		};
 
 		using _jmp_var_stack = std::stack<std::stack<_jmp_var>>;
 	public:
-		void push_stack()
-		{
-			_locals.top().emplace();
-		}
-		void pop_stack()
-		{
-			_locals.top().pop();
-		}
-
 		template <class Type>
 		void * push_var()
 		{
-			return &_locals.top().top().emplace(std::make_unique<_jmp_var_object<Type>>())._object;
+			return _locals.top().top().emplace(std::make_unique<_jmp_var_obj<Type>>()).get_obj();
 		}
 		void pop_var()
 		{
@@ -66,17 +73,39 @@ namespace stdx::thread
 			return !_locals.top().top().empty();
 		}
 
+		void push_stack()
+		{
+			_locals.top().emplace();
+		}
+		void pop_stack()
+		{
+			while (check_var())
+			{
+				pop_var();
+			}
+			_locals.top().pop();
+		}
+		bool check_stack()
+		{
+			return !_locals.top().empty();
+		}
+
+		std::jmp_buf & get_env()
+		{
+			return _buffers.top().get_env();
+		}
 		std::jmp_buf & push_env()
 		{
 			_locals.emplace();
-			return _buffers.emplace()._env;
-		}
-		std::jmp_buf & get_env()
-		{
-			return _buffers.top()._env;
+			push_stack();
+			return _buffers.emplace().get_env();
 		}
 		void pop_env()
 		{
+			while (check_stack())
+			{
+				pop_stack();
+			}
 			_locals.pop();
 			_buffers.pop();
 		}
@@ -108,7 +137,7 @@ namespace stdx::thread
 
 namespace stdx::this_thread
 {
-	inline auto & get_jmp_state()
+	inline auto & jmp_state()
 	{
 		thread_local static stdx::thread::_jmp_state state;
 		return state;
