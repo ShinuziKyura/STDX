@@ -17,7 +17,7 @@ int b = 5;
 
 int & a(int count)
 {
-//	STDX_FLOW_SCOPE()
+	STDX_FLOW_SCOPE()
 	if (count != b)
 	{
 		auto & count_any = STDX_FLOW_DECLARE(std::any(count));

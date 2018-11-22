@@ -125,7 +125,7 @@ namespace stdx::thread
 	private:
 		std::stack<_jmp_var_stack> _locals;
 		std::stack<_jmp_buf> _buffers;
-		int _status;
+		int _status{ 0 };
 	};
 
 	template <class FuncType, class ... ArgTypes>

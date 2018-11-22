@@ -23,7 +23,7 @@
 #define	STDX_CONCATENATE_9_FUNCTION(token1, token2, token3, token4, token5, token6, token7, token8, token9) token1 ## token2 ## token3 ## token4 ## token5 ## token6 ## token7 ## token8 ## token9
 #define	STDX_CONCATENATE_9(token1, token2, token3, token4, token5, token6, token7, token8, token9) STDX_CONCATENATE_9_FUNCTION(token1, token2, token3, token4, token5, token6, token7, token8, token9)
 
-#if defined(_MSVC_LANG) || defined(__GNUG__) || defined(__clang__)
+#if defined(__clang__) || defined(__GNUG__) || defined(_MSC_VER)
 #define STDX_UNIQUE __COUNTER__
 #else
 #error STDX_UNIQUE: Cannot guarantee uniqueness

@@ -5,19 +5,20 @@
 #include "stdx_macros.hpp"
 
 #ifdef STDX_FLOW_SUPPRESS_WARNINGS
-	#if defined(_MSVC_LANG)
-		#pragma warning(disable: 4611)
-		#pragma warning(disable: 4715)
+	#if defined(__clang__)
+		#pragma clang diagnostic ignored "-Wreturn-type" // TODO test this
 	#elif defined(__GNUG__)
 		#pragma GCC diagnostic ignored "-Wreturn-type"
-	#elif defined(__clang__)
-		//#pragma clang diagnostic ignored "-Wreturn-type" // TODO test this
+	#elif defined(_MSC_VER)
+		#pragma warning(disable: 4611)
+		#pragma warning(disable: 4715)
 	#else
 		// TODO suppress warnings for other compilers
 	#endif
 #endif
 
-// Executes invocation while defining a point to jump to without returning through the call stack
+// Executes invocation while registering a point to jump to without returning through the call stack
+// When the invoked function returns or jumps, the jump point is unregistered
 #define STDX_FLOW_JUMP_POINT(invocation) STDX_MACRO_FUNCTION_n_ary(STDX_FLOW_JUMP_POINT, invocation)
 #define STDX_FLOW_JUMP_POINT_FUNCTION(context, uid, invocation) \
 [&] (auto STDX_MACRO_VARIABLE(invocation_result, context, uid)) -> decltype(auto)\
@@ -41,7 +42,7 @@
 }\
 (::std::common_type<decltype(invocation)>())
 
-// Checks if there is a valid jump point
+// Checks if there is a registered jump point to jump to
 #define STDX_FLOW_JUMP_POINT_STATUS() ::stdx::this_thread::jmp_state().check_env()
 
 // Returns execution to last defined jump point without returning through the call stack
@@ -57,10 +58,10 @@
 }\
 (__VA_ARGS__)
 
-// Checks if the last jump point returned without jumping
+// Checks if the last jump point was unregistered without jumping
 #define STDX_FLOW_JUMP_STATUS() ::stdx::this_thread::jmp_state().get_status() == 0
 
-// TODO description
+// Invokes a function with a jump-guarded scope on any jump-guarded variables declared in its definition
 #define STDX_FLOW_INVOKE(invocation) STDX_MACRO_FUNCTION_n_ary(STDX_FLOW_INVOKE, invocation)
 #define STDX_FLOW_INVOKE_FUNCTION(context, uid, invocation) \
 [&] (auto STDX_MACRO_VARIABLE(invocation_result, context, uid)) -> decltype(auto)\
@@ -80,7 +81,7 @@
 }\
 (::std::common_type<decltype(invocation)>())
 
-// TODO description
+// Declares a jump-guarded variable, limited by the scope of the outer STDX_FLOW_JUMP_POINT / STDX_FLOW_INVOKE / STDX_FLOW_SCOPE
 #define STDX_FLOW_DECLARE(declaration) STDX_MACRO_FUNCTION_n_ary(STDX_FLOW_DECLARE, declaration) // TODO cases for class, array and function types
 #define STDX_FLOW_DECLARE_FUNCTION(context, uid, declaration) \
 [&] (auto STDX_MACRO_VARIABLE(declaration_result, context, uid)) -> decltype(auto)\
@@ -96,14 +97,14 @@
 }\
 (::std::common_type<decltype(declaration)>())
 
-// TODO description 
-// FIXME doesn't consider cases where a jump happened
-#define STDX_FLOW_SCOPE() \
-while (\
-[]\
+// Introduces a jump-guarded scope on any jump-guarded variables declared in the statement that follows this one 
+// [Note: This statement shouldn't be terminated by a semicolon -- end note]
+#define STDX_FLOW_SCOPE() STDX_MACRO_FUNCTION_0_ary(STDX_FLOW_SCOPE)
+#define STDX_FLOW_SCOPE_FUNCTION(context, uid) \
+for (bool STDX_MACRO_VARIABLE(within, context, uid) = true;\
+[&STDX_MACRO_VARIABLE(within, context, uid)]\
 {\
-	thread_local bool within = false;\
-	if ((within = !within) == true)\
+	if (STDX_MACRO_VARIABLE(within, context, uid))\
 	{\
 		::stdx::this_thread::jmp_state().push_stack();\
 	}\
@@ -111,9 +112,9 @@ while (\
 	{\
 		::stdx::this_thread::jmp_state().pop_stack();\
 	}\
-	return within;\
+	return STDX_MACRO_VARIABLE(within, context, uid);\
 }\
-()\
-)
+();\
+STDX_MACRO_VARIABLE(within, context, uid) = false)
 
 #endif
