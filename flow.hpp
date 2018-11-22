@@ -82,10 +82,12 @@
 (::std::common_type<decltype(invocation)>())
 
 // Declares a jump-guarded variable, limited by the scope of the outer STDX_FLOW_JUMP_POINT / STDX_FLOW_INVOKE / STDX_FLOW_SCOPE
-#define STDX_FLOW_DECLARE(declaration) STDX_MACRO_FUNCTION_n_ary(STDX_FLOW_DECLARE, declaration) // TODO cases for class, array and function types
+#define STDX_FLOW_DECLARE(declaration) STDX_MACRO_FUNCTION_n_ary(STDX_FLOW_DECLARE, declaration)
 #define STDX_FLOW_DECLARE_FUNCTION(context, uid, declaration) \
 [&] (auto STDX_MACRO_VARIABLE(declaration_result, context, uid)) -> decltype(auto)\
 {\
+	static_assert(!std::is_array_v<typename decltype(STDX_MACRO_VARIABLE(declaration_result, context, uid))::type>,\
+				  "'STDX_FLOW_DECLARE(declaration)': declaration must not be an array type");\
 	if constexpr (::std::is_trivially_destructible_v<typename decltype(STDX_MACRO_VARIABLE(declaration_result, context, uid))::type>)\
 	{\
 		return declaration;\
