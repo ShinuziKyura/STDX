@@ -30,9 +30,9 @@
 //#define STDX_UNIQUE __LINE__
 #endif
 
-#define STDX_MACRO_TYPE(identifier, context, unique) STDX_CONCATENATE_6(identifier, _, context, _, unique, _type_)
-#define STDX_MACRO_FUNCTION_0_ary(function) STDX_CONCATENATE_2(function, _function_)(function, STDX_UNIQUE)
-#define STDX_MACRO_FUNCTION_n_ary(function, ...) STDX_CONCATENATE_2(function, _function_)(function, STDX_UNIQUE, __VA_ARGS__)
-#define STDX_MACRO_VARIABLE(identifier, context, unique) STDX_CONCATENATE_6(identifier, _, context, _, unique, _variable_)
+#define STDX_MACRO_TYPE(identifier, context) STDX_CONCATENATE_4(identifier, _, context, _type_)
+#define STDX_MACRO_FUNCTION_0_ary(identifier) STDX_CONCATENATE_2(identifier, _function_)(STDX_CONCATENATE_3(identifier, _, STDX_UNIQUE))
+#define STDX_MACRO_FUNCTION_n_ary(identifier, ...) STDX_CONCATENATE_2(identifier, _function_)(STDX_CONCATENATE_3(identifier, _, STDX_UNIQUE), __VA_ARGS__)
+#define STDX_MACRO_VARIABLE(identifier, context) STDX_CONCATENATE_4(identifier, _, context, _variable_)
 
 #endif

@@ -50,7 +50,7 @@ int MyMethodRC(MyClass const && object)
 	return object.i + 1;
 }
 
-int test4()
+int example_4()
 {
 	MyClass MyObject;
 	MyClassC MyObjectC;

@@ -7,7 +7,7 @@
 #include "mutex.hpp"
 #include "stopwatch.hpp"
 
-int test6()
+int example_6()
 {
 	stdx::unsynced_ios();
 
@@ -152,7 +152,7 @@ int test6()
 		(elapsed < sp_elapsed ? "std::shared_mutex" : (elapsed > sp_elapsed ? "stdx::shared_spin_mutex" : "std::shared_mutex and stdx::shared_spin_mutex")) << (elapsed == sp_elapsed ? " are equal\n" : " is faster\n")
 	<< std::endl;
 
-	stdx::ignoreline();
+	stdx::await_input();
 
 	return 0;
 }

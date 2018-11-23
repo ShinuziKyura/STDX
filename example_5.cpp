@@ -22,16 +22,16 @@ namespace
 {
 	bool test_less(int i)
 	{
-		bool test = i < 10;
-		std::cout << std::boolalpha << "Evaluated i < 10: " << test << std::endl;
-		return test;
+		bool example_ = i < 10;
+		std::cout << std::boolalpha << "Evaluated i < 10: " << example_ << std::endl;
+		return example_;
 	}
 
 	bool test_greater(int i)
 	{
-		bool test = i > 0;
-		std::cout << std::boolalpha << "Evaluated i > 0: " << test << std::endl;
-		return test;
+		bool example_ = i > 0;
+		std::cout << std::boolalpha << "Evaluated i > 0: " << example_ << std::endl;
+		return example_;
 	}
 }
 template <char ... Chars>
@@ -49,7 +49,7 @@ constexpr stdx::matrix<int, 3> A2({ 1, 2, 3,
 									4, 5, 6,
 									7, 8, 9 });
 
-int test5()
+int example_5()
 {
 	stdx::unsynced_ios();
 
@@ -71,7 +71,7 @@ int test5()
 	}
 	std::cout << std::endl;
 
-	std::fstream fout("test5.txt", std::ios::out | std::ios::trunc);
+	std::fstream fout("example_5.txt", std::ios::out | std::ios::trunc);
 
 	STDX_SCOPED_VARIABLE(stdx::streamroute<std::ostream, stdx::policy::replicate>(std::cout, fout));
 
@@ -111,7 +111,7 @@ int test5()
 
 	fout.close();
 
-	stdx::ignoreline();
+	stdx::await_input();
 
 	return 0;
 }

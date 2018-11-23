@@ -40,7 +40,7 @@ namespace stdx::functional
 		static_assert(std::is_function_v<FuncType>,
 					  "'stdx::functional::bind(FuncType *, ArgTypes && ...)': "
 					  "FuncType must be a function, a pointer to function, or a pointer to member function");
-		return std::bind(func, forward<ArgTypes>(args) ...);
+		return std::bind(func, stdx::functional::forward<ArgTypes>(args) ...);
 	}
 	template <class FuncType, class ObjType, class ... ArgTypes>
 	auto bind(FuncType ObjType::* func, ObjType * obj, ArgTypes && ... args)
@@ -48,7 +48,7 @@ namespace stdx::functional
 		static_assert(std::is_function_v<FuncType>,
 					  "'stdx::functional::bind(FuncType ObjType::*, ObjType *, ArgTypes && ...)': "
 					  "FuncType must be a function, a pointer to function, or a pointer to member function");
-		return std::bind(func, obj, forward<ArgTypes>(args) ...);
+		return std::bind(func, obj, stdx::functional::forward<ArgTypes>(args) ...);
 	}
 }
 

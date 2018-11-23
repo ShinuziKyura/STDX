@@ -8,7 +8,7 @@ void func()
 	std::this_thread::sleep_for(std::chrono::seconds(1));
 }
 
-int test2()
+int example_2()
 {
 	auto start = std::chrono::steady_clock::now();
 
