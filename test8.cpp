@@ -36,15 +36,15 @@ int test8()
 	
 	while (count != 9)
 	{
-		int & b_ref = STDX_FLOW_JUMP_POINT(a(++count));
+		int & b_ref = STDX_FLOW_MARK_AND_INVOKE(a(++count));
 		
-		if (STDX_FLOW_JUMP_STATUS())
+		if (STDX_FLOW_STATUS())
 		{
 			std::cout << "b(" << b_ref << ")\n";
 		}
 	}
 
-	STDX_FLOW_JUMP_POINT(func());
+	STDX_FLOW_MARK_AND_INVOKE(func());
 	
 	return 0;
 }

@@ -17,10 +17,10 @@
 	#endif
 #endif
 
-// Executes invocation while registering a point to jump to without returning through the call stack
-// When the invoked function returns or jumps, the jump point is unregistered
-#define STDX_FLOW_JUMP_POINT(invocation) STDX_MACRO_FUNCTION_n_ary(STDX_FLOW_JUMP_POINT, invocation)
-#define STDX_FLOW_JUMP_POINT_FUNCTION(context, uid, invocation) \
+// Executes invocation while marking a point to jump to without returning from the invocation
+// The point is removed once the invocation returns or jumps
+#define STDX_FLOW_MARK_AND_INVOKE(invocation) STDX_MACRO_FUNCTION_n_ary(STDX_FLOW_MARK_AND_INVOKE, invocation)
+#define STDX_FLOW_MARK_AND_INVOKE_function_(context, uid, invocation) \
 [&] (auto STDX_MACRO_VARIABLE(invocation_result, context, uid)) -> decltype(auto)\
 {\
 	if (setjmp(::stdx::this_thread::jmp_state().push_env()) == 0)\
@@ -42,28 +42,18 @@
 }\
 (::std::common_type<decltype(invocation)>())
 
-// Checks if there is a registered jump point to jump to
-#define STDX_FLOW_JUMP_POINT_STATUS() ::stdx::this_thread::jmp_state().check_env()
-
-// Returns execution to last defined jump point without returning through the call stack
-#define STDX_FLOW_JUMP(...) STDX_MACRO_FUNCTION_n_ary(STDX_FLOW_JUMP, __VA_ARGS__)
-#define STDX_FLOW_JUMP_FUNCTION(context, uid, ...) \
-[] (int STDX_MACRO_VARIABLE(status, context, uid) = 1)\
+// Returns execution to last marked jump point without returning through the call stack
+#define STDX_FLOW_JUMP() \
+[]\
 {\
-	if (::stdx::this_thread::jmp_state().check_env())\
-	{\
-		::stdx::this_thread::jmp_state().set_status(STDX_MACRO_VARIABLE(status, context, uid));\
-		::std::longjmp(::stdx::this_thread::jmp_state().get_env(), STDX_MACRO_VARIABLE(status, context, uid));\
-	}\
+	::stdx::this_thread::jmp_state().set_status(1);\
+	::std::longjmp(::stdx::this_thread::jmp_state().get_env(), 1);\
 }\
-(__VA_ARGS__)
+()
 
-// Checks if the last jump point was unregistered without jumping
-#define STDX_FLOW_JUMP_STATUS() ::stdx::this_thread::jmp_state().get_status() == 0
-
-// Invokes a function with a jump-guarded scope on any jump-guarded variables declared in its definition
+// Invokes a function with a jump-protected scope on any jump-protected variables declared in its definition
 #define STDX_FLOW_INVOKE(invocation) STDX_MACRO_FUNCTION_n_ary(STDX_FLOW_INVOKE, invocation)
-#define STDX_FLOW_INVOKE_FUNCTION(context, uid, invocation) \
+#define STDX_FLOW_INVOKE_function_(context, uid, invocation) \
 [&] (auto STDX_MACRO_VARIABLE(invocation_result, context, uid)) -> decltype(auto)\
 {\
 	::stdx::this_thread::jmp_state().push_stack();\
@@ -81,12 +71,12 @@
 }\
 (::std::common_type<decltype(invocation)>())
 
-// Declares a jump-guarded variable, limited by the scope of the outer STDX_FLOW_JUMP_POINT / STDX_FLOW_INVOKE / STDX_FLOW_SCOPE
+// Declares a jump-protected variable, limited by the scope of the outer STDX_FLOW_JUMP_POINT / STDX_FLOW_INVOKE / STDX_FLOW_SCOPE
 #define STDX_FLOW_DECLARE(declaration) STDX_MACRO_FUNCTION_n_ary(STDX_FLOW_DECLARE, declaration)
-#define STDX_FLOW_DECLARE_FUNCTION(context, uid, declaration) \
+#define STDX_FLOW_DECLARE_function_(context, uid, declaration) \
 [&] (auto STDX_MACRO_VARIABLE(declaration_result, context, uid)) -> decltype(auto)\
 {\
-	static_assert(!std::is_array_v<typename decltype(STDX_MACRO_VARIABLE(declaration_result, context, uid))::type>,\
+	static_assert(!::std::is_array_v<typename decltype(STDX_MACRO_VARIABLE(declaration_result, context, uid))::type>,\
 				  "'STDX_FLOW_DECLARE(declaration)': declaration must not be an array type");\
 	if constexpr (::std::is_trivially_destructible_v<typename decltype(STDX_MACRO_VARIABLE(declaration_result, context, uid))::type>)\
 	{\
@@ -99,10 +89,10 @@
 }\
 (::std::common_type<decltype(declaration)>())
 
-// Introduces a jump-guarded scope on any jump-guarded variables declared in the statement that follows this one 
-// [Note: This statement shouldn't be terminated by a semicolon -- end note]
+// Introduces a jump-protected scope on any jump-protected variables declared in the statement that follows this one 
+// [Note: This statement should not be terminated by a semicolon -- end note]
 #define STDX_FLOW_SCOPE() STDX_MACRO_FUNCTION_0_ary(STDX_FLOW_SCOPE)
-#define STDX_FLOW_SCOPE_FUNCTION(context, uid) \
+#define STDX_FLOW_SCOPE_function_(context, uid) \
 for (bool STDX_MACRO_VARIABLE(within, context, uid) = true;\
 [&STDX_MACRO_VARIABLE(within, context, uid)]\
 {\
@@ -118,5 +108,13 @@ for (bool STDX_MACRO_VARIABLE(within, context, uid) = true;\
 }\
 ();\
 STDX_MACRO_VARIABLE(within, context, uid) = false)
+
+// Checks if the last invocation returned without jumping
+#define STDX_FLOW_STATUS() \
+[]\
+{\
+	return ::stdx::this_thread::jmp_state().get_status() == 0;\
+}\
+()
 
 #endif

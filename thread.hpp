@@ -64,14 +64,6 @@ namespace stdx::thread
 		{
 			return _locals.top().top().emplace(std::make_unique<_jmp_var_obj<Type>>()).get_obj();
 		}
-		void pop_var()
-		{
-			_locals.top().top().pop();
-		}
-		bool check_var()
-		{
-			return !_locals.top().top().empty();
-		}
 
 		void push_stack()
 		{
@@ -79,21 +71,14 @@ namespace stdx::thread
 		}
 		void pop_stack()
 		{
-			while (check_var())
+			auto & stack = _locals.top().top();
+			while (!stack.empty())
 			{
-				pop_var();
+				stack.pop();
 			}
 			_locals.top().pop();
 		}
-		bool check_stack()
-		{
-			return !_locals.top().empty();
-		}
 
-		std::jmp_buf & get_env()
-		{
-			return _buffers.top().get_env();
-		}
 		std::jmp_buf & push_env()
 		{
 			_locals.emplace();
@@ -102,16 +87,17 @@ namespace stdx::thread
 		}
 		void pop_env()
 		{
-			while (check_stack())
+			auto & stack = _locals.top();
+			while (!stack.empty())
 			{
 				pop_stack();
 			}
 			_locals.pop();
 			_buffers.pop();
 		}
-		bool check_env()
+		std::jmp_buf & get_env()
 		{
-			return !_buffers.empty();
+			return _buffers.top().get_env();
 		}
 
 		int get_status()
