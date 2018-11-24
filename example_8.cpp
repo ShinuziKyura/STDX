@@ -4,14 +4,6 @@
 #include "flow.hpp"
 #include "utility.hpp"
 
-struct S
-{
-	~S()
-	{
-		std::cout << "Destructed\n";
-	}
-};
-
 namespace
 {
 	void func()
@@ -24,15 +16,11 @@ int b = 5;
 
 int & a(int count)
 {
-	STDX_FLOW_SCOPE()
 	if (count != b)
 	{
-		auto & s = STDX_FLOW_DECLARE(S());
-		std::cout << "Will jump - a(" << count << ")\n";
+		std::cout << "a(" << count << ")\n";
 		STDX_FLOW_JUMP();
 	}
-
-	std::cout << "Will not jump - ";
 
 	return b;
 }
@@ -51,7 +39,7 @@ int example_8()
 		}
 	}
 
-	STDX_FLOW_SET_AND_INVOKE(func());
+	func();
 	
 	return 0;
 }
