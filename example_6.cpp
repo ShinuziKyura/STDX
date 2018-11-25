@@ -9,7 +9,7 @@
 
 int example_6()
 {
-	stdx::unsynced_ios();
+	stdx::desync_io();
 
 	STDX_DEFINE_STOPWATCH(std::chrono::nanoseconds);
 

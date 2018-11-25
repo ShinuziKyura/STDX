@@ -236,28 +236,10 @@ namespace stdx::meta
 	template <class Valpack>
 	using as_reverse_valpack = typename _as_reverse_valpack<Valpack, valpack<>>::_type;
 
-		// Apply a trait that takes a type parameter to the type from a Val
-
-	template <template <class> class Trait>
-	struct apply_to_type
-	{
-		template <class Val>
-		using trait = Trait<typename Val::type>;
-	};
-
-		// Apply a trait that takes a non-type parameter to the value from a Val
-
-	template <template <auto> class Trait>
-	struct apply_to_value
-	{
-		template <class Val>
-		using trait = Trait<Val::value>;
-	};
-
 		// Apply a trait that takes a type parameter to a type from a Pack
 
 	template <template <class> class Trait, std::size_t Index = 0>
-	struct apply_to_pack
+	struct apply_to_pack_element
 	{
 		template <class Pack>
 		using first = Trait<typename Pack::first>;
@@ -270,7 +252,7 @@ namespace stdx::meta
 		// Apply a trait that takes a non-type parameter to a value from a Valpack
 
 	template <template <auto> class Trait, std::size_t Index = 0>
-	struct apply_to_valpack
+	struct apply_to_valpack_element
 	{
 		template <class Valpack>
 		using first = Trait<Valpack::first>;
@@ -290,11 +272,6 @@ namespace stdx::meta
 		using type = Type;
 	};
 
-		// Cast from one type to another, if they are convertible
-
-	template <class Type1, class Type2>
-	using type_cast = std::enable_if_t<std::is_convertible_v<Type1, Type2>, Type2>;
-
 		// Check if a type is an instantiation of a class template
 
 	template <class, template <class ...> class>
@@ -310,33 +287,23 @@ namespace stdx::meta
 	template <class Class, template <class ...> class Template>
 	constexpr bool is_template_instantiation_v = is_template_instantiation<Class, Template>::value;
 
-		// Apply type parameters from template class instance to class template
+		// Apply a trait that takes a type parameter to a type alias that is a member of the instantiated type
 
-	template <template <class ...> class, class>
-	struct _apply_type_parameters;
-
-	template <template <class ...> class Template1, template <class ...> class Template2, class ... Parameters>
-	struct _apply_type_parameters<Template1, Template2<Parameters ...>>
+	template <template <class> class Trait>
+	struct apply_to_type
 	{
-		using _type = Template1<Parameters ...>;
+		template <class Type>
+		using trait = Trait<typename Type::type>;
 	};
 
-	template <template <class ...> class Template, class Class>
-	using apply_type_parameters = typename _apply_type_parameters<Template, Class>::_type;
+		// Apply a trait that takes a non-type parameter to a constant value that is a member of the instantiated type
 
-		// Apply value parameters from template class instance to class template
-
-	template <template <auto ...> class, class>
-	struct _apply_value_parameters;
-
-	template <template <auto ...> class Template1, template <auto ...> class Template2, auto ... Parameters>
-	struct _apply_value_parameters<Template1, Template2<Parameters ...>>
+	template <template <auto> class Trait>
+	struct apply_to_value
 	{
-		using _type = Template1<Parameters ...>;
+		template <class Type>
+		using trait = Trait<Type::value>;
 	};
-
-	template <template <auto ...> class Template, class Class>
-	using apply_value_parameters = typename _apply_value_parameters<Template, Class>::_type;
 
 		// Add cv through ref, provides type alias for Type, where if Type is a reference to a possibly cv-qualified type T, the type alias is of reference to that type T with added cv-qualifiers
 
@@ -406,21 +373,9 @@ namespace stdx::meta
 	};
 
 	template <class Type>
-	struct remove_const_through_ref<Type const volatile &>
-	{
-		using type = Type volatile &;
-	};
-
-	template <class Type>
 	struct remove_const_through_ref<Type const &&>
 	{
 		using type = Type &&;
-	};
-
-	template <class Type>
-	struct remove_const_through_ref<Type const volatile &&>
-	{
-		using type = Type volatile &&;
 	};
 
 	template <class Type>
@@ -439,21 +394,9 @@ namespace stdx::meta
 	};
 
 	template <class Type>
-	struct remove_volatile_through_ref<Type const volatile &>
-	{
-		using type = Type const &;
-	};
-
-	template <class Type>
 	struct remove_volatile_through_ref<Type volatile &&>
 	{
 		using type = Type &&;
-	};
-
-	template <class Type>
-	struct remove_volatile_through_ref<Type const volatile &&>
-	{
-		using type = Type const &&;
 	};
 
 	template <class Type>
@@ -607,8 +550,8 @@ namespace stdx::meta
 			short
 		>::endif;
 
-	template <class ArithmeticType> // Stands for half int
-	using hint_t = 
+	template <class ArithmeticType>
+	using half_t = 
 		typename type_if<std::is_unsigned_v<ArithmeticType>>::template then<
 			typename type_if<bool(sizeof(ArithmeticType) == sizeof(unsigned long long))>::template then<
 				type_if<bool(sizeof(unsigned long) < sizeof(unsigned long long))>::then<

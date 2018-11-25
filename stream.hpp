@@ -14,7 +14,7 @@
 
 namespace stdx::stream
 {
-#if STDX_USING_CXX2A
+#if _HAS_CXX20
 	template <class CharType, class Traits>
 	inline auto _initialize_osyncstream(std::basic_ostream<CharType, Traits> & stream)
 	{

@@ -115,7 +115,7 @@ namespace stdx::thread
 	};
 
 	template <class FuncType, class ... ArgTypes>
-	void daemon(FuncType func, ArgTypes && ... args)
+	void daemon(FuncType func, ArgTypes && ... args) // TODO: register daemon in global table
 	{
 		std::thread(func, std::forward<ArgTypes>(args) ...).detach();
 	}

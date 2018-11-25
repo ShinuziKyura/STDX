@@ -16,6 +16,7 @@ int b = 5;
 
 int & a(int count)
 {
+	STDX_FLOW_SCOPE
 	if (count != b)
 	{
 		std::cout << "a(" << count << ")\n";
@@ -27,6 +28,8 @@ int & a(int count)
 
 int example_8()
 {
+	stdx::desync_io();
+
 	int count = 0;
 	
 	while (count != 9)

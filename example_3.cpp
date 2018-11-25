@@ -16,7 +16,7 @@ struct ClassTemplate
 
 int example_3()
 {
-	[[maybe_unused]] stdx::constrained_pack<stdx::apply_to_pack<std::is_placeholder>::first, stdx::pack<stdx::pack<int &, int>, stdx::pack<double, double>, stdx::pack<decltype(std::placeholders::_1), bool>, stdx::pack<char, char &&>>> t1;
+	[[maybe_unused]] stdx::constrained_pack<stdx::apply_to_pack_element<std::is_placeholder>::first, stdx::pack<stdx::pack<int &, int>, stdx::pack<double, double>, stdx::pack<decltype(std::placeholders::_1), bool>, stdx::pack<char, char &&>>> t1;
 
 	[[maybe_unused]] stdx::transformed_pack<std::add_const, stdx::pack<stdx::pack<unsigned int, Class, double>, stdx::pack<float, bool>>> t2;
 
@@ -43,10 +43,6 @@ int example_3()
 	>::else_then<
 		char
 	>::endif();
-
-	stdx::type_cast<int, float>();
-
-//	stdx::type_cast<int, Class>(); // SFINAE error if not convertible
 
 	return 0;
 }

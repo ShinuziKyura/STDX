@@ -26,7 +26,7 @@
 #if defined(__clang__) || defined(__GNUG__) || defined(_MSC_VER)
 #define STDX_UNIQUE() __COUNTER__
 #else
-#error STDX_UNIQUE: Cannot guarantee uniqueness
+#error STDX_UNIQUE(): Cannot guarantee uniqueness
 //#define STDX_UNIQUE() __LINE__
 #endif
 

@@ -7,7 +7,6 @@
 #include "utility.hpp"
 #include "matrix.hpp"
 
-//#define STDX_STOPWATCH_RESOLUTION std::chrono::microseconds
 #include "stopwatch.hpp"
 #include "stream.hpp"
 
@@ -51,7 +50,7 @@ constexpr stdx::matrix<int, 3> A2({ 1, 2, 3,
 
 int example_5()
 {
-	stdx::unsynced_ios();
+	stdx::desync_io();
 
 	STDX_DEFINE_STOPWATCH(std::chrono::microseconds);
 

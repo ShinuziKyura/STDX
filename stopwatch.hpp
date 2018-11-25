@@ -2,7 +2,7 @@
 #define STDX_STOPWATCH_HPP
 
 #include <utility>
-#include <list>
+#include <deque>
 #include <chrono>
 
 // Defines stopwatch alias with std::chrono::duration<Rep, Period> as the stopwatch resolution. Defaults to std::chrono::nanoseconds if no resolution is specified.
@@ -41,7 +41,7 @@ namespace stdx::chrono
 				_total_time = rep_type();
 			}
 		}
-		static std::list<rep_type> split_times()
+		static std::deque<rep_type> split_times()
 		{
 			return _split_times;
 		}
@@ -58,18 +58,20 @@ namespace stdx::chrono
 		{
 			if (_is_ticking)
 			{
+				auto start_point = std::exchange(_split_point, std::chrono::steady_clock::now());
+				auto split_time = _split_times.emplace_back(std::chrono::duration_cast<Resolution>(_split_point - start_point).count());
+				
+				_total_time += split_time;
 				_is_ticking = ticking;
 
-				auto start_point = std::exchange(_split_point, std::chrono::steady_clock::now());
-				_total_time += _split_times.emplace_back(std::chrono::duration_cast<Resolution>(_split_point - start_point).count());
-				return _split_times.back();
+				return split_time;
 			}
 			return rep_type();
 		}
 
 		thread_local static inline bool										_is_ticking = false;
 		thread_local static inline std::chrono::steady_clock::time_point	_split_point;
-		thread_local static inline std::list<rep_type>						_split_times;
+		thread_local static inline std::deque<rep_type>						_split_times;
 		thread_local static inline rep_type									_total_time = rep_type();
 	};
 }

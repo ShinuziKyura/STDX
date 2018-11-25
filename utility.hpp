@@ -28,17 +28,18 @@ namespace stdx
 	template <class Type>
 	[[nodiscard]] constexpr bool _once(Type)
 	{
-		static bool once = true; // Would it make more sense for this to be thread_local?
+		static bool once = true;
 		return std::exchange(once, false);
 	}
 
-	// [Note: Currently calling this function is a no-op --end note] Should be called only once, inside a non-reentrant function, before any IO operation has happened
-	inline void unsynced_ios()
+	// Should be called only before any IO operation has happened
+	inline void desync_io()
 	{
-	/*	std::setvbuf(stdin, NULL, _IOFBF, BUFSIZ);
-		std::setvbuf(stdout, NULL, _IOFBF, BUFSIZ);
-		std::setvbuf(stderr, NULL, _IOFBF, BUFSIZ);
-		std::ios_base::sync_with_stdio(false); */
+	//	std::setvbuf(stdin, NULL, _IOFBF, BUFSIZ);
+	//	std::setvbuf(stdout, NULL, _IOFBF, BUFSIZ);
+	//	std::setvbuf(stderr, NULL, _IOFBF, BUFSIZ);
+
+		std::ios_base::sync_with_stdio(false);
 	}
 
 	inline void await_input()

@@ -10,12 +10,9 @@
 
 namespace stdx::mutex
 {	
-	template <class MutexType>
 	class ranked_mutex
 	{
 	public:
-		using mutex_type = MutexType;
-
 		ranked_mutex(std::size_t rank) noexcept :
 			_rank(rank)
 		{
@@ -28,31 +25,42 @@ namespace stdx::mutex
 		void lock()
 		{
 			_check_next_mutex();
+
 			_mutex.lock();
+
 			_previous_mutex = _current_mutex;
 			_current_mutex = this;
 		}
 		bool try_lock()
 		{
 			_check_next_mutex();
+
 			if (_mutex.try_lock())
 			{
 				_previous_mutex = _current_mutex;
 				_current_mutex = this;
+
 				return true;
 			}
+
 			return false;
 		}
 		void unlock()
 		{
 			_check_current_mutex();
+
 			_current_mutex = _previous_mutex;
+
 			_mutex.unlock();
+		}
+		std::size_t rank() const
+		{
+			return _rank;
 		}
 	private:
 		void _check_next_mutex()
 		{
-			if (_current_mutex && _current_mutex->_rank >= _rank) // Only allows totally ordered mutexes
+			if (_current_mutex && _current_mutex->_rank >= _rank) // Only allow totally ordered mutexes
 			{
 				_unlock_previous_mutexes();
 				std::logic_error("Thread rank invariant violated on lock / try_lock!");
@@ -60,7 +68,7 @@ namespace stdx::mutex
 		}
 		void _check_current_mutex()
 		{
-			if (_current_mutex->_rank != _rank)
+			if (_current_mutex != this)
 			{
 				_unlock_previous_mutexes();
 				std::logic_error("Thread rank invariant violated on unlock!");
@@ -78,7 +86,7 @@ namespace stdx::mutex
 		thread_local static inline ranked_mutex * _current_mutex = nullptr;
 		ranked_mutex * _previous_mutex = nullptr;
 		std::size_t const _rank;
-		mutex_type _mutex;
+		std::mutex _mutex;
 	};
 
 	class spin_mutex

@@ -52,6 +52,9 @@
 }\
 (__VA_ARGS__)
 
+// Checks the status of the last set jump point
+#define STDX_FLOW_STATUS() ::stdx::this_thread::jmp_state().get_status()
+
 // Invokes a function with a jump-protected scope on any jump-protected variables declared in it
 #define STDX_FLOW_INVOKE(invocation) STDX_MACRO_FUNCTION_N_ARY(FLOW_INVOKE, invocation)
 #define STDX_implementation_FLOW_INVOKE(context, invocation) \
@@ -90,7 +93,7 @@
 
 // Introduces a jump-protected scope on any jump-protected variables declared in the statement that follows this one 
 // [Note: This statement should not be terminated by a semicolon --end note]
-#define STDX_FLOW_SCOPE() STDX_MACRO_FUNCTION_0_ARY(FLOW_SCOPE)
+#define STDX_FLOW_SCOPE STDX_MACRO_FUNCTION_0_ARY(FLOW_SCOPE)
 #define STDX_implementation_FLOW_SCOPE(context) \
 for (\
 	bool STDX_MACRO_VARIABLE(within, context) = true;\
@@ -109,13 +112,5 @@ for (\
 	();\
 	STDX_MACRO_VARIABLE(within, context) = false\
 )
-
-// Checks if the last invocation returned without jumping
-#define STDX_FLOW_STATUS() \
-[]\
-{\
-	return ::stdx::this_thread::jmp_state().get_status();\
-}\
-()
 
 #endif
