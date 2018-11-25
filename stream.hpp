@@ -49,7 +49,7 @@ namespace stdx::stream
 			streambuf_type(),
 			_streams({ streams ... })
 		{
-			static_assert(stdx::meta::conjunction<stdx::meta::bind<std::is_base_of, streambuf_type, stdx::meta::placeholders::_1>::invoke>::template trait<StreambufTypes ...>::value, 
+			static_assert(stdx::meta::conjunction_v<stdx::meta::bind<std::is_base_of, streambuf_type, stdx::meta::placeholders::_1>::invoke, StreambufTypes ...>, 
 						  "'stdx::stream::basic_multibuf<CharType, TraitsType>::basic_multibuf(StreambufTypes * ...)': StreambufTypes must be of type or derived of type std::basic_streambuf<CharType, TraitsType>");
 		}
 		basic_multibuf(basic_multibuf const & other) :
@@ -71,7 +71,7 @@ namespace stdx::stream
 			streambuf_type::swap(other);
 			_streams.swap(other._streams);
 		}
-	protected: // See https://en.cppreference.com/w/cpp/io/basic_streambuf
+	protected: // See https://en.cppreference.com/w/cpp/io/basic_streambuf // TODO: possibly better error-handling
 		// Locales
 		virtual void imbue(std::locale const & loc) override
 		{
@@ -194,7 +194,7 @@ namespace stdx::stream
 
 	using multibuf = basic_multibuf<std::streambuf::char_type>;
 
-	// Stream traits
+	// Streamroute
 
 	namespace policy
 	{
@@ -218,8 +218,8 @@ namespace stdx::stream
 			_source(source),
 			_buffer(source.rdbuf(new multibuf(source.rdbuf(), destination.rdbuf() ...)))
 		{
-			static_assert(stdx::meta::conjunction<stdx::meta::bind<std::is_base_of, StreamType, stdx::meta::placeholders::_1>::invoke>::template trait<OutstreamTypes ...>::value,
-							"'stdx::stream::streamroute<StreamType, policy::replicate>::streamroute(StreamType &, OutstreamTypes & ...)': OstreamTypes must be an instance of or derived from type StreamType");
+			static_assert(stdx::meta::conjunction_v<stdx::meta::bind<std::is_base_of, StreamType, stdx::meta::placeholders::_1>::invoke, OutstreamTypes ...>,
+						  "'stdx::stream::streamroute<StreamType, policy::replicate>::streamroute(StreamType &, OutstreamTypes & ...)': OstreamTypes must be an instance of or derived from type StreamType");
 		}
 		streamroute(streamroute const &) = delete;
 		streamroute & operator=(streamroute const &) = delete;

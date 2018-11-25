@@ -7,8 +7,8 @@
 #include "stdx_macros.hpp"
 
 // Declares an anonymous variable whose lifetime is limited to the scope where it is declared; should be declared only inside functions or at the global scope, one per line
-#define STDX_SCOPED_VARIABLE(...) STDX_MACRO_FUNCTION_n_ary(STDX_SCOPED_VARIABLE, __VA_ARGS__)
-#define STDX_SCOPED_VARIABLE_function_(context, ...) [[maybe_unused]] auto STDX_MACRO_VARIABLE(variable, context) = __VA_ARGS__
+#define STDX_SCOPED_VARIABLE(...) STDX_MACRO_FUNCTION_N_ARY(SCOPED_VARIABLE, __VA_ARGS__)
+#define STDX_implementation_SCOPED_VARIABLE(context, ...) [[maybe_unused]] auto STDX_MACRO_VARIABLE(variable, context) = __VA_ARGS__
 
 // Marks a class as polymorphic; should be declared in base clause of the class
 #define STDX_POLYMORPHIC_CLASS protected virtual ::stdx::_polymorphic

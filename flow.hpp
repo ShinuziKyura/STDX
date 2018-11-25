@@ -19,8 +19,8 @@
 
 // Invokes a function with a jump-protected scope on any jump-protected variables declared in it while setting a point to jump to without returning from the function
 // The point is removed once the function returns or is jumped from
-#define STDX_FLOW_SET_AND_INVOKE(invocation) STDX_MACRO_FUNCTION_n_ary(STDX_FLOW_SET_AND_INVOKE, invocation)
-#define STDX_FLOW_SET_AND_INVOKE_function_(context, invocation) \
+#define STDX_FLOW_SET_AND_INVOKE(invocation) STDX_MACRO_FUNCTION_N_ARY(FLOW_SET_AND_INVOKE, invocation)
+#define STDX_implementation_FLOW_SET_AND_INVOKE(context, invocation) \
 [&] (auto STDX_MACRO_VARIABLE(invocation_result, context)) -> decltype(auto)\
 {\
 	if (setjmp(::stdx::this_thread::jmp_state().push_buf()) == 0)\
@@ -43,8 +43,8 @@
 (::std::common_type<decltype(invocation)>())
 
 // Returns execution to last set jump point
-#define STDX_FLOW_JUMP(...) STDX_MACRO_FUNCTION_n_ary(STDX_FLOW_JUMP, __VA_ARGS__)
-#define STDX_FLOW_JUMP_function_(context, ...) \
+#define STDX_FLOW_JUMP(...) STDX_MACRO_FUNCTION_N_ARY(FLOW_JUMP, __VA_ARGS__)
+#define STDX_implementation_FLOW_JUMP(context, ...) \
 [] (int STDX_MACRO_VARIABLE(status, context) = 1)\
 {\
 	::stdx::this_thread::jmp_state().set_status(STDX_MACRO_VARIABLE(status, context));\
@@ -53,8 +53,8 @@
 (__VA_ARGS__)
 
 // Invokes a function with a jump-protected scope on any jump-protected variables declared in it
-#define STDX_FLOW_INVOKE(invocation) STDX_MACRO_FUNCTION_n_ary(STDX_FLOW_INVOKE, invocation)
-#define STDX_FLOW_INVOKE_function_(context, invocation) \
+#define STDX_FLOW_INVOKE(invocation) STDX_MACRO_FUNCTION_N_ARY(FLOW_INVOKE, invocation)
+#define STDX_implementation_FLOW_INVOKE(context, invocation) \
 [&] (auto STDX_MACRO_VARIABLE(invocation_result, context)) -> decltype(auto)\
 {\
 	::stdx::this_thread::jmp_state().push_stack();\
@@ -73,8 +73,8 @@
 (::std::common_type<decltype(invocation)>())
 
 // Declares a jump-protected variable, whose lifetime is controlled by the containing jump-protected scope
-#define STDX_FLOW_DECLARE(declaration) STDX_MACRO_FUNCTION_n_ary(STDX_FLOW_DECLARE, declaration)
-#define STDX_FLOW_DECLARE_function_(context, declaration) \
+#define STDX_FLOW_DECLARE(declaration) STDX_MACRO_FUNCTION_N_ARY(FLOW_DECLARE, declaration)
+#define STDX_implementation_FLOW_DECLARE(context, declaration) \
 [&] (auto STDX_MACRO_VARIABLE(declaration_result, context)) -> decltype(auto)\
 {\
 	if constexpr (!::std::is_trivially_destructible_v<typename decltype(STDX_MACRO_VARIABLE(declaration_result, context))::type>)\
@@ -90,8 +90,8 @@
 
 // Introduces a jump-protected scope on any jump-protected variables declared in the statement that follows this one 
 // [Note: This statement should not be terminated by a semicolon --end note]
-#define STDX_FLOW_SCOPE() STDX_MACRO_FUNCTION_0_ary(STDX_FLOW_SCOPE)
-#define STDX_FLOW_SCOPE_function_(context) \
+#define STDX_FLOW_SCOPE() STDX_MACRO_FUNCTION_0_ARY(FLOW_SCOPE)
+#define STDX_implementation_FLOW_SCOPE(context) \
 for (\
 	bool STDX_MACRO_VARIABLE(within, context) = true;\
 	[&STDX_MACRO_VARIABLE(within, context)]\

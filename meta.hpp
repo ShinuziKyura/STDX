@@ -13,11 +13,8 @@ namespace stdx::meta
 	namespace _implementation
 	{
 		struct _undefined;
-		struct _defined
-		{
-		};
 
-		template <size_t>
+		template <std::size_t>
 		struct _placeholder;
 	}
 
@@ -74,37 +71,37 @@ namespace stdx::meta
 	template <class ...>
 	struct pack
 	{
-		static constexpr size_t size = 0;
+		static constexpr std::size_t size = 0;
 
 		template <class ... Types>
 		using push = pack<Types ...>;
-		template <size_t N>
+		template <std::size_t N>
 		using pop = pack<>;
 	};
 
 	template <class Type>
 	struct pack<Type>
 	{
-		static constexpr size_t size = 1;
+		static constexpr std::size_t size = 1;
 		using first = Type;
 		using last = Type;
 
 		template <class ... Types>
 		using push = pack<Type, Types ...>;
-		template <size_t N>
+		template <std::size_t N>
 		using pop = std::conditional_t<bool(N), pack<>, pack<Type>>;
 	};
 
 	template <class Type, class ... Types>
 	struct pack<Type, Types ...>
 	{
-		static constexpr size_t size = 1 + sizeof...(Types);
+		static constexpr std::size_t size = 1 + sizeof...(Types);
 		using first = Type;
 		using last = typename pack<Types ...>::last;
 
 		template <class ... Types1>
 		using push = pack<Type, Types ..., Types1 ...>;
-		template <size_t N>
+		template <std::size_t N>
 		using pop = std::conditional_t<bool(N), typename pack<Types ...>::template pop<N - 1>, pack<Type, Types ...>>;
 	};
 
@@ -113,37 +110,37 @@ namespace stdx::meta
 	template <auto ...>
 	struct valpack
 	{
-		static constexpr size_t size = 0;
+		static constexpr std::size_t size = 0;
 
 		template <auto ... Values>
 		using push = valpack<Values ...>;
-		template <size_t N>
+		template <std::size_t N>
 		using pop = valpack<>;
 	};
 
 	template <auto Value>
 	struct valpack<Value>
 	{
-		static constexpr size_t size = 1;
+		static constexpr std::size_t size = 1;
 		static constexpr auto first = Value;
 		static constexpr auto last = Value;
 
 		template <auto ... Values>
 		using push = valpack<Value, Values ...>;
-		template <size_t N>
+		template <std::size_t N>
 		using pop = std::conditional_t<bool(N), valpack<>, valpack<Value>>;
 	};
 
 	template <auto Value, auto ... Values>
 	struct valpack<Value, Values ...>
 	{
-		static constexpr size_t size = 1 + sizeof...(Values);
+		static constexpr std::size_t size = 1 + sizeof...(Values);
 		static constexpr auto first = Value;
 		static constexpr auto last = valpack<Values ...>::last;
 
 		template <auto ... Values1>
 		using push = valpack<Value, Values ..., Values1 ...>;
-		template <size_t N>
+		template <std::size_t N>
 		using pop = std::conditional_t<bool(N), typename valpack<Values ...>::template pop<N - 1>, valpack<Value, Values ...>>;
 	};
 
@@ -259,7 +256,7 @@ namespace stdx::meta
 
 		// Apply a trait that takes a type parameter to a type from a Pack
 
-	template <template <class> class Trait, size_t Index = 0>
+	template <template <class> class Trait, std::size_t Index = 0>
 	struct apply_to_pack
 	{
 		template <class Pack>
@@ -272,7 +269,7 @@ namespace stdx::meta
 
 		// Apply a trait that takes a non-type parameter to a value from a Valpack
 
-	template <template <auto> class Trait, size_t Index = 0>
+	template <template <auto> class Trait, std::size_t Index = 0>
 	struct apply_to_valpack
 	{
 		template <class Valpack>
@@ -575,59 +572,43 @@ namespace stdx::meta
 	template <bool Condition>
 	using value_if = _value_if<Condition, _implementation::_undefined>;
 
-		// Conjunction // Review this (make interface more similar to std versions)
+		// Conjunction
 
-	template <class ... BoolTypes>
-	constexpr bool _conjunction(BoolTypes ... booleans)
+	template <template <class> class Trait, class ... Types>
+	struct conjunction : std::bool_constant<(...&& Trait<Types>::value)>
 	{
-		return (... && booleans);
-	}
-
-	template <template <class> class Trait>
-	struct conjunction
-	{
-		template <class ... Types>
-		using trait = std::bool_constant<_conjunction(Trait<Types>::value ...)>;
 	};
 
-		// Disjunction // Review this (make interface more similar to std versions)
+	template <template <class> class Trait, class ... Types>
+	constexpr bool conjunction_v = conjunction<Trait, Types ...>::value;
 
-	template <class ... BoolTypes>
-	constexpr bool _disjunction(BoolTypes ... booleans)
-	{
-		return (... || booleans);
-	}
+		// Disjunction
 
-	template <template <class> class Trait>
-	struct disjunction
+	template <template <class> class Trait, class ... Types>
+	struct disjunction : std::bool_constant<(... || Trait<Types>::value)>
 	{
-		template <class ... Types>
-		using trait = std::bool_constant<_disjunction(Trait<Types>::value ...)>;
 	};
+
+	template <template <class> class Trait, class ... Types>
+	constexpr bool disjunction_v = disjunction<Trait, Types ...>::value;
 
 	// Numeric traits
 
 		// Aliases
 
-	using i_literal_t = unsigned long long;
-
-	using fp_literal_t = long double;
-
 	using ssize_t = 
-		type_if<bool(sizeof(size_t) == sizeof(unsigned long long))>::then<
+		type_if<bool(sizeof(std::size_t) == sizeof(unsigned long long))>::then<
 			long long
-		>::else_if<bool(sizeof(size_t) == sizeof(unsigned long))>::then<
+		>::else_if<bool(sizeof(std::size_t) == sizeof(unsigned long))>::then<
 			long
-		>::else_if<bool(sizeof(size_t) == sizeof(unsigned int))>::then<
+		>::else_if<bool(sizeof(std::size_t) == sizeof(unsigned int))>::then<
 			int
-		>::else_if<bool(sizeof(size_t) == sizeof(unsigned short))>::then<
+		>::else_if<bool(sizeof(std::size_t) == sizeof(unsigned short))>::then<
 			short
-		>::else_then<
-			char
 		>::endif;
 
-	template <class ArithmeticType>
-	using hsize_t = 
+	template <class ArithmeticType> // Stands for half int
+	using hint_t = 
 		typename type_if<std::is_unsigned_v<ArithmeticType>>::template then<
 			typename type_if<bool(sizeof(ArithmeticType) == sizeof(unsigned long long))>::template then<
 				type_if<bool(sizeof(unsigned long) < sizeof(unsigned long long))>::then<
@@ -756,26 +737,26 @@ namespace stdx::meta
 	{
 		static_assert(Char >= '0' && Char <= '9', "Invalid character in number representation!");
 
-		static constexpr size_t _value = Char - '0';
+		static constexpr std::size_t _value = Char - '0';
 	};
 
 	template <char Char>
-	constexpr size_t intchar = _intchar<Char>::_value;
+	constexpr std::size_t intchar = _intchar<Char>::_value;
 
-	template <class CharPack, size_t Position>
+	template <class CharPack, std::size_t Position>
 	struct _intstring
 	{
-		static constexpr size_t _value = _intstring<typename CharPack::template pop<1>, Position * 10>::_value + _intchar<CharPack::first>::_value * Position;
+		static constexpr std::size_t _value = _intstring<typename CharPack::template pop<1>, Position * 10>::_value + _intchar<CharPack::first>::_value * Position;
 	};
 
-	template <size_t Position>
+	template <std::size_t Position>
 	struct _intstring<valpack<>, Position>
 	{
-		static constexpr size_t _value = 0;
+		static constexpr std::size_t _value = 0;
 	};
 
 	template <char ... Chars>
-	constexpr size_t intstring = _intstring<as_reverse_valpack<valpack<Chars ...>>, 1>::_value;
+	constexpr std::size_t intstring = _intstring<as_reverse_valpack<valpack<Chars ...>>, 1>::_value;
 
 	// Container types
 
@@ -864,7 +845,7 @@ namespace stdx::meta
 
 		// Merged pack, merges several packs of the same size into one pack of packs where the nth pack contains the nth elements of each original pack
 
-	template <size_t N, class OutPack, class ... InPack>
+	template <std::size_t N, class OutPack, class ... InPack>
 	struct _merged_pack : _merged_pack<N - 1, typename OutPack::template push<pack<typename InPack::first ...>>, typename InPack::template pop<1> ...>
 	{
 	};
@@ -1203,10 +1184,12 @@ namespace stdx::meta
 	{
 	};
 
-	template <template <class ...> class Template, size_t Index, class ... Types1, class Pack2>
+	template <template <class ...> class Template, std::size_t Index, class ... Types1, class Pack2>
 	struct _bind<Template, pack<_implementation::_placeholder<Index>, Types1 ...>, Pack2> : _bind<Template, pack<Types1 ..., typename Pack2::template pop<Index - 1>::first>, Pack2>
 	{
-		static_assert(Index <= Pack2::size, "'stdx::meta::bind<Template, BoundTypes ...>::invoke<Types ...>': For BoundTypes of type stdx::meta::_implementation::_placeholder<Index>, Index must be less or equal than sizeof...(Types)");
+		static_assert(Index <= Pack2::size, 
+					  "'stdx::meta::bind<Template, BoundTypes ...>::invoke<Types ...>': "
+					  "For BoundTypes of type stdx::meta::_implementation::_placeholder<Index>, Index must be less or equal than sizeof...(Types)");
 	};
 
 	template <template <class ...> class Template, class ... Types1, class Pack2>

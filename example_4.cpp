@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "functional.hpp"
+#include "utility.hpp"
 
 class MyClass
 {
@@ -27,26 +28,32 @@ using MyClassRC = MyClass const &&;
 
 int MyMethod(MyClass object)
 {
+	std::cout << "\t\t----\n";
 	return object.i += 1;
 }
 int MyMethodC(MyClass const object)
 {
+	std::cout << "\t\t----\n";
 	return object.i + 1;
 }
 int MyMethodL(MyClass & object)
 {
+	std::cout << "\t\t----\n";
 	return object.i += 1;
 }
 int MyMethodLC(MyClass const & object)
 {
+	std::cout << "\t\t----\n";
 	return object.i + 1;
 }
 int MyMethodR(MyClass && object)
 {
+	std::cout << "\t\t----\n";
 	return object.i += 1;
 }
 int MyMethodRC(MyClass const && object)
 {
+	std::cout << "\t\t----\n";
 	return object.i + 1;
 }
 
@@ -140,6 +147,8 @@ int example_4()
 	stdx::functional::bind(MyMethodRC, std::move(MyObjectC))();
 
 	std::cout << "\t\t\ti: " << MyObject.i << "\nEnd" << std::endl;
+
+	stdx::await_input();
 	
 	return 0;
 }

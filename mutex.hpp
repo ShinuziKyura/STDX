@@ -16,7 +16,7 @@ namespace stdx::mutex
 	public:
 		using mutex_type = MutexType;
 
-		ranked_mutex(size_t rank) noexcept :
+		ranked_mutex(std::size_t rank) noexcept :
 			_rank(rank)
 		{
 		}
@@ -77,7 +77,7 @@ namespace stdx::mutex
 
 		thread_local static inline ranked_mutex * _current_mutex = nullptr;
 		ranked_mutex * _previous_mutex = nullptr;
-		size_t const _rank;
+		std::size_t const _rank;
 		mutex_type _mutex;
 	};
 
