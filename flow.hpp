@@ -53,7 +53,13 @@
 (__VA_ARGS__)
 
 // Checks the status of the last set jump point
-#define STDX_FLOW_STATUS() ::stdx::this_thread::jmp_state().get_status()
+#define STDX_FLOW_STATUS() STDX_MACRO_FUNCTION_0_ARY(FLOW_STATUS)
+#define STDX_implementation_FLOW_STATUS(context) \
+[]\
+{\
+	return ::stdx::this_thread::jmp_state().get_status();\
+}\
+()
 
 // Invokes a function with a jump-protected scope on any jump-protected variables declared in it
 #define STDX_FLOW_INVOKE(invocation) STDX_MACRO_FUNCTION_N_ARY(FLOW_INVOKE, invocation)
@@ -91,7 +97,7 @@
 }\
 (::std::common_type<decltype(declaration)>())
 
-// Introduces a jump-protected scope on any jump-protected variables declared in the statement that follows this one 
+// Introduces a jump-protected scope on any jump-protected variables declared in the next statement
 // [Note: This statement should not be terminated by a semicolon --end note]
 #define STDX_FLOW_SCOPE STDX_MACRO_FUNCTION_0_ARY(FLOW_SCOPE)
 #define STDX_implementation_FLOW_SCOPE(context) \
