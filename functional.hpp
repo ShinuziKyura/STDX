@@ -1,5 +1,5 @@
-#ifndef STDX_FUNCTIONAL_HPP
-#define STDX_FUNCTIONAL_HPP
+#ifndef STDX_implementation_FUNCTIONAL_HEADER
+#define STDX_implementation_FUNCTIONAL_HEADER
 
 #include <functional>
 
@@ -33,6 +33,8 @@ namespace stdx::functional
 			return std::bind(std::move<ValType &>, std::move(val));
 		}
 	}
+
+	// TODO: create own implementation
 
 	template <class FuncType, class ... ArgTypes> // Wrapper for std::bind that uses stdx::functional::forward to forward the arguments to the function
 	auto bind(FuncType * func, ArgTypes && ... args)

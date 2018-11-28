@@ -1,12 +1,12 @@
-#ifndef STDX_STREAM_HPP
-#define STDX_STREAM_HPP
+#ifndef STDX_implementation_STREAM_HEADER
+#define STDX_implementation_STREAM_HEADER
 
 #include <vector>
 #include <streambuf>
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#if STDX_USING_CXX2A
+#if _HAS_CXX20
 #include <syncstream>
 #endif
 
@@ -34,7 +34,7 @@ namespace stdx::stream
 	// Multibuf
 
 	template <class CharType, class TraitsType = std::char_traits<CharType>>
-	class basic_multibuf final : public std::basic_streambuf<CharType, TraitsType> // Based on this: http://wordaligned.org/articles/cpp-streambufs#toca-generic-version
+	class basic_multibuf final : public std::basic_streambuf<CharType, TraitsType> // FIXME: maybe this can be protected or private inheritance // Based on this: http://wordaligned.org/articles/cpp-streambufs#toca-generic-version
 	{
 	public:
 		using char_type = CharType;

@@ -1,10 +1,10 @@
-#ifndef STDX_FLOW_HPP
-#define STDX_FLOW_HPP
+#ifndef STDX_implementation_FLOW_HEADER
+#define STDX_implementation_FLOW_HEADER
 
 #include "thread.hpp"
-#include "stdx_macros.hpp"
+#include "utility_macros.hpp"
 
-#ifdef STDX_FLOW_SUPPRESS_WARNINGS
+#ifdef STDX_directive_FLOW_SUPPRESS_WARNINGS
 	#if defined(__clang__)
 		#pragma clang diagnostic ignored "-Wreturn-type" // TODO test this
 	#elif defined(__GNUG__)

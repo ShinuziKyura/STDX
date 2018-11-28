@@ -1,7 +1,5 @@
-#ifndef STDX_MACROS_HPP
-#define STDX_MACROS_HPP
-
-// For internal usage only
+#ifndef STDX_implementation_UTILITY_MACROS_HEADER
+#define STDX_implementation_UTILITY_MACROS_HEADER
 
 #define STDX_implementation_ENQUOTE(token) #token
 #define	STDX_ENQUOTE(token) STDX_implementation_ENQUOTE(token)
@@ -29,6 +27,8 @@
 #error STDX_UNIQUE(): Cannot guarantee uniqueness
 //#define STDX_UNIQUE() __LINE__
 #endif
+
+// For internal usage only
 
 #define STDX_MACRO_TYPE(identifier, context) STDX_CONCATENATE_4(STDX_implementation_, context, _, identifier)
 #define STDX_MACRO_FUNCTION_0_ARY(identifier) STDX_CONCATENATE_2(STDX_implementation_, identifier)(STDX_CONCATENATE_3(identifier, _, STDX_UNIQUE()))

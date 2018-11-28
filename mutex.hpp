@@ -1,5 +1,5 @@
-#ifndef STDX_MUTEX_HPP
-#define STDX_MUTEX_HPP
+#ifndef STDX_implementation_MUTEX_HEADER
+#define STDX_implementation_MUTEX_HEADER
 
 #include <limits>
 #include <thread>

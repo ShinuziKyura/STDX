@@ -1,5 +1,5 @@
-#ifndef STDX_THREAD_HPP
-#define STDX_THREAD_HPP
+#ifndef STDX_implementation_THREAD_HEADER
+#define STDX_implementation_THREAD_HEADER
 
 #include <csetjmp>
 

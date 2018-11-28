@@ -1,5 +1,5 @@
-#ifndef STDX_CONCURRENT_QUEUE_HPP
-#define STDX_CONCURRENT_QUEUE_HPP
+#ifndef STDX_implementation_CONCURRENT_QUEUE_HEADER
+#define STDX_implementation_CONCURRENT_QUEUE_HEADER
 
 #include <atomic>
 
