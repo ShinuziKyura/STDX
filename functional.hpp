@@ -18,7 +18,7 @@ namespace stdx::functional
 		}
 		else
 		{
-			return std::bind(std::move<ValType &>, std::move(val));
+			return std::bind(std::move<ValType &>, std::move(val)); // Ideally, this would pass a std::ref(val) to the inner bind, but we can't be sure that whatever value reached here is REALLY an lvalue
 		}
 	}
 	template <class ValType>
@@ -34,7 +34,7 @@ namespace stdx::functional
 		}
 	}
 
-	// TODO: create own implementation
+	// TODO: investigate possible improvements with lambda
 
 	template <class FuncType, class ... ArgTypes> // Wrapper for std::bind that uses stdx::functional::forward to forward the arguments to the function
 	auto bind(FuncType * func, ArgTypes && ... args)
