@@ -1,6 +1,6 @@
 #include <iostream>
 
-#define STDX_FLOW_SUPPRESS_WARNINGS
+#define STDX_directive_FLOW_SUPPRESS_WARNINGS
 #include "flow.hpp"
 #include "utility.hpp"
 
@@ -31,7 +31,7 @@ int example_8()
 	stdx::desync_io();
 
 	int count = 0;
-	
+
 	while (count != 9)
 	{
 		int & b_ref = STDX_FLOW_SET_AND_INVOKE(a(++count));

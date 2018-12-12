@@ -77,7 +77,7 @@ int example_5()
 	S s;
 	int i = 0;
 
-#include STDX_WHILE_ELSE
+#include STDX_LANGUAGE_WHILE_ELSE
 
 	stopwatch::start();
 
@@ -94,7 +94,7 @@ int example_5()
 
 	stdx::memzero(s);
 
-#include STDX_DO_WHILE
+#include STDX_LANGUAGE_DO_WHILE
 
 	stopwatch::start();
 

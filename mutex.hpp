@@ -1,5 +1,5 @@
-#ifndef STDX_MUTEX_HPP
-#define STDX_MUTEX_HPP
+#ifndef STDX_implementation_MUTEX_HEADER
+#define STDX_implementation_MUTEX_HEADER
 
 #include <limits>
 #include <thread>
@@ -7,6 +7,7 @@
 #include <atomic>
 
 #include "meta.hpp"
+#include "utility.hpp"
 
 namespace stdx::mutex
 {	
@@ -100,27 +101,27 @@ namespace stdx::mutex
 	
 		void lock()
 		{
-			while (_flag.test_and_set(std::memory_order_acquire))
+			while (_mutex.test_and_set(std::memory_order_acquire))
 			{
 				std::this_thread::yield();
 			}
 		}
 		bool try_lock()
 		{
-			return !_flag.test_and_set(std::memory_order_acquire);
+			return !_mutex.test_and_set(std::memory_order_acquire);
 		}
 		void unlock()
 		{
-			_flag.clear(std::memory_order_release);
+			_mutex.clear(std::memory_order_release);
 		}
 	private:
-		std::atomic_flag _flag = ATOMIC_FLAG_INIT;
+		std::atomic_flag _mutex = ATOMIC_FLAG_INIT;
 	};
 
 	class shared_spin_mutex
 	{
 		using _atomic_int_largest_lock_free_t =
-			typename stdx::meta::constrained_pack<
+			stdx::meta::constrained_pack<
 				stdx::meta::is_lock_free,
 				stdx::meta::pack<
 					std::atomic_int_least64_t,
@@ -132,7 +133,7 @@ namespace stdx::mutex
 				std::atomic_int_least64_t
 			>::first;
 		using _int_largest_lock_free_t =
-			typename _atomic_int_largest_lock_free_t::value_type;
+			_atomic_int_largest_lock_free_t::value_type;
 	public:
 		shared_spin_mutex() noexcept = default;
 		shared_spin_mutex(shared_spin_mutex const &) = delete;
@@ -142,63 +143,81 @@ namespace stdx::mutex
 
 		void lock()
 		{
-			_int_largest_lock_free_t available = 0;
+			_int_largest_lock_free_t mutex_state = 0;
 
-			while (!_flag.compare_exchange_weak(available, std::numeric_limits<_int_largest_lock_free_t>::min(), std::memory_order_acquire))
+			while (!_mutex.compare_exchange_weak(mutex_state, _exclusive_state, std::memory_order_acquire))
 			{
+				mutex_state = 0;
 				std::this_thread::yield();
-				available = 0;
 			}
 		}
 		bool try_lock()
 		{
-			_int_largest_lock_free_t available = 0;
+			_int_largest_lock_free_t mutex_state = 0;
 
-			return _flag.compare_exchange_weak(available, std::numeric_limits<_int_largest_lock_free_t>::min(), std::memory_order_acquire);
+			return _mutex.compare_exchange_weak(mutex_state, _exclusive_state, std::memory_order_acquire);
 		}
 		void unlock()
 		{
-			_flag.store(0, std::memory_order_release);
+			_mutex.store(0, std::memory_order_release);
 		}
 		void lock_shared()
 		{
-			_int_largest_lock_free_t available = _flag.load(std::memory_order_relaxed);
+			_int_largest_lock_free_t mutex_state = _mutex.load(std::memory_order_relaxed);
 
 			do
 			{
-				switch (available)
+				if (mutex_state < 0)
 				{
-					case std::numeric_limits<_int_largest_lock_free_t>::min():
-						std::this_thread::yield();
-						available = 0;
-						break;
-					case std::numeric_limits<_int_largest_lock_free_t>::max():
-						std::this_thread::yield();
-						--available;
-						break;
+					mutex_state = 0;
+					std::this_thread::yield();
+				}
+				else if (mutex_state == _shared_state_limit) // Edge case, we'll try decrementing now; we might get lucky on this attempt if one thread releases the mutex
+				{
+					--mutex_state;
+					std::this_thread::yield();
 				}
 			}
-			while (!_flag.compare_exchange_weak(available, available + 1, std::memory_order_acquire));
+			while (!_mutex.compare_exchange_weak(mutex_state, mutex_state + 1, std::memory_order_acquire));
 		}
 		bool try_lock_shared()
 		{
-			_int_largest_lock_free_t available = _flag.load(std::memory_order_relaxed);
-
-			switch (available)
+			_int_largest_lock_free_t mutex_state = _mutex.load(std::memory_order_relaxed);
+			
+			if (mutex_state < 0)
 			{
-				case std::numeric_limits<_int_largest_lock_free_t>::min():
-					available = 0;
-					break;
-				case std::numeric_limits<_int_largest_lock_free_t>::max():
-					--available;
-					break;
+				mutex_state = 0;
+			}
+			else if (mutex_state == _shared_state_limit)
+			{
+				--mutex_state;
 			}
 
-			return _flag.compare_exchange_weak(available, available + 1, std::memory_order_acquire);
+			return _mutex.compare_exchange_weak(mutex_state, mutex_state + 1, std::memory_order_acquire);
 		}
 		void unlock_shared()
 		{
-			_flag.fetch_sub(1, std::memory_order_release);
+			_mutex.fetch_sub(1, std::memory_order_release);
+		}
+		void upgrade()
+		{
+			STDX_SCOPED_VARIABLE(std::scoped_lock<spin_mutex>(_upgrade_mutex));
+
+			_int_largest_lock_free_t mutex_state = 1;
+
+			if (!_mutex.compare_exchange_strong(mutex_state, _exclusive_state, std::memory_order_acquire)) // Edge case, will avoid loops when single thread holds the mutex in shared mode
+			{
+				while (!_mutex.compare_exchange_weak(mutex_state, _exclusive_state + mutex_state - 1, std::memory_order_acquire));
+
+				while (_mutex.load(std::memory_order_acquire) != _exclusive_state)
+				{
+					std::this_thread::yield();
+				}
+			}
+		}
+		void downgrade()
+		{
+			_mutex.store(1, std::memory_order_release);
 		}
 
 		static constexpr bool is_lock_free()
@@ -207,10 +226,14 @@ namespace stdx::mutex
 		}
 		static constexpr auto maximum_number_of_owners()
 		{
-			return std::numeric_limits<_int_largest_lock_free_t>::max();
+			return _shared_state_limit;
 		}
 	private:
-		_atomic_int_largest_lock_free_t _flag = 0;
+		static constexpr auto _shared_state_limit = std::numeric_limits<_int_largest_lock_free_t>::max();
+		static constexpr auto _exclusive_state = std::numeric_limits<_int_largest_lock_free_t>::min();
+
+		_atomic_int_largest_lock_free_t _mutex = 0;
+		spin_mutex _upgrade_mutex;
 	};
 }
 

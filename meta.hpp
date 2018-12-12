@@ -1,5 +1,5 @@
-#ifndef STDX_META_HPP
-#define STDX_META_HPP
+#ifndef STDX_implementation_META_HEADER
+#define STDX_implementation_META_HEADER
 
 #include <type_traits>
 #include <utility>

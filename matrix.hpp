@@ -1,5 +1,5 @@
-#ifndef STDX_MATRIX_HPP
-#define STDX_MATRIX_HPP
+#ifndef STDX_implementation_MATRIX_HEADER
+#define STDX_implementation_MATRIX_HEADER
 
 #include <limits>
 #include <array>

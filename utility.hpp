@@ -1,10 +1,10 @@
-#ifndef STDX_UTILITY_HPP
-#define STDX_UTILITY_HPP
+#ifndef STDX_implementation_UTILITY_HEADER
+#define STDX_implementation_UTILITY_HEADER
 
 #include <iostream>
 #include <type_traits>
 
-#include "stdx_macros.hpp"
+#include "utility_macros.hpp"
 
 // Declares an anonymous variable whose lifetime is limited to the scope where it is declared; should be declared only inside functions or at the global scope, one per line
 #define STDX_SCOPED_VARIABLE(...) STDX_MACRO_FUNCTION_N_ARY(SCOPED_VARIABLE, __VA_ARGS__)
