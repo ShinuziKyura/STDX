@@ -199,26 +199,42 @@ namespace stdx::mutex
 		{
 			_mutex.fetch_sub(1, std::memory_order_release);
 		}
-		void upgrade()
+	/*	void upgrade()
 		{
-			STDX_SCOPED_VARIABLE(std::scoped_lock<spin_mutex>(_upgrade_mutex));
+		//	STDX_SCOPED_VARIABLE(std::scoped_lock<spin_mutex>(_upgrade_mutex));
+			_upgrade.fetch_add(1, std::memory_order_acquire);
 
 			_int_largest_lock_free_t mutex_state = 1;
 
 			if (!_mutex.compare_exchange_strong(mutex_state, _exclusive_state, std::memory_order_acquire)) // Edge case, will avoid loops when single thread holds the mutex in shared mode
 			{
-				while (!_mutex.compare_exchange_weak(mutex_state, _exclusive_state + mutex_state - 1, std::memory_order_acquire));
+				do
+				{
+					if (mutex_state < 0)
+					{
+						unlock_shared();
+
+						return lock();
+					}
+					if (mutex_state == _exclusive_state)
+					{
+						mutex_state = _upgrade.load(std::memory_order_relaxed);
+					}
+				}
+				while (!_mutex.compare_exchange_weak(mutex_state, _exclusive_state + mutex_state - _upgrade.load(std::memory_order_relaxed), std::memory_order_acquire));
 
 				while (_mutex.load(std::memory_order_acquire) != _exclusive_state)
 				{
 					std::this_thread::yield();
 				}
 			}
+
+			_upgrade.fetch_sub(1, std::memory_order_release);
 		}
 		void downgrade()
 		{
-			_mutex.store(1, std::memory_order_release);
-		}
+			_mutex.store(_upgrade.load(std::memory_order_relaxed) + 1, std::memory_order_release);
+		} */
 
 		static constexpr bool is_lock_free()
 		{
@@ -233,7 +249,8 @@ namespace stdx::mutex
 		static constexpr auto _exclusive_state = std::numeric_limits<_int_largest_lock_free_t>::min();
 
 		_atomic_int_largest_lock_free_t _mutex = 0;
-		spin_mutex _upgrade_mutex;
+	//	_atomic_int_largest_lock_free_t _upgrade = 0;
+	//	spin_mutex _upgrade_mutex;
 	};
 }
 
