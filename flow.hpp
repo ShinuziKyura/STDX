@@ -91,7 +91,7 @@
 }\
 (::std::common_type<decltype(declaration)>())
 
-// Introduces a jump-protected scope on any jump-protected variables declared in the statement that follows this one 
+// Introduces a jump-protected scope on any jump-protected variables declared in the next statement
 // [Note: This statement should not be terminated by a semicolon --end note]
 #define STDX_FLOW_SCOPE STDX_MACRO_FUNCTION_0_ARY(FLOW_SCOPE)
 #define STDX_implementation_FLOW_SCOPE(context) \
