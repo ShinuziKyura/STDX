@@ -7,7 +7,6 @@
 #include <atomic>
 
 #include "meta.hpp"
-#include "utility.hpp"
 
 namespace stdx::mutex
 {	
@@ -199,21 +198,26 @@ namespace stdx::mutex
 		{
 			_mutex.fetch_sub(1, std::memory_order_release);
 		}
-		void upgrade()
+		bool upgrade()
 		{
-			STDX_SCOPED_VARIABLE(std::scoped_lock<spin_mutex>(_upgrade_mutex));
-
-			_int_largest_lock_free_t mutex_state = 1;
-
-			if (!_mutex.compare_exchange_strong(mutex_state, _exclusive_state, std::memory_order_acquire)) // Edge case, will avoid loops when single thread holds the mutex in shared mode
+			std::unique_lock<spin_mutex> upgrade_lock(_upgrade_mutex, std::try_to_lock);
+			
+			if (upgrade_lock.owns_lock())
 			{
-				while (!_mutex.compare_exchange_weak(mutex_state, _exclusive_state + mutex_state - 1, std::memory_order_acquire));
+				_int_largest_lock_free_t mutex_state = 1;
 
-				while (_mutex.load(std::memory_order_acquire) != _exclusive_state)
+				if (!_mutex.compare_exchange_strong(mutex_state, _exclusive_state, std::memory_order_acquire)) // Edge case, will avoid loops when single thread holds the mutex in shared mode
 				{
-					std::this_thread::yield();
+					while (!_mutex.compare_exchange_weak(mutex_state, _exclusive_state + mutex_state - 1, std::memory_order_acquire));
+
+					while (_mutex.load(std::memory_order_acquire) != _exclusive_state)
+					{
+						std::this_thread::yield();
+					}
 				}
 			}
+
+			return upgrade_lock.owns_lock();
 		}
 		void downgrade()
 		{
