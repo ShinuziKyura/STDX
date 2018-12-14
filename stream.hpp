@@ -1,5 +1,5 @@
-#ifndef STDX_implementation_STREAM_HEADER
-#define STDX_implementation_STREAM_HEADER
+#ifndef STDX_header_STREAM
+#define STDX_header_STREAM
 
 #include <vector>
 #include <streambuf>

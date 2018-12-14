@@ -1,5 +1,5 @@
-#ifndef STDX_implementation_UTILITY_HEADER
-#define STDX_implementation_UTILITY_HEADER
+#ifndef STDX_header_UTILITY
+#define STDX_header_UTILITY
 
 #include <iostream>
 #include <type_traits>

@@ -1,5 +1,5 @@
-#ifndef STDX_implementation_ATOMIC_PTR_HEADER
-#define STDX_implementation_ATOMIC_PTR_HEADER
+#ifndef STDX_header_ATOMIC_PTR
+#define STDX_header_ATOMIC_PTR
 
 #include <atomic>
 #include <typeinfo>

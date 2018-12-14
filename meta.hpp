@@ -1,5 +1,5 @@
-#ifndef STDX_implementation_META_HEADER
-#define STDX_implementation_META_HEADER
+#ifndef STDX_header_META
+#define STDX_header_META
 
 #include <type_traits>
 #include <utility>

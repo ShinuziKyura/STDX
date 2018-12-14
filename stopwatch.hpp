@@ -1,5 +1,5 @@
-#ifndef STDX_implementation_STOPWATCH_HEADER
-#define STDX_implementation_STOPWATCH_HEADER
+#ifndef STDX_header_STOPWATCH
+#define STDX_header_STOPWATCH
 
 #include <utility>
 #include <deque>
