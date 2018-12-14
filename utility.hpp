@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <type_traits>
+#include <atomic>
 
 #include "utility_macros.hpp"
 
@@ -13,7 +14,7 @@
 // Marks a class as polymorphic; should be declared in base clause of the class
 #define STDX_POLYMORPHIC_CLASS protected virtual ::stdx::_polymorphic
 
-// Function call returns true on the first time execution passes through a particular invocation, and false on next invocations.
+// Function that returns true on first invocation, and false on next invocations; invocation is thread-safe and only the first invocation among multiple threads will return true
 #define STDX_ONCE() ::stdx::_once([]{})
 
 namespace stdx
@@ -26,10 +27,10 @@ namespace stdx
 	};
 
 	template <class Type>
-	[[nodiscard]] constexpr bool _once(Type)
+	[[nodiscard]] bool _once(Type)
 	{
-		static bool once = true;
-		return std::exchange(once, false);
+		static std::atomic_flag flag = ATOMIC_FLAG_INIT;
+		return !flag.test_and_set(std::memory_order_relaxed);
 	}
 
 	// Should be called only before any IO operation has happened
@@ -38,7 +39,7 @@ namespace stdx
 	//	std::setvbuf(stdin, NULL, _IOFBF, BUFSIZ);
 	//	std::setvbuf(stdout, NULL, _IOFBF, BUFSIZ);
 	//	std::setvbuf(stderr, NULL, _IOFBF, BUFSIZ);
-
+		
 		std::ios_base::sync_with_stdio(false);
 	}
 
