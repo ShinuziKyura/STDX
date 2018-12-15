@@ -1,5 +1,5 @@
-#ifndef STDX_implementation_FLOW_HEADER
-#define STDX_implementation_FLOW_HEADER
+#ifndef STDX_header_FLOW
+#define STDX_header_FLOW
 
 #include <csetjmp>
 #include <memory>

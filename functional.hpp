@@ -1,5 +1,5 @@
-#ifndef STDX_implementation_FUNCTIONAL_HEADER
-#define STDX_implementation_FUNCTIONAL_HEADER
+#ifndef STDX_header_FUNCTIONAL
+#define STDX_header_FUNCTIONAL
 
 #include <functional>
 

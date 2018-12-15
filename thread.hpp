@@ -1,5 +1,5 @@
-#ifndef STDX_implementation_THREAD_HEADER
-#define STDX_implementation_THREAD_HEADER
+#ifndef STDX_header_THREAD
+#define STDX_header_THREAD
 
 #include <thread>
 

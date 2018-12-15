@@ -1,5 +1,5 @@
-#ifndef STDX_implementation_LANGUAGE_HEADER
-#define STDX_implementation_LANGUAGE_HEADER
+#ifndef STDX_header_LANGUAGE
+#define STDX_header_LANGUAGE
 
 // Enables while-else loops, disables do-while loops
 #define STDX_LANGUAGE_WHILE_ELSE "while_else.lpp"

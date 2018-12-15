@@ -1,7 +1,7 @@
 #ifdef STDX_implementation_WIP
 
-#ifndef STDX_implementation_RANDOM_HEADER
-#define STDX_implementation_RANDOM_HEADER
+#ifndef STDX_header_RANDOM
+#define STDX_header_RANDOM
 
 #include <random>
 #include <array>
