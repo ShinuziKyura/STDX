@@ -1,5 +1,5 @@
-#ifndef STDX_implementation_UTILITY_MACROS_HEADER
-#define STDX_implementation_UTILITY_MACROS_HEADER
+#ifndef STDX_header_CORE
+#define STDX_header_CORE
 
 #define STDX_implementation_ENQUOTE(token) #token
 #define	STDX_ENQUOTE(token) STDX_implementation_ENQUOTE(token)
@@ -20,6 +20,8 @@
 #define	STDX_CONCATENATE_8(token1, token2, token3, token4, token5, token6, token7, token8) STDX_implementation_CONCATENATE_8(token1, token2, token3, token4, token5, token6, token7, token8)
 #define STDX_implementation_CONCATENATE_9(token1, token2, token3, token4, token5, token6, token7, token8, token9) token1 ## token2 ## token3 ## token4 ## token5 ## token6 ## token7 ## token8 ## token9
 #define	STDX_CONCATENATE_9(token1, token2, token3, token4, token5, token6, token7, token8, token9) STDX_implementation_CONCATENATE_9(token1, token2, token3, token4, token5, token6, token7, token8, token9)
+
+#define STDX_DIRECTIVE(file, directive) STDX_ENQUOTE(STDX_CONCATENATE_5(./stdx/directives/, file, /, directive, .dpp))
 
 #if defined(__clang__) || defined(__GNUG__) || defined(_MSC_VER)
 #define STDX_UNIQUE() __COUNTER__

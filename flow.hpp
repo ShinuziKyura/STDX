@@ -5,8 +5,9 @@
 #include <memory>
 #include <stack>
 
-#include "utility_macros.hpp"
+#include "stdx/core.hpp"
 
+// Directive: suppress_warnings
 #ifdef STDX_directive_FLOW_SUPPRESS_WARNINGS
 	#if defined(__clang__)
 		#pragma clang diagnostic ignored "-Wreturn-type" // TODO test this
@@ -28,7 +29,7 @@ namespace stdx::flow
 		{
 			virtual ~_jmp_var_obj_base() = default;
 
-			virtual void * get_obj() = 0;
+			virtual operator void *() = 0;
 		};
 		template <class Type>
 		struct _jmp_var_obj : _jmp_var_obj_base
@@ -38,7 +39,7 @@ namespace stdx::flow
 				std::destroy_at(std::launder(reinterpret_cast<Type *>(&_obj)));
 			}
 
-			void * get_obj() override
+			operator void *() override
 			{
 				return &_obj;
 			}
@@ -46,27 +47,30 @@ namespace stdx::flow
 			std::aligned_storage_t<sizeof(Type), alignof(Type)> _obj;
 		};
 
-		struct _jmp_var
+		class _jmp_var
 		{
-			_jmp_var(std::unique_ptr<_jmp_var_obj_base> && obj_ptr) :
-				_obj_ptr(std::move(obj_ptr))
+		public:
+			template <class Type>
+			_jmp_var(std::common_type<Type>) :
+				_obj_ptr(std::make_unique<_jmp_var_obj<Type>>())
 			{
 			}
 
-			void * get_obj()
+			operator void *()
 			{
-				return _obj_ptr->get_obj();
+				return *_obj_ptr;
 			}
-
+		private:
 			std::unique_ptr<_jmp_var_obj_base> _obj_ptr;
 		};
-		struct _jmp_buf
+		class _jmp_buf
 		{
-			std::jmp_buf & get_env()
+		public:
+			operator std::jmp_buf &()
 			{
 				return _env;
 			}
-
+		private:
 			std::jmp_buf _env;
 		};
 
@@ -75,42 +79,42 @@ namespace stdx::flow
 		template <class Type>
 		void * push_var()
 		{
-			return _var_stacks.top().top().emplace(std::make_unique<_jmp_var_obj<Type>>()).get_obj();
+			return _var_stack.top().top().emplace(std::common_type<Type>());
 		}
 
 		void push_stack()
 		{
-			_var_stacks.top().emplace();
+			_var_stack.top().emplace();
 		}
 		void pop_stack()
 		{
-			auto & stack = _var_stacks.top().top();
+			auto & stack = _var_stack.top().top();
 			while (!stack.empty())
 			{
 				stack.pop();
 			}
-			_var_stacks.top().pop();
+			_var_stack.top().pop();
 		}
 
 		std::jmp_buf & push_buf()
 		{
-			_var_stacks.emplace();
+			_var_stack.emplace();
 			push_stack();
-			return _buf_stack.emplace().get_env();
+			return _buf_stack.emplace();
 		}
 		void pop_buf()
 		{
-			auto & stack = _var_stacks.top();
+			auto & stack = _var_stack.top();
 			while (!stack.empty())
 			{
 				pop_stack();
 			}
-			_var_stacks.pop();
+			_var_stack.pop();
 			_buf_stack.pop();
 		}
 		std::jmp_buf & get_buf()
 		{
-			return _buf_stack.top().get_env();
+			return _buf_stack.top();
 		}
 
 		int get_status()
@@ -122,7 +126,7 @@ namespace stdx::flow
 			_status = status;
 		}
 	private:
-		std::stack<_jmp_var_stack> _var_stacks;
+		std::stack<_jmp_var_stack> _var_stack;
 		std::stack<_jmp_buf> _buf_stack;
 		int _status{ 0 };
 	};

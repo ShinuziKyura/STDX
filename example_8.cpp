@@ -1,7 +1,10 @@
 #include <iostream>
 
-#define STDX_directive_FLOW_SUPPRESS_WARNINGS
+#include "stdx/core.hpp"
+
+#include STDX_DIRECTIVE(flow, suppress_warnings)
 #include "flow.hpp"
+
 #include "utility.hpp"
 
 namespace
@@ -16,7 +19,6 @@ int b = 5;
 
 int & a(int count)
 {
-	STDX_FLOW_SCOPE
 	if (count != b)
 	{
 		std::cout << "a(" << count << ")\n";
@@ -35,14 +37,14 @@ int example_8()
 	while (count != 9)
 	{
 		int & b_ref = STDX_FLOW_SET_AND_INVOKE(a(++count));
-		
+
 		if (STDX_FLOW_STATUS() == 0)
 		{
 			std::cout << "b(" << b_ref << ")\n";
 		}
 	}
 
-	func();
-	
+	STDX_FLOW_SET_AND_INVOKE(func());
+
 	return 0;
 }

@@ -4,7 +4,7 @@
 #include <iostream>
 #include <type_traits>
 
-#include "utility_macros.hpp"
+#include "stdx/core.hpp"
 
 // Declares an anonymous variable whose lifetime is limited to the scope where it is declared; should be declared only inside functions or at the global scope, one per line
 #define STDX_SCOPED_VARIABLE(...) STDX_MACRO_FUNCTION_N_ARY(SCOPED_VARIABLE, __VA_ARGS__)
