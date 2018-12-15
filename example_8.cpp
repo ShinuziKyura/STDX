@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "stdx/core.hpp"
+#include "core/stdx.hpp"
 
 #include STDX_DIRECTIVE(flow, suppress_warnings)
 #include "flow.hpp"

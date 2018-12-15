@@ -5,7 +5,7 @@
 #include <type_traits>
 #include <atomic>
 
-#include "stdx/core.hpp"
+#include "core/stdx.hpp"
 
 // Declares an anonymous variable whose lifetime is limited to the scope where it is declared; should be declared only inside functions or at the global scope, one per line
 #define STDX_SCOPED_VARIABLE(...) STDX_MACRO_FUNCTION_N_ARY(SCOPED_VARIABLE, __VA_ARGS__)
@@ -27,7 +27,7 @@ namespace stdx
 	};
 
 	template <class Type>
-	[[nodiscard]] bool _once(Type)
+	[[nodiscard]] bool _once(Type const &)
 	{
 		static std::atomic_flag flag = ATOMIC_FLAG_INIT;
 		return !flag.test_and_set(std::memory_order_relaxed);

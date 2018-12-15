@@ -5,7 +5,7 @@
 #include <memory>
 #include <stack>
 
-#include "stdx/core.hpp"
+#include "core/stdx.hpp"
 
 // Directive: suppress_warnings
 #ifdef STDX_directive_FLOW_SUPPRESS_WARNINGS
