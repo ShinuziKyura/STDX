@@ -15,6 +15,7 @@
 		#pragma GCC diagnostic ignored "-Wreturn-type"
 	#elif defined(_MSC_VER)
 		#pragma warning(disable: 4611)
+		#pragma warning(disable: 4702) // TODO disable this for other compilers, if permanent
 		#pragma warning(disable: 4715)
 	#else
 		// TODO suppress warnings for other compilers
@@ -219,7 +220,7 @@ namespace stdx::flow
 (::std::common_type<decltype(declaration)>())
 
 // Introduces a jump-protected scope on any jump-protected variables declared in the next statement
-// [Note: This statement should not be terminated by a semicolon --end note]
+// Continue and break statements are allowed in the next statement, and cause the execution flow to exit the scope
 #define STDX_FLOW_SCOPE STDX_MACRO_FUNCTION_0_ARY(FLOW_SCOPE)
 #define STDX_implementation_FLOW_SCOPE(context) \
 for (\
@@ -238,6 +239,8 @@ for (\
 	}\
 	();\
 	STDX_MACRO_VARIABLE(within, context) = false\
-)
+)\
+switch(int())\
+default:\
 
 #endif

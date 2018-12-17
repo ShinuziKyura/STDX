@@ -9,8 +9,13 @@
 
 namespace
 {
-	void func()
+	void func(bool jump)
 	{
+		if (jump)
+		{
+			STDX_FLOW_JUMP();
+		}
+
 		stdx::await_input();
 	}
 }
@@ -22,7 +27,10 @@ int & a(int count)
 	if (count != b)
 	{
 		std::cout << "a(" << count << ")\n";
-		STDX_FLOW_JUMP();
+		
+		STDX_FLOW_INVOKE(func(true));
+
+		std::cout << "Will never execute!";
 	}
 
 	return b;
@@ -37,14 +45,14 @@ int example_8()
 	while (count != 9)
 	{
 		int & b_ref = STDX_FLOW_SET_AND_INVOKE(a(++count));
-
+		
 		if (STDX_FLOW_STATUS() == 0)
 		{
 			std::cout << "b(" << b_ref << ")\n";
 		}
 	}
 
-	STDX_FLOW_SET_AND_INVOKE(func());
+	STDX_FLOW_SET_AND_INVOKE(func(false));
 
 	return 0;
 }
