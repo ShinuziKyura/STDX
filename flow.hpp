@@ -78,16 +78,16 @@ namespace stdx::flow
 		using _jmp_var_stack = std::stack<std::stack<_jmp_var>>;
 	public:
 		template <class Type>
-		void * push_var()
+		static void * push_var()
 		{
 			return _var_stack.top().top().emplace(std::common_type<Type>());
 		}
 
-		void push_stack()
+		static void push_stack()
 		{
 			_var_stack.top().emplace();
 		}
-		void pop_stack()
+		static void pop_stack()
 		{
 			auto & stack = _var_stack.top().top();
 			while (!stack.empty())
@@ -97,13 +97,13 @@ namespace stdx::flow
 			_var_stack.top().pop();
 		}
 
-		std::jmp_buf & push_buf()
+		static std::jmp_buf & push_buf()
 		{
 			_var_stack.emplace();
 			push_stack();
 			return _buf_stack.emplace();
 		}
-		void pop_buf()
+		static void pop_buf()
 		{
 			auto & stack = _var_stack.top();
 			while (!stack.empty())
@@ -113,30 +113,24 @@ namespace stdx::flow
 			_var_stack.pop();
 			_buf_stack.pop();
 		}
-		std::jmp_buf & get_buf()
+		static std::jmp_buf & get_buf()
 		{
 			return _buf_stack.top();
 		}
 
-		int get_status()
+		static int get_status()
 		{
 			return _status;
 		}
-		void set_status(int status)
+		static void set_status(int status)
 		{
 			_status = status;
 		}
 	private:
-		std::stack<_jmp_var_stack> _var_stack;
-		std::stack<_jmp_buf> _buf_stack;
-		int _status{ 0 };
+		inline thread_local static std::stack<_jmp_var_stack> _var_stack;
+		inline thread_local static std::stack<_jmp_buf> _buf_stack;
+		inline thread_local static int _status{ 0 };
 	};
-
-	inline _jmp_state & jmp_state()
-	{
-		thread_local static _jmp_state state;
-		return state;
-	}
 }
 
 // Invokes a function with a jump-protected scope on any jump-protected variables declared in it while setting a point to jump to without returning from the function
@@ -145,22 +139,22 @@ namespace stdx::flow
 #define STDX_implementation_FLOW_SET_AND_INVOKE(context, invocation) \
 [&] (auto STDX_MACRO_VARIABLE(invocation_result, context)) -> decltype(auto)\
 {\
-	if (setjmp(::stdx::flow::jmp_state().push_buf()) == 0)\
+	if (setjmp(::stdx::flow::_jmp_state::push_buf()) == 0)\
 	{\
 		if constexpr (!::std::is_same_v<void, typename decltype(STDX_MACRO_VARIABLE(invocation_result, context))::type>)\
 		{\
 			decltype(auto) STDX_MACRO_VARIABLE(result, context) = invocation;\
-			::stdx::flow::jmp_state().set_status(0);\
-			::stdx::flow::jmp_state().pop_buf();\
+			::stdx::flow::_jmp_state::set_status(0);\
+			::stdx::flow::_jmp_state::pop_buf();\
 			return STDX_MACRO_VARIABLE(result, context);\
 		}\
 		else\
 		{\
 			invocation;\
-			::stdx::flow::jmp_state().set_status(0);\
+			::stdx::flow::_jmp_state::set_status(0);\
 		}\
 	}\
-	::stdx::flow::jmp_state().pop_buf();\
+	::stdx::flow::_jmp_state::pop_buf();\
 }\
 (::std::common_type<decltype(invocation)>())
 
@@ -169,8 +163,8 @@ namespace stdx::flow
 #define STDX_implementation_FLOW_JUMP(context, ...) \
 [] (int STDX_MACRO_VARIABLE(status, context) = 1)\
 {\
-	::stdx::flow::jmp_state().set_status(STDX_MACRO_VARIABLE(status, context));\
-	::std::longjmp(::stdx::flow::jmp_state().get_buf(), 1);\
+	::stdx::flow::_jmp_state::set_status(STDX_MACRO_VARIABLE(status, context));\
+	::std::longjmp(::stdx::flow::_jmp_state::get_buf(), 1);\
 }\
 (__VA_ARGS__)
 
@@ -179,7 +173,7 @@ namespace stdx::flow
 #define STDX_implementation_FLOW_STATUS(context) \
 []\
 {\
-	return ::stdx::flow::jmp_state().get_status();\
+	return ::stdx::flow::_jmp_state::get_status();\
 }\
 ()
 
@@ -188,18 +182,18 @@ namespace stdx::flow
 #define STDX_implementation_FLOW_INVOKE(context, invocation) \
 [&] (auto STDX_MACRO_VARIABLE(invocation_result, context)) -> decltype(auto)\
 {\
-	::stdx::flow::jmp_state().push_stack();\
+	::stdx::flow::_jmp_state::push_stack();\
 	if constexpr (!::std::is_same_v<void, typename decltype(STDX_MACRO_VARIABLE(invocation_result, context))::type>)\
 	{\
 		decltype(auto) STDX_MACRO_VARIABLE(result, context) = invocation;\
-		::stdx::flow::jmp_state().pop_stack();\
+		::stdx::flow::_jmp_state::pop_stack();\
 		return STDX_MACRO_VARIABLE(result, context);\
 	}\
 	else\
 	{\
 		invocation;\
 	}\
-	::stdx::flow::jmp_state().pop_stack();\
+	::stdx::flow::_jmp_state::pop_stack();\
 }\
 (::std::common_type<decltype(invocation)>())
 
@@ -210,7 +204,7 @@ namespace stdx::flow
 {\
 	if constexpr (!::std::is_trivially_destructible_v<typename decltype(STDX_MACRO_VARIABLE(declaration_result, context))::type>)\
 	{\
-		return *new (::stdx::flow::jmp_state().push_var<decltype(declaration)>()) declaration;\
+		return *new (::stdx::flow::_jmp_state::push_var<decltype(declaration)>()) declaration;\
 	}\
 	else\
 	{\
@@ -220,7 +214,7 @@ namespace stdx::flow
 (::std::common_type<decltype(declaration)>())
 
 // Introduces a jump-protected scope on any jump-protected variables declared in the next statement
-// Continue and break statements are allowed in the next statement, and cause the execution flow to exit the scope
+// Continue and break statements are allowed in the next statement: both cause the execution flow to exit the scope and move to the next instruction
 #define STDX_FLOW_SCOPE STDX_MACRO_FUNCTION_0_ARY(FLOW_SCOPE)
 #define STDX_implementation_FLOW_SCOPE(context) \
 for (\
@@ -229,18 +223,18 @@ for (\
 	{\
 		if (STDX_MACRO_VARIABLE(within, context))\
 		{\
-			::stdx::flow::jmp_state().push_stack();\
+			::stdx::flow::_jmp_state::push_stack();\
 		}\
 		else\
 		{\
-			::stdx::flow::jmp_state().pop_stack();\
+			::stdx::flow::_jmp_state::pop_stack();\
 		}\
 		return STDX_MACRO_VARIABLE(within, context);\
 	}\
 	();\
 	STDX_MACRO_VARIABLE(within, context) = false\
 )\
-switch(int())\
+switch(0)\
 default:\
 
 #endif

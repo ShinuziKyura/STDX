@@ -69,10 +69,10 @@ namespace stdx::chrono
 			return rep_type();
 		}
 
-		thread_local static inline bool										_is_ticking = false;
-		thread_local static inline std::chrono::steady_clock::time_point	_split_point;
-		thread_local static inline std::deque<rep_type>						_split_times;
-		thread_local static inline rep_type									_total_time = rep_type();
+		inline thread_local static bool										_is_ticking = false;
+		inline thread_local static std::chrono::steady_clock::time_point	_split_point;
+		inline thread_local static std::deque<rep_type>						_split_times;
+		inline thread_local static rep_type									_total_time = rep_type();
 	};
 }
 
