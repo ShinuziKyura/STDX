@@ -30,7 +30,7 @@ int & a(int count)
 		
 		STDX_FLOW_INVOKE(func(true));
 
-		std::cout << "Will never execute!";
+	//	std::cout << "Will never execute!"; // Causes 'unreachable code' warning
 	}
 
 	return b;
@@ -52,7 +52,7 @@ int example_8()
 		}
 	}
 
-	STDX_FLOW_SET_AND_INVOKE(func(false));
+	func(false);
 
 	return 0;
 }

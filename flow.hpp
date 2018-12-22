@@ -14,9 +14,8 @@
 	#elif defined(__GNUG__)
 		#pragma GCC diagnostic ignored "-Wreturn-type"
 	#elif defined(_MSC_VER)
-		#pragma warning(disable: 4611)
-		#pragma warning(disable: 4702) // TODO disable this for other compilers, if permanent
-		#pragma warning(disable: 4715)
+		#pragma warning(disable: 4611) // MSVC implementation specific warning
+		#pragma warning(disable: 4715) // Return-type
 	#else
 		// TODO suppress warnings for other compilers
 	#endif
@@ -51,9 +50,8 @@ namespace stdx::flow
 		class _jmp_var
 		{
 		public:
-			template <class Type>
-			_jmp_var(std::common_type<Type>) :
-				_obj_ptr(std::make_unique<_jmp_var_obj<Type>>())
+			_jmp_var(std::unique_ptr<_jmp_var_obj_base> obj_ptr) :
+				_obj_ptr(std::move(obj_ptr))
 			{
 			}
 
@@ -80,7 +78,7 @@ namespace stdx::flow
 		template <class Type>
 		static void * push_var()
 		{
-			return _var_stack.top().top().emplace(std::common_type<Type>());
+			return _var_stack.top().top().emplace(std::make_unique<_jmp_var_obj<Type>>());
 		}
 
 		static void push_stack()
@@ -218,10 +216,10 @@ namespace stdx::flow
 #define STDX_FLOW_SCOPE STDX_MACRO_FUNCTION_0_ARY(FLOW_SCOPE)
 #define STDX_implementation_FLOW_SCOPE(context) \
 for (\
-	bool STDX_MACRO_VARIABLE(within, context) = true;\
-	[&STDX_MACRO_VARIABLE(within, context)]\
+	bool STDX_MACRO_VARIABLE(scope, context) = true;\
+	[&STDX_MACRO_VARIABLE(scope, context)]\
 	{\
-		if (STDX_MACRO_VARIABLE(within, context))\
+		if (STDX_MACRO_VARIABLE(scope, context))\
 		{\
 			::stdx::flow::_jmp_state::push_stack();\
 		}\
@@ -229,12 +227,12 @@ for (\
 		{\
 			::stdx::flow::_jmp_state::pop_stack();\
 		}\
-		return STDX_MACRO_VARIABLE(within, context);\
+		return STDX_MACRO_VARIABLE(scope, context);\
 	}\
 	();\
-	STDX_MACRO_VARIABLE(within, context) = false\
+	STDX_MACRO_VARIABLE(scope, context) = false\
 )\
 switch(0)\
-default:\
+default:
 
 #endif
