@@ -46,20 +46,20 @@ namespace stdx::stream
 
 		template <class ... StreambufTypes>
 		basic_multibuf(StreambufTypes * ... streams) : 
-			streambuf_type(),
+			std::basic_streambuf<CharType, TraitsType>(),
 			_streams({ streams ... })
 		{
-			static_assert(stdx::meta::conjunction_v<stdx::meta::bind<std::is_base_of, streambuf_type, stdx::meta::placeholders::_1>::invoke, StreambufTypes ...>, 
+			static_assert(stdx::meta::conjunction_v<stdx::meta::bind<std::is_base_of, std::basic_streambuf<CharType, TraitsType>, stdx::meta::placeholders::_1>::invoke, StreambufTypes ...>,
 						  "'stdx::stream::basic_multibuf<CharType, TraitsType>::basic_multibuf(StreambufTypes * ...)': StreambufTypes must be of type or derived of type std::basic_streambuf<CharType, TraitsType>");
 		}
 		basic_multibuf(basic_multibuf const & other) :
-			streambuf_type(other),
+			std::basic_streambuf<CharType, TraitsType>(other),
 			_streams(other._streams)
 		{
 		}
 		basic_multibuf & operator=(basic_multibuf const & other)
 		{
-			streambuf_type::operator=(other);
+			std::basic_streambuf<CharType, TraitsType>::operator=(other);
 			_streams = other._streams;
 			return *this;
 		}
@@ -68,11 +68,12 @@ namespace stdx::stream
 
 		void swap(basic_multibuf & other)
 		{
-			streambuf_type::swap(other);
+			std::basic_streambuf<CharType, TraitsType>::swap(other);
 			_streams.swap(other._streams);
 		}
 	protected: // See https://en.cppreference.com/w/cpp/io/basic_streambuf // TODO: possibly better error-handling
 		// Locales
+
 		virtual void imbue(std::locale const & loc) override
 		{
 			for (auto const & stream : _streams)
@@ -82,6 +83,7 @@ namespace stdx::stream
 		}
 
 		// Positioning
+
 		virtual streambuf_type * setbuf(char_type * s, std::streamsize n) override
 		{
 			streambuf_type * retval = this;
@@ -132,6 +134,7 @@ namespace stdx::stream
 		}
 
 		// Get area // NOTE: no sense in overriding these functions for now (what would be the effect of reading from multiple buffers?)
+
 /*		virtual std::streamsize showmanyc() override
 		{
 			// TODO
@@ -154,6 +157,7 @@ namespace stdx::stream
 		}
 */
 		// Put area
+
 		virtual std::streamsize xsputn(char_type const * s, std::streamsize count) override
 		{
 			std::streamsize retval = count;
@@ -166,6 +170,7 @@ namespace stdx::stream
 			}
 			return retval;
 		}
+		
 		virtual int_type overflow(int_type ch = traits_type::eof()) override
 		{
 			int_type retval = traits_type::not_eof(ch);
@@ -183,6 +188,7 @@ namespace stdx::stream
 		}
 
 		// Putback // NOTE: no sense in overriding this function for now (what would be the effect of undoing reading from multiple buffers?)
+
 /*		virtual int_type pbackfail(int_type c = traits_type::eof())
 		{
 			// TODO
@@ -210,15 +216,16 @@ namespace stdx::stream
 	{
 		static_assert(std::is_base_of_v<std::basic_ostream<typename StreamType::char_type, typename StreamType::traits_type>, StreamType>,
 					  "'stdx::stream::streamroute<StreamType, policy::replicate>': StreamType must be of type std::basic_ostream or derived from it");
-
-		using StreambufType = std::decay_t<decltype(*std::declval<StreamType>().rdbuf())>;
 	public:
+		using stream_type = StreamType;
+		using streambuf_type = std::decay_t<decltype(*std::declval<StreamType>().rdbuf())>;
+
 		template <class ... OutstreamTypes>
 		streamroute(StreamType & source, OutstreamTypes & ... destination) :
 			_source(source),
 			_buffer(source.rdbuf(new multibuf(source.rdbuf(), destination.rdbuf() ...)))
 		{
-			static_assert(stdx::meta::conjunction_v<stdx::meta::bind<std::is_base_of, StreamType, stdx::meta::placeholders::_1>::invoke, OutstreamTypes ...>,
+			static_assert(stdx::meta::conjunction_v<stdx::meta::bind<std::is_base_of, StreamType, stdx::meta::placeholders::_1>::template invoke, OutstreamTypes ...>,
 						  "'stdx::stream::streamroute<StreamType, policy::replicate>::streamroute(StreamType &, OutstreamTypes & ...)': OstreamTypes must be an instance of or derived from type StreamType");
 		}
 		streamroute(streamroute const &) = delete;
@@ -230,8 +237,8 @@ namespace stdx::stream
 			delete _source.rdbuf(_buffer);
 		}
 	private:
-		StreamType & _source;
-		StreambufType * _buffer;
+		stream_type & _source;
+		streambuf_type * _buffer;
 	};
 
 	template <class StreamType>
@@ -239,9 +246,10 @@ namespace stdx::stream
 	{
 		static_assert(std::is_base_of_v<std::basic_ios<typename StreamType::char_type, typename StreamType::traits_type>, StreamType>,
 					  "'stdx::stream::streamroute<StreamType, policy::redirect>': StreamType must be of type std::basic_ios or derived from it");
-
-		using StreambufType = std::decay_t<decltype(*std::declval<StreamType>().rdbuf())>;
 	public:
+		using stream_type = StreamType;
+		using streambuf_type = std::decay_t<decltype(*std::declval<StreamType>().rdbuf())>;
+
 		streamroute(StreamType & source, StreamType & destination) :
 			_source(source),
 			_buffer(source.rdbuf(destination.rdbuf()))
@@ -256,8 +264,8 @@ namespace stdx::stream
 			_source.rdbuf(_buffer);
 		}
 	private:
-		StreamType & _source;
-		StreambufType * _buffer;
+		stream_type & _source;
+		streambuf_type * _buffer;
 	};
 }
 

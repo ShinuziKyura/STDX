@@ -9,7 +9,7 @@
 
 namespace
 {
-	void func(bool jump)
+	void func(bool const jump)
 	{
 		if (jump)
 		{
@@ -22,7 +22,7 @@ namespace
 
 int b = 5;
 
-int & a(int count)
+int & a(int const count)
 {
 	if (count != b)
 	{

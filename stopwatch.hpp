@@ -58,7 +58,7 @@ namespace stdx::chrono
 		{
 			if (_is_ticking)
 			{
-				auto start_point = std::exchange(_split_point, std::chrono::steady_clock::now());
+				auto const start_point = std::exchange(_split_point, std::chrono::steady_clock::now());
 				auto split_time = _split_times.emplace_back(std::chrono::duration_cast<Resolution>(_split_point - start_point).count());
 				
 				_total_time += split_time;

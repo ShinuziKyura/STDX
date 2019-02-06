@@ -15,25 +15,29 @@
 		#pragma GCC diagnostic ignored "-Wreturn-type"
 	#elif defined(_MSC_VER)
 		#pragma warning(disable: 4611) // MSVC implementation specific warning
-		#pragma warning(disable: 4715) // Return-type
+		#pragma warning(disable: 4715) // -Wreturn-type
 	#else
 		// TODO suppress warnings for other compilers
 	#endif
 #endif
-	
+
 namespace stdx::flow
 {
 	class _jmp_state
 	{
-		struct _jmp_var_obj_base
+		class _jmp_var_obj_base
 		{
+		public:
 			virtual ~_jmp_var_obj_base() = default;
 
 			virtual operator void *() = 0;
+
 		};
+
 		template <class Type>
-		struct _jmp_var_obj : _jmp_var_obj_base
+		class _jmp_var_obj : _jmp_var_obj_base
 		{
+		public:
 			~_jmp_var_obj() override
 			{
 				std::destroy_at(std::launder(reinterpret_cast<Type *>(&_obj)));
@@ -44,7 +48,9 @@ namespace stdx::flow
 				return &_obj;
 			}
 
+		private:
 			std::aligned_storage_t<sizeof(Type), alignof(Type)> _obj;
+
 		};
 
 		class _jmp_var
@@ -55,13 +61,16 @@ namespace stdx::flow
 			{
 			}
 
-			operator void *()
+			operator void *() const
 			{
 				return *_obj_ptr;
 			}
+
 		private:
 			std::unique_ptr<_jmp_var_obj_base> _obj_ptr;
+
 		};
+
 		class _jmp_buf
 		{
 		public:
@@ -69,11 +78,11 @@ namespace stdx::flow
 			{
 				return _env;
 			}
-		private:
-			std::jmp_buf _env;
-		};
 
-		using _jmp_var_stack = std::stack<std::stack<_jmp_var>>;
+		private:
+			std::jmp_buf _env{};
+
+		};
 	public:
 		template <class Type>
 		static void * push_var()
@@ -85,6 +94,7 @@ namespace stdx::flow
 		{
 			_var_stack.top().emplace();
 		}
+
 		static void pop_stack()
 		{
 			auto & stack = _var_stack.top().top();
@@ -101,16 +111,18 @@ namespace stdx::flow
 			push_stack();
 			return _buf_stack.emplace();
 		}
+
 		static void pop_buf()
 		{
+			_buf_stack.pop();
 			auto & stack = _var_stack.top();
 			while (!stack.empty())
 			{
 				pop_stack();
 			}
 			_var_stack.pop();
-			_buf_stack.pop();
 		}
+
 		static std::jmp_buf & get_buf()
 		{
 			return _buf_stack.top();
@@ -120,14 +132,17 @@ namespace stdx::flow
 		{
 			return _status;
 		}
+
 		static void set_status(int status)
 		{
 			_status = status;
 		}
+
 	private:
-		inline thread_local static std::stack<_jmp_var_stack> _var_stack;
+		inline thread_local static std::stack<std::stack<std::stack<_jmp_var>>> _var_stack;
 		inline thread_local static std::stack<_jmp_buf> _buf_stack;
 		inline thread_local static int _status{ 0 };
+
 	};
 }
 
@@ -139,7 +154,7 @@ namespace stdx::flow
 {\
 	if (setjmp(::stdx::flow::_jmp_state::push_buf()) == 0)\
 	{\
-		if constexpr (!::std::is_same_v<void, typename decltype(STDX_MACRO_VARIABLE(invocation_result, context))::type>)\
+		if constexpr (::std::negation_v<::std::is_same<void, decltype(STDX_MACRO_VARIABLE(invocation_result, context))::type>>)\
 		{\
 			decltype(auto) STDX_MACRO_VARIABLE(result, context) = invocation;\
 			::stdx::flow::_jmp_state::set_status(0);\
@@ -181,7 +196,7 @@ namespace stdx::flow
 [&] (auto STDX_MACRO_VARIABLE(invocation_result, context)) -> decltype(auto)\
 {\
 	::stdx::flow::_jmp_state::push_stack();\
-	if constexpr (!::std::is_same_v<void, typename decltype(STDX_MACRO_VARIABLE(invocation_result, context))::type>)\
+	if constexpr (::std::negation_v<::std::is_same<void, decltype(STDX_MACRO_VARIABLE(invocation_result, context))::type>>)\
 	{\
 		decltype(auto) STDX_MACRO_VARIABLE(result, context) = invocation;\
 		::stdx::flow::_jmp_state::pop_stack();\
@@ -200,7 +215,7 @@ namespace stdx::flow
 #define STDX_implementation_FLOW_DECLARE(context, declaration) \
 [&] (auto STDX_MACRO_VARIABLE(declaration_result, context)) -> decltype(auto)\
 {\
-	if constexpr (!::std::is_trivially_destructible_v<typename decltype(STDX_MACRO_VARIABLE(declaration_result, context))::type>)\
+	if constexpr (::std::negation_v<::std::is_trivially_destructible<decltype(STDX_MACRO_VARIABLE(declaration_result, context))::type>>)\
 	{\
 		return *new (::stdx::flow::_jmp_state::push_var<decltype(declaration)>()) declaration;\
 	}\

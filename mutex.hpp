@@ -120,17 +120,17 @@ namespace stdx::mutex
 	class shared_spin_mutex
 	{
 		using _atomic_int_largest_lock_free_t =
-			stdx::meta::constrained_pack<
-				stdx::meta::is_lock_free,
-				stdx::meta::pack<
-					std::atomic_int_least64_t,
-					std::atomic_int_least32_t,
-					std::atomic_int_least16_t,
-					std::atomic_int_least8_t
-				>
-			>::push<
+			stdx::meta::type_if<stdx::meta::is_lock_free_v<std::atomic_int_least64_t>>::then<
 				std::atomic_int_least64_t
-			>::first;
+			>::else_if<stdx::meta::is_lock_free_v<std::atomic_int_least32_t>>::then<
+				std::atomic_int_least32_t
+			>::else_if<stdx::meta::is_lock_free_v<std::atomic_int_least16_t>>::then<
+				std::atomic_int_least16_t
+			>::else_if<stdx::meta::is_lock_free_v<std::atomic_int_least8_t>>::then<
+				std::atomic_int_least8_t
+			>::else_then<
+				std::atomic_int_least64_t
+			>::endif;
 		using _int_largest_lock_free_t =
 			_atomic_int_largest_lock_free_t::value_type;
 	public:

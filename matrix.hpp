@@ -10,7 +10,7 @@
 
 namespace stdx::math
 {
-	enum class matrix_name
+	enum matrix_type
 	{
 		/*	Identity matrix, i.e.:
 			1 0 0 0 0
@@ -18,211 +18,64 @@ namespace stdx::math
 			0 0 1 0 0
 			0 0 0 1 0
 			0 0 0 0 1 */
-		identity,
+		identity_matrix,
 		/*	Exchange matrix, i.e.:
 			0 0 0 0 1
 			0 0 0 1 0
 			0 0 1 0 0
 			0 1 0 0 0
 			1 0 0 0 0 */
-		exchange,
+		exchange_matrix,
 		/*	Shift upper matrix, i.e.:
 			0 1 0 0 0
 			0 0 1 0 0
 			0 0 0 1 0
 			0 0 0 0 1
 			0 0 0 0 0 */
-		shift_upper,
+		shift_upper_matrix,
 		/*	Shift lower matrix, i.e.:
 			0 0 0 0 0
 			1 0 0 0 0
 			0 1 0 0 0
 			0 0 1 0 0
 			0 0 0 1 0 */
-		shift_lower,
+		shift_lower_matrix,
 		/*	Pascal upper matrix, i.e.:
 			1  1  1  1  1
 			0  1  2  3  4
 			0  0  1  3  6
 			0  0  0  1  4
 			0  0  0  0  1 */
-		pascal_upper,
+		pascal_upper_matrix,
 		/*	Pascal lower matrix, i.e.:
 			1  0  0  0  0
 			1  1  0  0  0
 			1  2  1  0  0
 			1  3  3  1  0
 			1  4  6  4  1 */
-		pascal_lower,
+		pascal_lower_matrix,
 		/*	Hilbert matrix, i.e.:
 			1/1 1/2 1/3 1/4 1/5
 			1/2 1/3 1/4 1/5 1/6
 			1/3 1/4 1/5 1/6 1/7
 			1/4 1/5 1/6 1/7 1/8
 			1/5 1/6 1/7 1/8 1/9 */
-		hilbert,
+		hilbert_matrix,
 		/*	Lehmer matrix, i.e.:
 			1/1 1/2 1/3 1/4 1/5
 			1/2 2/2 2/3 2/4 2/5
 			1/3 2/3 3/3 3/4 3/5
 			1/4 2/4 3/4 4/4 4/5
 			1/5 2/5 3/5 4/5 5/5 */
-		lehmer,
+		lehmer_matrix,
 	};
 
-	template <class, class>
-	class _matrix_addition;
-	
-	template <class, class>
-	class _matrix_subtraction;
-	
-	template <class, class>
-	class _matrix_multiplication;
-	
 	template <class>
-	class _matrix_transposition;
+	class _matrix_expression;
 
-	template <class>
-	class _matrix_permutation;
-	
-	template <class>
-	class _matrix_submatrix;
-
-	template <class MatrixType>
-	class _matrix_expression
-	{
-	public:
-		template <class OtherMatrixType>
-		constexpr auto operator+(_matrix_expression<OtherMatrixType> const & other) const
-		{
-			return _matrix_addition(static_cast<MatrixType const &>(*this), static_cast<OtherMatrixType const &>(other));
-		}
-		template <class OtherMatrixType>
-		constexpr auto operator-(_matrix_expression<OtherMatrixType> const & other) const
-		{
-			return _matrix_subtraction(static_cast<MatrixType const &>(*this), static_cast<OtherMatrixType const &>(other));
-		}
-		template <class OtherMatrixType>
-		constexpr auto operator*(_matrix_expression<OtherMatrixType> const & other) const
-		{
-			return _matrix_multiplication(static_cast<MatrixType const &>(*this), static_cast<OtherMatrixType const &>(other));
-		}
-
-		constexpr auto transpose() const
-		{
-			return _matrix_transposition(static_cast<MatrixType const &>(*this));
-		}
-		constexpr auto pivot() const
-		{
-			return _matrix_permutation(static_cast<MatrixType const &>(*this), _pivot());
-		}
-		constexpr auto submatrix(std::size_t const & i, std::size_t const & j) const
-		{
-			return _matrix_submatrix(static_cast<MatrixType const &>(*this), i, j);
-		}
-
-		constexpr bool is_upper_triangular() const
-		{
-			static_assert(MatrixType::rows == MatrixType::columns,
-						  "'stdx::math::_matrix_expression<MatrixType>': MatrixType::rows must be equal to MatrixType::columns");
-			return _is_upper_triangular(stdx::meta::make_integer_sequence<std::size_t, 1, MatrixType::rows>());
-		}
-		constexpr bool is_lower_triangular() const
-		{
-			static_assert(MatrixType::rows == MatrixType::columns,
-						  "'stdx::math::_matrix_expression<MatrixType>': MatrixType::rows must be equal to MatrixType::columns");
-			return _is_lower_triangular(stdx::meta::make_integer_sequence<std::size_t, 1, MatrixType::columns>());
-		}
-		constexpr bool is_triangular() const
-		{
-			return is_upper_triangular() || is_lower_triangular();
-		}
-		constexpr auto determinant() const
-		{
-			static_assert(MatrixType::rows == MatrixType::columns,
-						  "'stdx::math::_matrix_expression<MatrixType>': MatrixType::rows must be equal to MatrixType::columns");
-			// Applying ri  -> a*ri has the effect of multiplying det(A) by a.
-			// Applying ri  -> ri + a*rj has no effect on det(A).
-			// Applying ri <-> rj has the effect of multiplying det(A) by -1.
-
-			// Use different method/overload depending on type of MatrixType
-			return _determinant(stdx::meta::make_integer_sequence<std::size_t, 1, MatrixType::columns>());
-		}
-	protected:
-		template <std::size_t I = 0, std::size_t Rows = MatrixType::rows>
-		constexpr auto _pivot(std::array<std::size_t, Rows> permutation = {}) const
-		{
-			auto max = std::numeric_limits<typename MatrixType::value_type>::lowest();
-			std::size_t max_i = 0;
-
-			for (std::size_t i = 1; i <= MatrixType::rows; ++i)
-			{
-				if (auto element = static_cast<MatrixType const &>(*this)(i, 1); element > max)
-				{
-					max = element;
-					max_i = i;
-				}
-			}
-
-			permutation[I] = max_i;
-
-			if constexpr (I + 2 < Rows)
-			{
-				return submatrix(max_i, 1)._pivot<I + 1>(permutation);
-			}
-			else
-			{
-				permutation[I + 1] = 1;
-
-				for (std::size_t idx1 = I + 1; idx1 > 0; --idx1)
-				{
-					for (std::size_t idx2 = idx1 - 1; idx2 > 0; --idx2)
-					{
-						permutation[idx1] += std::size_t(permutation[idx2] <= permutation[idx1]);
-					}
-				}
-
-				return permutation;
-			}
-		}
-	private:
-		template <std::size_t J, std::size_t ... I>
-		constexpr bool _is_upper_triangular(std::index_sequence<J, I ...>) const
-		{
-			return (... && (static_cast<MatrixType const &>(*this)(I, J) == 0)) && _is_upper_triangular(std::index_sequence<I ...>());
-		}
-		template <std::size_t J>
-		constexpr bool _is_upper_triangular(std::index_sequence<J>) const
-		{
-			return true;
-		}
-		template <std::size_t I, std::size_t ... J>
-		constexpr bool _is_lower_triangular(std::index_sequence<I, J ...>) const
-		{
-			return (... && (static_cast<MatrixType const &>(*this)(I, J) == 0)) && _is_lower_triangular(std::index_sequence<J ...>());
-		}
-		template <std::size_t I>
-		constexpr bool _is_lower_triangular(std::index_sequence<I>) const
-		{
-			return true;
-		}
-		// WARNING: Uses cofactor expansion, which has a time complexity for n*n matrices of O(n!); will be improved once LU decomposition is implemented (maybe maintain this method for matrices up to size 4)
-		template <std::size_t ... J>
-		constexpr auto _determinant(std::index_sequence<J ...>) const
-		{
-			return ((static_cast<MatrixType const &>(*this)(1, J) * submatrix(1, J).determinant()) - ... - typename MatrixType::value_type(0));
-		}
-		constexpr auto _determinant(std::index_sequence<1>) const
-		{
-			return static_cast<MatrixType const &>(*this)(1, 1);
-		}
-		
-	/*	template <std::size_t ... IJ>
-		auto _determinant(std::index_sequence<IJ ...>)
-		{
-			return (... * static_cast<MatrixType const &>(*this)(IJ, IJ));
-		}	*/
-	};
+	////////////////////////////////////////////////////////////////////////////////
+	// Matrix
+	////////////////////////////////////////////////////////////////////////////////
 
 	template <class ValueType, std::size_t Rows, std::size_t Columns = Rows>
 	class matrix : public _matrix_expression<matrix<ValueType, Rows, Columns>>
@@ -243,7 +96,7 @@ namespace stdx::math
 			_matrix(_initialize_matrix(value))
 		{
 		}
-		constexpr matrix(matrix_name name) :
+		constexpr matrix(matrix_type name) :
 			_matrix(_initialize_matrix(name))
 		{
 			static_assert(rows == columns, 
@@ -284,36 +137,36 @@ namespace stdx::math
 			}
 			return matrix;
 		}
-		static constexpr auto _initialize_matrix(matrix_name name)
+		static constexpr auto _initialize_matrix(matrix_type type)
 		{
 			std::array<std::array<value_type, columns>, rows> matrix = {};
-			switch (name)
+			switch (type)
 			{
-				case matrix_name::identity:
+				case identity_matrix:
 					for (std::size_t ij = 0; ij != rows; ++ij)
 					{
 						matrix[ij][ij] = value_type(1);
 					}
 					break;
-				case matrix_name::exchange:
+				case exchange_matrix:
 					for (std::size_t ij = 0; ij != rows; ++ij)
 					{
 						matrix[ij][columns - ij - 1] = value_type(1);
 					}
 					break;
-				case matrix_name::shift_upper:
+				case shift_upper_matrix:
 					for (std::size_t ij = 1; ij != rows; ++ij)
 					{
 						matrix[ij - 1][ij] = value_type(1);
 					}
 					break;
-				case matrix_name::shift_lower:
+				case shift_lower_matrix:
 					for (std::size_t ij = 1; ij != rows; ++ij)
 					{
 						matrix[ij][ij - 1] = value_type(1);
 					}
 					break;
-				case matrix_name::pascal_upper:
+				case pascal_upper_matrix:
 					for (std::size_t i = 0; i != (rows + 1) / 2; ++i)
 					{
 						for (std::size_t j = i * 2; j != columns; ++j)
@@ -322,7 +175,7 @@ namespace stdx::math
 						}
 					}
 					break;
-				case matrix_name::pascal_lower:
+				case pascal_lower_matrix:
 					for (std::size_t j = 0; j != (columns + 1) / 2; ++j)
 					{
 						for (std::size_t i = j * 2; i != rows; ++i)
@@ -331,7 +184,7 @@ namespace stdx::math
 						}
 					}
 					break;
-				case matrix_name::hilbert:
+				case hilbert_matrix:
 					if constexpr (std::is_floating_point_v<value_type>)
 					{
 						for (std::size_t i = 0; i != rows; ++i)
@@ -343,7 +196,7 @@ namespace stdx::math
 						}
 					}
 					break;
-				case matrix_name::lehmer:
+				case lehmer_matrix:
 					if constexpr (std::is_floating_point_v<value_type>)
 					{
 						for (std::size_t i = 0; i != rows; ++i)
@@ -380,6 +233,10 @@ namespace stdx::math
 
 	template <class MatrixType>
 	matrix(_matrix_expression<MatrixType>) -> matrix<typename MatrixType::value_type, MatrixType::rows, MatrixType::columns>;
+
+	////////////////////////////////////////////////////////////////////////////////
+	// Matrix operations
+	////////////////////////////////////////////////////////////////////////////////
 
 	template <class MatrixType1, class MatrixType2>
 	class _matrix_addition : public _matrix_expression<_matrix_addition<MatrixType1, MatrixType2>>
@@ -548,6 +405,146 @@ namespace stdx::math
 
 		template <class>
 		friend class _matrix_expression;
+	};
+
+	////////////////////////////////////////////////////////////////////////////////
+	// Matrix expression
+	////////////////////////////////////////////////////////////////////////////////
+
+	template <class MatrixType>
+	class _matrix_expression
+	{
+	public:
+		template <class OtherMatrixType>
+		constexpr auto operator+(_matrix_expression<OtherMatrixType> const & other) const
+		{
+			return _matrix_addition(static_cast<MatrixType const &>(*this), static_cast<OtherMatrixType const &>(other));
+		}
+		template <class OtherMatrixType>
+		constexpr auto operator-(_matrix_expression<OtherMatrixType> const & other) const
+		{
+			return _matrix_subtraction(static_cast<MatrixType const &>(*this), static_cast<OtherMatrixType const &>(other));
+		}
+		template <class OtherMatrixType>
+		constexpr auto operator*(_matrix_expression<OtherMatrixType> const & other) const
+		{
+			return _matrix_multiplication(static_cast<MatrixType const &>(*this), static_cast<OtherMatrixType const &>(other));
+		}
+
+		constexpr auto transpose() const
+		{
+			return _matrix_transposition(static_cast<MatrixType const &>(*this));
+		}
+		constexpr auto pivot() const
+		{
+			return _matrix_permutation(static_cast<MatrixType const &>(*this), _pivot());
+		}
+		constexpr auto submatrix(std::size_t const & i, std::size_t const & j) const
+		{
+			return _matrix_submatrix(static_cast<MatrixType const &>(*this), i, j);
+		}
+
+		constexpr bool is_upper_triangular() const
+		{
+			static_assert(MatrixType::rows == MatrixType::columns,
+						  "'stdx::math::_matrix_expression<MatrixType>': MatrixType::rows must be equal to MatrixType::columns");
+			return _is_upper_triangular(stdx::meta::make_integer_sequence<std::size_t, 1, MatrixType::rows>());
+		}
+		constexpr bool is_lower_triangular() const
+		{
+			static_assert(MatrixType::rows == MatrixType::columns,
+						  "'stdx::math::_matrix_expression<MatrixType>': MatrixType::rows must be equal to MatrixType::columns");
+			return _is_lower_triangular(stdx::meta::make_integer_sequence<std::size_t, 1, MatrixType::columns>());
+		}
+		constexpr bool is_triangular() const
+		{
+			return is_upper_triangular() || is_lower_triangular();
+		}
+		constexpr auto determinant() const
+		{
+			static_assert(MatrixType::rows == MatrixType::columns,
+						  "'stdx::math::_matrix_expression<MatrixType>': MatrixType::rows must be equal to MatrixType::columns");
+			// Applying ri  -> a*ri has the effect of multiplying det(A) by a.
+			// Applying ri  -> ri + a*rj has no effect on det(A).
+			// Applying ri <-> rj has the effect of multiplying det(A) by -1.
+
+			// Use different method/overload depending on type of MatrixType
+			return _determinant(stdx::meta::make_integer_sequence<std::size_t, 1, MatrixType::columns>());
+		}
+	protected:
+		template <std::size_t J = 0, std::size_t Rows = MatrixType::rows>
+		constexpr auto _pivot(std::array<std::size_t, Rows> permutation = {}) const // TODO recheck this function
+		{
+			auto max = std::numeric_limits<typename MatrixType::value_type>::lowest();
+			std::size_t max_i = 0;
+
+			for (std::size_t i = 1; i <= MatrixType::rows; ++i)
+			{
+				if (auto element = static_cast<MatrixType const &>(*this)(i, 1); element > max)
+				{
+					max = element;
+					max_i = i;
+				}
+			}
+
+			permutation[J] = max_i;
+
+			if constexpr (J + 2 < Rows)
+			{
+				return submatrix(max_i, 1)._pivot<J + 1>(permutation);
+			}
+			else
+			{
+				permutation[J + 1] = 1;
+
+				for (std::size_t idx1 = J + 1; idx1 > 0; --idx1)
+				{
+					for (std::size_t idx2 = idx1 - 1; idx2 > 0; --idx2)
+					{
+						permutation[idx1] += std::size_t(permutation[idx2] <= permutation[idx1]);
+					}
+				}
+
+				return permutation;
+			}
+		}
+	private:
+		template <std::size_t J, std::size_t ... I>
+		constexpr bool _is_upper_triangular(std::index_sequence<J, I ...>) const
+		{
+			return (... && (static_cast<MatrixType const &>(*this)(I, J) == 0)) && _is_upper_triangular(std::index_sequence<I ...>());
+		}
+		template <std::size_t J>
+		constexpr bool _is_upper_triangular(std::index_sequence<J>) const
+		{
+			return true;
+		}
+		template <std::size_t I, std::size_t ... J>
+		constexpr bool _is_lower_triangular(std::index_sequence<I, J ...>) const
+		{
+			return (... && (static_cast<MatrixType const &>(*this)(I, J) == 0)) && _is_lower_triangular(std::index_sequence<J ...>());
+		}
+		template <std::size_t I>
+		constexpr bool _is_lower_triangular(std::index_sequence<I>) const
+		{
+			return true;
+		}
+		// WARNING: Uses cofactor expansion, which has a time complexity for n*n matrices of O(n!); will be improved once LU decomposition is implemented (maybe maintain this method for matrices up to size 4)
+		template <std::size_t ... J>
+		constexpr auto _determinant(std::index_sequence<J ...>) const
+		{
+			return ((static_cast<MatrixType const &>(*this)(1, J) * submatrix(1, J).determinant()) - ... - typename MatrixType::value_type(0));
+		}
+		constexpr auto _determinant(std::index_sequence<1>) const
+		{
+			return static_cast<MatrixType const &>(*this)(1, 1);
+		}
+
+	/*	template <std::size_t ... IJ>
+		auto _determinant(std::index_sequence<IJ ...>)
+		{
+			return (... * static_cast<MatrixType const &>(*this)(IJ, IJ));
+		}	*/
 	};
 }
 

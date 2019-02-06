@@ -8,7 +8,7 @@ int example_6();
 int example_7();
 int example_8();
 
-#define EXAMPLE example_8
+#define EXAMPLE example_5
 
 int main()
 {

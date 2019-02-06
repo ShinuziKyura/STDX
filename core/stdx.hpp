@@ -21,7 +21,8 @@
 #define STDX_implementation_CONCATENATE_9(token1, token2, token3, token4, token5, token6, token7, token8, token9) token1 ## token2 ## token3 ## token4 ## token5 ## token6 ## token7 ## token8 ## token9
 #define	STDX_CONCATENATE_9(token1, token2, token3, token4, token5, token6, token7, token8, token9) STDX_implementation_CONCATENATE_9(token1, token2, token3, token4, token5, token6, token7, token8, token9)
 
-#define STDX_DIRECTIVE(file, directive) STDX_ENQUOTE(STDX_CONCATENATE_4(./core/directives/, file, /, directive)) // TODO find better way to get path
+// TODO find better way to get path
+#define STDX_DIRECTIVE(file, directive) STDX_ENQUOTE(STDX_CONCATENATE_4(./core/directives/, file, /, directive))
 
 #if defined(__clang__) || defined(__GNUG__) || defined(_MSC_VER)
 #define STDX_UNIQUE() __COUNTER__

@@ -1254,6 +1254,9 @@ namespace stdx::meta
 	{
 	};
 #endif
+
+	template <class Type>
+	constexpr bool is_lock_free_v = is_lock_free<Type>::value;
 }
 
 #endif
