@@ -147,6 +147,7 @@ namespace stdx::mutex
 			while (!_mutex.compare_exchange_weak(mutex_state, _exclusive_state, std::memory_order_acquire))
 			{
 				mutex_state = 0;
+
 				std::this_thread::yield();
 			}
 		}
@@ -166,31 +167,19 @@ namespace stdx::mutex
 
 			do
 			{
-				if (mutex_state < 0)
+				if (ensure_shared_state(mutex_state))
 				{
-					mutex_state = 0;
-					std::this_thread::yield();
-				}
-				else if (mutex_state == _shared_state_limit) // Edge case, we'll try decrementing now; we might get lucky on this attempt if one thread releases the mutex
-				{
-					--mutex_state;
 					std::this_thread::yield();
 				}
 			}
 			while (!_mutex.compare_exchange_weak(mutex_state, mutex_state + 1, std::memory_order_acquire));
 		}
+
 		bool try_lock_shared()
 		{
 			_int_largest_lock_free_t mutex_state = _mutex.load(std::memory_order_relaxed);
 			
-			if (mutex_state < 0)
-			{
-				mutex_state = 0;
-			}
-			else if (mutex_state == _shared_state_limit)
-			{
-				--mutex_state;
-			}
+			ensure_shared_state(mutex_state);
 
 			return _mutex.compare_exchange_weak(mutex_state, mutex_state + 1, std::memory_order_acquire);
 		}
@@ -200,13 +189,13 @@ namespace stdx::mutex
 		}
 		bool upgrade()
 		{
-			std::unique_lock<spin_mutex> upgrade_lock(_upgrade_mutex, std::try_to_lock);
+			std::unique_lock<spin_mutex> const upgrade_lock(_upgrade_mutex, std::try_to_lock);
 			
 			if (upgrade_lock.owns_lock())
 			{
 				_int_largest_lock_free_t mutex_state = 1;
 
-				if (!_mutex.compare_exchange_strong(mutex_state, _exclusive_state, std::memory_order_acquire)) // Edge case, will avoid loops when single thread holds the mutex in shared mode
+				if (!_mutex.compare_exchange_strong(mutex_state, _exclusive_state, std::memory_order_acquire)) // Edge case, will avoid loops when only this thread holds the mutex
 				{
 					while (!_mutex.compare_exchange_weak(mutex_state, _exclusive_state + mutex_state - 1, std::memory_order_acquire));
 
@@ -228,13 +217,24 @@ namespace stdx::mutex
 		{
 			return stdx::meta::is_lock_free<_atomic_int_largest_lock_free_t>::value;
 		}
-		static constexpr auto maximum_number_of_owners()
-		{
-			return _shared_state_limit;
-		}
 	private:
-		static constexpr auto _shared_state_limit = std::numeric_limits<_int_largest_lock_free_t>::max();
 		static constexpr auto _exclusive_state = std::numeric_limits<_int_largest_lock_free_t>::min();
+
+		// Ensures state is valid for shared locking, returns whether mutex_state was modified
+		static bool ensure_shared_state(_int_largest_lock_free_t & mutex_state)
+		{
+			if (mutex_state < 0)
+			{
+				mutex_state = 0;
+				return true;
+			}
+			if (mutex_state == std::numeric_limits<_int_largest_lock_free_t>::max()) // Edge case, we'll try decrementing now; we might get lucky on this attempt if one thread releases the mutex
+			{
+				--mutex_state;
+				return true;
+			}
+			return false;
+		}
 
 		_atomic_int_largest_lock_free_t _mutex = 0;
 		spin_mutex _upgrade_mutex;
