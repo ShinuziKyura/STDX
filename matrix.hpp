@@ -229,7 +229,7 @@ namespace stdx::math
 	};
 
 	template <class ValueType, std::size_t Rows, std::size_t Columns>
-	matrix(std::array<std::array<ValueType, Columns>, Rows>) -> matrix<ValueType, Rows, Columns>;
+	matrix(std::array<std::array<ValueType, Columns>, Rows>) -> matrix<ValueType, Rows, Columns>; // TODO unsure about utility of this
 
 	template <class MatrixType>
 	matrix(_matrix_expression<MatrixType>) -> matrix<typename MatrixType::value_type, MatrixType::rows, MatrixType::columns>;
@@ -242,7 +242,7 @@ namespace stdx::math
 	class _matrix_addition : public _matrix_expression<_matrix_addition<MatrixType1, MatrixType2>>
 	{
 		static_assert(MatrixType1::rows == MatrixType2::rows && MatrixType1::columns == MatrixType2::columns, 
-					  "'stdx::math::_matrix_addition<Matrix1, Matrix2>': Matrix1 and Matrix2 must have the same dimensions");
+					  "'stdx::math::_matrix_addition<MatrixType1, MatrixType2>': MatrixType1 and MatrixType2 must have the same dimensions");
 	
 		constexpr _matrix_addition(MatrixType1 const & a, MatrixType2 const & b) :
 			_a(a),
@@ -270,7 +270,7 @@ namespace stdx::math
 	class _matrix_subtraction : public _matrix_expression<_matrix_subtraction<MatrixType1, MatrixType2>>
 	{
 		static_assert(MatrixType1::rows == MatrixType2::rows && MatrixType1::columns == MatrixType2::columns,
-					  "'stdx::math::_matrix_subtraction<Matrix1, Matrix2>': Matrix1 and Matrix2 must have the same dimensions");
+					  "'stdx::math::_matrix_subtraction<MatrixType1, MatrixType2>': MatrixType1 and MatrixType2 must have the same dimensions");
 
 		constexpr _matrix_subtraction(MatrixType1 const & a, MatrixType2 const & b) :
 			_a(a),
@@ -298,7 +298,7 @@ namespace stdx::math
 	class _matrix_multiplication : public _matrix_expression<_matrix_multiplication<MatrixType1, MatrixType2>>
 	{
 		static_assert(MatrixType1::columns == MatrixType2::rows,
-					  "'stdx::math::_matrix_multiplication<Matrix1, Matrix2>': Matrix1::columns() must equal Matrix2::rows()");
+					  "'stdx::math::_matrix_multiplication<MatrixType1, MatrixType2>': MatrixType1::columns must equal MatrixType2::rows");
 
 		constexpr _matrix_multiplication(MatrixType1 const & a, MatrixType2 const & b) :
 			_a(a),
@@ -361,8 +361,8 @@ namespace stdx::math
 		}
 	public:
 		using value_type = typename MatrixType::value_type;
-		static constexpr std::size_t rows = MatrixType::columns;
-		static constexpr std::size_t columns = MatrixType::rows;
+		static constexpr std::size_t rows = MatrixType::rows;
+		static constexpr std::size_t columns = MatrixType::columns;
 
 		constexpr value_type const & operator()(std::size_t const & i, std::size_t const & j) const
 		{
@@ -437,7 +437,7 @@ namespace stdx::math
 		}
 		constexpr auto pivot() const
 		{
-			return _matrix_permutation(static_cast<MatrixType const &>(*this), _pivot());
+			return _matrix_permutation(static_cast<MatrixType const &>(*this), _pivot<std::min(MatrixType::rows, MatrixType::columns)>());
 		}
 		constexpr auto submatrix(std::size_t const & i, std::size_t const & j) const
 		{
@@ -472,43 +472,44 @@ namespace stdx::math
 			return _determinant(stdx::meta::make_integer_sequence<std::size_t, 1, MatrixType::columns>());
 		}
 	protected:
-		template <std::size_t J = 0, std::size_t Rows = MatrixType::rows>
-		constexpr auto _pivot(std::array<std::size_t, Rows> permutation = {}) const // TODO recheck this function
+		template <std::size_t Size, std::size_t Index = 0>
+		constexpr auto _pivot(std::array<std::size_t, Size> permutation = {}, std::integral_constant<std::size_t, Index> = std::integral_constant<std::size_t, 0>()) const
 		{
-			auto max = std::numeric_limits<typename MatrixType::value_type>::lowest();
-			std::size_t max_i = 0;
-
-			for (std::size_t i = 1; i <= MatrixType::rows; ++i)
+			if constexpr (Index + 1 < Size)
 			{
-				if (auto element = static_cast<MatrixType const &>(*this)(i, 1); element > max)
+				auto max = std::numeric_limits<typename MatrixType::value_type>::lowest();
+				std::size_t max_i = 0;
+
+				for (std::size_t i = 1; i <= MatrixType::rows; ++i)
 				{
-					max = element;
-					max_i = i;
+					if (auto element = static_cast<MatrixType const &>(*this)(i, 1); element > max)
+					{
+						max = element;
+						max_i = i;
+					}
 				}
-			}
 
-			permutation[J] = max_i;
+				permutation[Index] = max_i;
 
-			if constexpr (J + 2 < Rows)
-			{
-				return submatrix(max_i, 1)._pivot<J + 1>(permutation);
+				return submatrix(max_i, 1)._pivot(permutation, std::integral_constant<std::size_t, Index + 1>()); // TODO specifying template parameters explicitly will result in errors, need to investigate
 			}
 			else
 			{
-				permutation[J + 1] = 1;
+				permutation[Index] = 1;
 
-				for (std::size_t idx1 = J + 1; idx1 > 0; --idx1)
+				// TODO add logic to get determinant sign (check if parity of sum of compressed indices works)
+
+				for (std::size_t index_1 = Index; index_1 > 0; --index_1)
 				{
-					for (std::size_t idx2 = idx1 - 1; idx2 > 0; --idx2)
+					for (std::size_t index_2 = index_1 - 1; index_2 > 0; --index_2)
 					{
-						permutation[idx1] += std::size_t(permutation[idx2] <= permutation[idx1]);
+						permutation[index_1] += std::size_t(permutation[index_2] <= permutation[index_1]);
 					}
 				}
 
 				return permutation;
 			}
 		}
-	private:
 		template <std::size_t J, std::size_t ... I>
 		constexpr bool _is_upper_triangular(std::index_sequence<J, I ...>) const
 		{
@@ -529,7 +530,7 @@ namespace stdx::math
 		{
 			return true;
 		}
-		// WARNING: Uses cofactor expansion, which has a time complexity for n*n matrices of O(n!); will be improved once LU decomposition is implemented (maybe maintain this method for matrices up to size 4)
+		// WARNING: Uses Laplace expansion, which has a time complexity of O(n!); will be improved once LU decomposition is implemented (maybe maintain this method for matrices up to size 4)
 		template <std::size_t ... J>
 		constexpr auto _determinant(std::index_sequence<J ...>) const
 		{

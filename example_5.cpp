@@ -21,16 +21,16 @@ namespace
 {
 	bool test_less(int i)
 	{
-		bool example_ = i < 10;
-		std::cout << std::boolalpha << "Evaluated i < 10: " << example_ << std::endl;
-		return example_;
+		bool test = i < 10;
+		std::cout << std::boolalpha << "Evaluated i < 10: " << test << std::endl;
+		return test;
 	}
 
 	bool test_greater(int i)
 	{
-		bool example_ = i > 0;
-		std::cout << std::boolalpha << "Evaluated i > 0: " << example_ << std::endl;
-		return example_;
+		bool test = i > 0;
+		std::cout << std::boolalpha << "Evaluated i > 0: " << test << std::endl;
+		return test;
 	}
 }
 template <char ... Chars>
@@ -54,21 +54,9 @@ int example_5()
 
 	STDX_DEFINE_STOPWATCH(std::chrono::microseconds);
 
-	stdx::matrix P1 = A1.pivot();
-
-//	VC++ can't compile this but G++ can
-//	constexpr stdx::matrix m3 = m1 * m2;
-//	constexpr auto e3 = m3(1, 1);
-
-	for (std::size_t i = 1; i <= P1.rows; ++i)
-	{
-		for (std::size_t j = 1; j <= P1.columns; ++j)
-		{
-			std::cout << P1(i, j) << " ";
-		}
-		std::cout << std::endl;
-	}
-	std::cout << std::endl;
+//	MSVC can't compile this line, GCC can
+//	Which of them is right (if any)?
+//	[[maybe_unused]] constexpr stdx::matrix P1 = A1.pivot();
 
 	std::fstream fout("example_5.txt", std::ios::out | std::ios::trunc);
 
