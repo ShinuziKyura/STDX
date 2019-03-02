@@ -416,10 +416,9 @@ namespace stdx::math
 
 	namespace _math
 	{
-		template <class MatrixType, std::size_t Size = MatrixType::rows>
+		template <class MatrixType, std::size_t Size = MatrixType::rows, std::size_t Index = Size - MatrixType::rows>
 		constexpr auto _pivot(_matrix_expression<MatrixType> const & expression, std::array<std::size_t, Size> permutation = {}, std::size_t sign = Size)
 		{
-			constexpr std::size_t Index = Size - MatrixType::rows;
 			if constexpr (Index < Size - 1)
 			{
 				auto max = std::numeric_limits<typename MatrixType::value_type>::lowest();
@@ -442,8 +441,7 @@ namespace stdx::math
 			else
 			{
 				permutation[Index] = 1;
-				sign ^= 1;
-				sign &= 1;
+				sign ^= sign | 1;
 
 				for (std::size_t index_1 = Index; index_1 > 0; --index_1)
 				{
