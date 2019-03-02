@@ -3,6 +3,7 @@
 
 #include <limits>
 #include <array>
+#include <tuple>
 
 #include "meta.hpp" // Consider including necessary metafunctions only
 
@@ -354,9 +355,10 @@ namespace stdx::math
 	template <class MatrixType>
 	class _matrix_permutation : public _matrix_expression<_matrix_permutation<MatrixType>>
 	{
-		constexpr _matrix_permutation(MatrixType const & a, std::array<std::size_t, MatrixType::rows> const & p) :
+		constexpr _matrix_permutation(MatrixType const & a, std::array<std::size_t, MatrixType::rows> const & p, std::size_t const & s) :
 			_a(a),
-			_p(p)
+			_p(p),
+			_s(s)
 		{
 		}
 	public:
@@ -371,6 +373,7 @@ namespace stdx::math
 	private:
 		MatrixType const & _a;
 		std::array<std::size_t, rows> const _p;
+		std::size_t const _s;
 
 		template <class>
 		friend class _matrix_expression;
@@ -411,6 +414,50 @@ namespace stdx::math
 	// Matrix expression
 	////////////////////////////////////////////////////////////////////////////////
 
+	namespace _math
+	{
+		template <class MatrixType, std::size_t Size = MatrixType::rows>
+		constexpr auto _pivot(_matrix_expression<MatrixType> const & expression, std::array<std::size_t, Size> permutation = {}, std::size_t sign = Size)
+		{
+			constexpr std::size_t Index = Size - MatrixType::rows;
+			if constexpr (Index < Size - 1)
+			{
+				auto max = std::numeric_limits<typename MatrixType::value_type>::lowest();
+				std::size_t max_i = 0;
+
+				for (std::size_t i = 1; i <= MatrixType::rows; ++i)
+				{
+					if (auto element = static_cast<MatrixType const &>(expression)(i, 1); element > max)
+					{
+						max = element;
+						max_i = i;
+					}
+				}
+
+				permutation[Index] = max_i;
+				sign ^= max_i;
+
+				return _pivot(expression.submatrix(max_i, 1), permutation, sign);
+			}
+			else
+			{
+				permutation[Index] = 1;
+				sign ^= 1;
+				sign &= 1;
+
+				for (std::size_t index_1 = Index; index_1 > 0; --index_1)
+				{
+					for (std::size_t index_2 = index_1 - 1; index_2 > 0; --index_2)
+					{
+						permutation[index_1] += std::size_t(permutation[index_2] <= permutation[index_1]);
+					}
+				}
+
+				return std::make_tuple(permutation, sign);
+			}
+		}
+	}
+
 	template <class MatrixType>
 	class _matrix_expression
 	{
@@ -437,7 +484,8 @@ namespace stdx::math
 		}
 		constexpr auto pivot() const
 		{
-			return _matrix_permutation(static_cast<MatrixType const &>(*this), _pivot<std::min(MatrixType::rows, MatrixType::columns)>());
+			const auto & [permutation, sign] = _math::_pivot(*this);
+			return _matrix_permutation(static_cast<MatrixType const &>(*this), permutation, sign);
 		}
 		constexpr auto submatrix(std::size_t const & i, std::size_t const & j) const
 		{
@@ -471,45 +519,7 @@ namespace stdx::math
 			// Use different method/overload depending on type of MatrixType
 			return _determinant(stdx::meta::make_integer_sequence<std::size_t, 1, MatrixType::columns>());
 		}
-	protected:
-		template <std::size_t Size, std::size_t Index = 0>
-		constexpr auto _pivot(std::array<std::size_t, Size> permutation = {}, std::integral_constant<std::size_t, Index> = std::integral_constant<std::size_t, 0>()) const
-		{
-			if constexpr (Index + 1 < Size)
-			{
-				auto max = std::numeric_limits<typename MatrixType::value_type>::lowest();
-				std::size_t max_i = 0;
-
-				for (std::size_t i = 1; i <= MatrixType::rows; ++i)
-				{
-					if (auto element = static_cast<MatrixType const &>(*this)(i, 1); element > max)
-					{
-						max = element;
-						max_i = i;
-					}
-				}
-
-				permutation[Index] = max_i;
-
-				return submatrix(max_i, 1)._pivot(permutation, std::integral_constant<std::size_t, Index + 1>()); // TODO specifying template parameters explicitly will result in errors, need to investigate
-			}
-			else
-			{
-				permutation[Index] = 1;
-
-				// TODO add logic to get determinant sign (check if parity of sum of compressed indices works)
-
-				for (std::size_t index_1 = Index; index_1 > 0; --index_1)
-				{
-					for (std::size_t index_2 = index_1 - 1; index_2 > 0; --index_2)
-					{
-						permutation[index_1] += std::size_t(permutation[index_2] <= permutation[index_1]);
-					}
-				}
-
-				return permutation;
-			}
-		}
+	protected: // TODO RS eventually move this to _math
 		template <std::size_t J, std::size_t ... I>
 		constexpr bool _is_upper_triangular(std::index_sequence<J, I ...>) const
 		{

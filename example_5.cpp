@@ -56,7 +56,16 @@ int example_5()
 
 //	MSVC can't compile this line, GCC can
 //	Which of them is right (if any)?
-//	[[maybe_unused]] constexpr stdx::matrix P1 = A1.pivot();
+/*	[[maybe_unused]] constexpr stdx::matrix P1 = A1.pivot();
+
+	for (std::size_t i = 1; i <= P1.rows; ++i)
+	{
+		for (std::size_t j = 1; j <= P1.columns; ++j)
+		{
+			std::cout << P1(i, j) << " ";
+		}
+		std::cout << "\n";
+	} */
 
 	std::fstream fout("example_5.txt", std::ios::out | std::ios::trunc);
 
