@@ -421,14 +421,14 @@ namespace stdx::math
 		{
 			if constexpr (Index < Size - 1)
 			{
-				auto max = std::numeric_limits<typename MatrixType::value_type>::lowest();
+				auto max_element = std::numeric_limits<typename MatrixType::value_type>::lowest();
 				std::size_t max_i = 0;
 
 				for (std::size_t i = 1; i <= MatrixType::rows; ++i)
 				{
-					if (auto element = static_cast<MatrixType const &>(expression)(i, 1); element > max)
+					if (auto element = static_cast<MatrixType const &>(expression)(i, 1); element > max_element)
 					{
-						max = element;
+						max_element = element;
 						max_i = i;
 					}
 				}
@@ -445,9 +445,9 @@ namespace stdx::math
 
 				for (std::size_t index_1 = Index; index_1 > 0; --index_1)
 				{
-					for (std::size_t index_2 = index_1 - 1; index_2 > 0; --index_2)
+					for (std::size_t index_2 = index_1; index_2 > 0; --index_2)
 					{
-						permutation[index_1] += std::size_t(permutation[index_2] <= permutation[index_1]);
+						permutation[index_1] += std::size_t(permutation[index_2 - 1] <= permutation[index_1]);
 					}
 				}
 
