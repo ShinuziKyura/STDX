@@ -54,18 +54,43 @@ int example_5()
 
 	STDX_DEFINE_STOPWATCH(std::chrono::microseconds);
 
+	////////////////////////////////////////
+	/// Matrix test start
+
 //	MSVC can't compile this line, GCC can
 //	Which of them is right (if any)?
 //	[[maybe_unused]] constexpr stdx::matrix P1 = A1.pivot();
-
-/*	for (std::size_t i = 1; i <= P1.rows; ++i)
+/*	for (std::size_t i = 1; i <= M1.rows; ++i)
 	{
-		for (std::size_t j = 1; j <= P1.columns; ++j)
+		for (std::size_t j = 1; j <= M1.columns; ++j)
 		{
-			std::cout << P1(i, j) << " ";
+			std::cout << M1(i, j) << " ";
 		}
 		std::cout << "\n";
 	} */
+
+	const auto M1 = A1.LUP_decomposition();
+
+	for (std::size_t i = 1; i <= std::get<0>(M1).size(); ++i)
+	{
+		for (std::size_t j = 1; j <= std::get<0>(M1).size(); ++j)
+		{
+			std::cout << std::get<0>(M1)[i - 1][j - 1] << " ";
+		}
+		std::cout << "\n";
+	}
+
+	for (std::size_t i = 1; i <= std::get<1>(M1).size(); ++i)
+	{
+		for (std::size_t j = 1; j <= std::get<1>(M1).size(); ++j)
+		{
+			std::cout << std::get<1>(M1)[i - 1][j - 1] << " ";
+		}
+		std::cout << "\n";
+	}
+
+	/// Matrix test end
+	////////////////////////////////////////
 
 	std::fstream fout("example_5.txt", std::ios::out | std::ios::trunc);
 

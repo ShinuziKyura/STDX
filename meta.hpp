@@ -673,6 +673,9 @@ namespace stdx::meta
 	template <class Type, Type Min, Type Max>
 	using make_integer_sequence = typename _make_integer_sequence<std::make_integer_sequence<Type, Type(Max - Min + 1)>, Min>::_type;
 
+	template <std::size_t Min, std::size_t Max>
+	using make_index_sequence = typename _make_integer_sequence<std::make_integer_sequence<std::size_t, std::size_t(Max - Min + 1)>, Min>::_type;
+
 		// Conversions
 
 	template <char Char>
