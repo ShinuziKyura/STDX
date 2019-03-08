@@ -516,37 +516,63 @@ namespace stdx::math
 			}
 		}
 
-	/*	template <class ValueType, std::size_t Size, std::size_t ... Index>
-		constexpr std::array<std::array<ValueType, Size>, Size> _initialize_lower_matrix(std::index_sequence<Index ...>)
+		template <class ValueType, std::size_t Size, std::size_t ... Index>
+		constexpr auto _identity(std::index_sequence<Index ...>)
 		{
-			return { std::size_t(Index % (Size + 1) == 0) ... };
+			return { ValueType(Index % (Size + 1) == 0) ... };
 		}
 		template <class ValueType, std::size_t Size>
-		constexpr auto _initialize_lower_matrix()
+		constexpr auto _identity()
 		{
-			return _initialize_lower_matrix<ValueType, Size>(stdx::meta::make_index_sequence<0, Size * Size - 1>());
+			return _identity<ValueType, Size>(stdx::meta::make_index_sequence<0, Size * Size - 1>());
+		}
+		
+		template <class MatrixType, std::size_t ... K>
+		constexpr auto _upper_element(_matrix_expression<MatrixType> const & expression,
+									  std::array<std::array<typename MatrixType::value_type, MatrixType::columns>, MatrixType::rows> const & lower,
+									  std::array<std::array<typename MatrixType::value_type, MatrixType::columns>, MatrixType::rows> const & upper,
+									  std::size_t i,
+									  std::size_t j,
+									  std::index_sequence<K ...>)
+		{
+			return expression(i + 1, j + 1) - (typename MatrixType::value_type(0) + ... + (lower[i][K] * upper[K][j]));
 		}
 
-		template <class MatrixType, class ValueType = typename MatrixType::value_type, std::size_t Size = MatrixType::rows, std::size_t ... Index>
-		constexpr std::array<std::array<ValueType, Size>, Size> _initialize_upper_matrix(_permutated_matrix<MatrixType> const & expression, std::index_sequence<Index ...>)
+		template <class MatrixType, std::size_t ... K>
+		constexpr auto _lower_element(_matrix_expression<MatrixType> const & expression,
+									  std::array<std::array<typename MatrixType::value_type, MatrixType::columns>, MatrixType::rows> const & lower,
+									  std::array<std::array<typename MatrixType::value_type, MatrixType::columns>, MatrixType::rows> const & upper,
+									  std::size_t i,
+									  std::size_t j,
+									  std::index_sequence<K ...> k)
 		{
-			return { expression(1, Index) ... };
+			return _upper_element(expression, lower, upper, i, j, k) / upper[j][j];
 		}
-		template <class MatrixType, class ValueType = typename MatrixType::value_type, std::size_t Size = MatrixType::rows>
-		constexpr auto _initialize_upper_matrix(_permutated_matrix<MatrixType> const & expression)
+
+		template <class MatrixType, std::size_t Index = 0>
+		constexpr auto _LUP_decomposition(_matrix_expression<MatrixType> const & expression, 
+										  std::array<std::array<typename MatrixType::value_type, MatrixType::columns>, MatrixType::rows> lower = {}, 
+										  std::array<std::array<typename MatrixType::value_type, MatrixType::columns>, MatrixType::rows> upper = {})
 		{
-			return _initialize_upper_matrix(expression, stdx::meta::make_index_sequence<1, Size>());
-		} */
+			// TODO separate this further into methods
+			if constexpr (Index/* < MatrixType::rows*/)
+			{
+				for (std::size_t j = Index; j < upper.size(); ++j)
+				{
+					upper[Index][j] = _upper_element(expression, lower, upper, Index, j, stdx::meta::make_index_sequence<0, Index>());
+				}
+				for (std::size_t i = Index; i < lower.size(); ++i)
+				{
+					lower[i][Index] = _lower_element(expression, lower, upper, i, Index, stdx::meta::make_index_sequence<0, Index>());
+				}
 
-		template <class MatrixType> // TODO remove vvv this
-		constexpr auto _LUP_decomposition([[maybe_unused]] _permutated_matrix<MatrixType> const & expression)
-		{
-			// TODO implementation
-
-			auto lower = std::array<std::array<typename MatrixType::value_type, MatrixType::columns>, MatrixType::rows>{};
-			auto upper = std::array<std::array<typename MatrixType::value_type, MatrixType::columns>, MatrixType::rows>{};
-
-			return std::make_tuple(lower, upper);
+				return _LUP_decomposition(expression, lower, upper);
+			}
+			else
+			{
+				(void) expression;
+				return std::make_tuple(lower, upper);
+			}
 		}
 	}
 
