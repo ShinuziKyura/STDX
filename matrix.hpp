@@ -517,7 +517,7 @@ namespace stdx::math
 		}
 
 		template <class ValueType, std::size_t Size, std::size_t ... Index>
-		constexpr auto _identity(std::index_sequence<Index ...>)
+		constexpr std::array<std::array<ValueType, Size>, Size> _identity(std::index_sequence<Index ...>)
 		{
 			return { ValueType(Index % (Size + 1) == 0) ... };
 		}
@@ -551,7 +551,7 @@ namespace stdx::math
 
 		template <class MatrixType, std::size_t Index = 0>
 		constexpr auto _LUP_decomposition(_matrix_expression<MatrixType> const & expression, 
-										  std::array<std::array<typename MatrixType::value_type, MatrixType::columns>, MatrixType::rows> lower = {}, 
+										  std::array<std::array<typename MatrixType::value_type, MatrixType::columns>, MatrixType::rows> lower = _identity<typename MatrixType::value_type, MatrixType::rows>(),
 										  std::array<std::array<typename MatrixType::value_type, MatrixType::columns>, MatrixType::rows> upper = {})
 		{
 			// TODO separate this further into methods
