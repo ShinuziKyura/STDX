@@ -5,12 +5,20 @@
 #include <deque>
 #include <chrono>
 
-// Defines stopwatch alias with std::chrono::duration<Rep, Period> as the stopwatch resolution. Defaults to std::chrono::nanoseconds if no resolution is specified.
-#define STDX_DEFINE_STOPWATCH(resolution) using stopwatch = ::stdx::chrono::_stopwatch<resolution>
+// Defines stopwatch alias with std::chrono::duration<Rep, Period> as the stopwatch resolution. Defaults to stdx::chrono::seconds if no resolution is specified.
+// Do not define this in a header file.
+#define STDX_DEFINE_STOPWATCH(...) using stopwatch = ::stdx::chrono::_stopwatch<__VA_ARGS__>
 
 namespace stdx::chrono
 {	
-	template <class Resolution = std::chrono::nanoseconds>
+	using nanoseconds = std::chrono::duration<long double, std::nano>;
+	using microseconds = std::chrono::duration<long double, std::micro>;
+	using milliseconds = std::chrono::duration<long double, std::milli>;
+	using seconds = std::chrono::duration<long double>;
+	using minutes = std::chrono::duration<long double, std::ratio<60>>;
+	using hours = std::chrono::duration<long double, std::ratio<3600>>;
+
+	template <class Resolution = seconds>
 	class _stopwatch
 	{
 	public:
