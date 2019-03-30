@@ -518,7 +518,7 @@ namespace stdx::meta
 		// Conjunction
 
 	template <template <class> class Trait, class ... Types>
-	struct conjunction : std::bool_constant<(...&& Trait<Types>::value)>
+	struct conjunction : std::bool_constant<(... && Trait<Types>::value)>
 	{
 	};
 

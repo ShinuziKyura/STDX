@@ -2,7 +2,7 @@
 int function();\
 int(&main_function)() = function;
 
-FUNCTION(example_5);
+FUNCTION(example_9);
 
 int main()
 {
