@@ -28,6 +28,38 @@ struct derived_type : base_type, STDX_EVENT_HANDLER
 	{
 	}
 
+	derived_type(derived_type const & other)
+		: base_type(other)
+		, STDX_EVENT_HANDLER_COPY_CONSTRUCTOR(other)
+	{
+	}
+
+	derived_type(derived_type && other) noexcept
+		: base_type(other)
+		, STDX_EVENT_HANDLER_MOVE_CONSTRUCTOR(other)
+	{
+	}
+
+	derived_type & operator=(derived_type const & other)
+	{
+		STDX_EVENT_HANDLER_COPY_ASSIGNMENT(other);
+
+		return *this;
+	}
+
+	derived_type & operator=(derived_type && other) noexcept
+	{
+		STDX_EVENT_HANDLER_MOVE_ASSIGNMENT(other);
+
+		return *this;
+	}
+
+/*	Or alternatively, using the copy/move-and-swap idiom
+ *	derived_type & operator=(derived_type other)
+ *	{
+ *		return *this;
+ *	}
+ */
 };
 
 int example_9()
@@ -45,7 +77,7 @@ int example_9()
 			{
 				base_type b(2);
 				test_event.bind(&b, &base_type::function);
-
+				
 				{
 					base_type c(1);
 					test_event.bind(&c, &base_type::function);
