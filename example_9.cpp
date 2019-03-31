@@ -3,7 +3,7 @@
 #include "event.hpp"
 #include "utility.hpp"
 
-// Any type we want to use to handle events must have 'STDX_EVENT_HANDLER as a base
+// Any type we want to use to handle events must have 'STDX_EVENT_HANDLER' as a base
 struct base_type : STDX_EVENT_HANDLER
 {
 	base_type(int t)
@@ -13,14 +13,15 @@ struct base_type : STDX_EVENT_HANDLER
 
 	int function(int i, std::string const & str) const &
 	{
-		std::cout << _t << " " << i << " " << str << "\n";
+		std::cout << _t << " " << i << "\t" << str << "\n";
 		return 0;
 	}
 
 	int _t;
 };
 
-struct derived_type : base_type //, STDX_EVENT_HANDLER
+// Redundant base, will have no effect
+struct derived_type : base_type, STDX_EVENT_HANDLER
 {
 	derived_type(int t)
 		: base_type(t)
@@ -64,7 +65,7 @@ int example_9()
 				test_event.broadcast(2, "y");
 			}
 
-			test_event.broadcast(3, "a!");
+			test_event.broadcast(3, "a\n\t!");
 		}
 
 		test_event.bind(&e, &base_type::function);

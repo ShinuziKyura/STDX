@@ -16,9 +16,10 @@ namespace stdx::event
 	protected:
 		~_event_dispatcher_base() noexcept = default;
 
-	public:
-		virtual void unbind(class _event_handler_base const *) noexcept = 0;
+	private:
+		virtual bool _unbind(class _event_handler_base const *) noexcept = 0;
 
+		friend class _event_handler_base;
 	};
 
 	class _event_handler_base
@@ -26,11 +27,9 @@ namespace stdx::event
 	protected:
 		~_event_handler_base() noexcept
 		{
-			auto const dispatcher_set(std::move(_dispatcher_set));
-
-			for (auto const dispatcher : dispatcher_set)
+			for (auto const dispatcher : _dispatcher_set)
 			{
-				dispatcher->unbind(this);
+				dispatcher->_unbind(this);
 			}
 		}
 
@@ -44,7 +43,7 @@ namespace stdx::event
 			_dispatcher_set.erase(dispatcher);
 		}
 
-		auto _this() const noexcept
+		auto _this() const noexcept -> _event_handler_base const *
 		{
 			return this; // Because virtual base classes vtables are weird, we need to register each _event_handler_base through its 'this' pointer, which will be different from the derived class one
 		}
@@ -72,7 +71,7 @@ namespace stdx::event
 
 			virtual void invoke(ParamTypes && ... params) = 0;
 
-			auto get_exception() noexcept // Resets exception_ptr
+			auto get_exception() noexcept -> std::exception_ptr // Resets exception_ptr
 			{
 				return std::exchange(_exception, nullptr);
 			}
@@ -133,9 +132,9 @@ namespace stdx::event
 				obj->_event_handler_base::_bind(this);
 			}
 		}
-		void unbind(_event_handler_base const * handler) noexcept override
+		void unbind(_event_handler_base const * handler) noexcept
 		{
-			if (_handler_map.erase(handler))
+			if (_unbind(handler))
 			{
 				handler->_unbind(this);
 			}
@@ -172,7 +171,7 @@ namespace stdx::event
 				return iterator->second->get_exception();
 			}
 
-			return nullptr;
+			return std::exception_ptr();
 		}
 		auto last_exception() const noexcept -> std::map<_event_handler_base const *, std::exception_ptr>
 		{
@@ -187,6 +186,11 @@ namespace stdx::event
 		}
 
 	private:
+		bool _unbind(_event_handler_base const * handler) noexcept override
+		{
+			return _handler_map.erase(handler);
+		}
+
 		std::map<_event_handler_base const *, std::unique_ptr<_handler_object_base>> _handler_map;
 
 	};
