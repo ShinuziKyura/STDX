@@ -8,6 +8,10 @@
 #include "meta.hpp"
 
 #define STDX_EVENT_HANDLER public virtual ::stdx::event::_event_handler_base
+#define STDX_EVENT_HANDLER_COPY_CONSTRUCTOR(object) _event_handler_base(object)
+#define STDX_EVENT_HANDLER_COPY_ASSIGNMENT(object) _event_handler_base::operator=(object)
+#define STDX_EVENT_HANDLER_MOVE_CONSTRUCTOR(object) _event_handler_base(std::move(object))
+#define STDX_EVENT_HANDLER_MOVE_ASSIGNMENT(object) _event_handler_base::operator=(std::move(object))
 
 namespace stdx::event
 {
@@ -25,12 +29,30 @@ namespace stdx::event
 	class _event_handler_base
 	{
 	protected:
+		_event_handler_base() = default;
+		_event_handler_base(_event_handler_base const &) noexcept
+		{
+			_unbind();
+		}
+		_event_handler_base & operator=(_event_handler_base const &) noexcept
+		{
+			_unbind();
+
+			return *this;
+		}
+		_event_handler_base(_event_handler_base && other) noexcept
+		{
+			other._unbind();
+		}
+		_event_handler_base & operator=(_event_handler_base && other) noexcept
+		{
+			other._unbind();
+
+			return *this;
+		}
 		~_event_handler_base() noexcept
 		{
-			for (auto const dispatcher : _dispatcher_set)
-			{
-				dispatcher->_unbind(this);
-			}
+			_unbind();
 		}
 
 	private:
@@ -42,10 +64,19 @@ namespace stdx::event
 		{
 			_dispatcher_set.erase(dispatcher);
 		}
+		void _unbind() const noexcept
+		{
+			for (auto const dispatcher : _dispatcher_set)
+			{
+				dispatcher->_unbind(this);
+			}
+
+			_dispatcher_set.clear();
+		}
 
 		auto _this() const noexcept -> _event_handler_base const *
 		{
-			return this; // Because virtual base classes vtables are weird, we need to register each _event_handler_base through its 'this' pointer, which will be different from the derived class one
+			return this; // Because virtual base classes are weird, we need to register each _event_handler_base through its 'this' pointer, which will be different from the derived class one
 		}
 
 		mutable std::set<_event_dispatcher_base *> _dispatcher_set;
@@ -61,8 +92,8 @@ namespace stdx::event
 	template <class ... ParamTypes>
 	class event_dispatcher<void(ParamTypes ...)> final : public _event_dispatcher_base
 	{
-		static_assert(std::bool_constant<(... && (!std::is_rvalue_reference_v<ParamTypes>/* || std::is_trivially_copyable_v<ParamTypes>*/))>::value,
-					  "'stdx::event::event_dispatcher<void(ParamTypes ...)>': ParamTypes must be of non-rvalue-reference type");
+		static_assert(std::bool_constant<(... && (!std::is_rvalue_reference_v<ParamTypes> || std::is_trivially_copyable_v<ParamTypes>))>::value,
+					  "'stdx::event::event_dispatcher<void(ParamTypes ...)>': ParamTypes must be of non-rvalue-reference type or otherwise trivially copyable");
 
 		class _handler_object_base
 		{
@@ -106,6 +137,11 @@ namespace stdx::event
 		};
 
 	public:
+		event_dispatcher() = default;
+		event_dispatcher(event_dispatcher const &) = delete;
+		event_dispatcher & operator=(event_dispatcher const &) = delete;
+		event_dispatcher(event_dispatcher &&) = delete;
+		event_dispatcher & operator=(event_dispatcher &&) = delete;
 		~event_dispatcher() noexcept
 		{
 			unbind();
