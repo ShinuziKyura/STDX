@@ -75,6 +75,9 @@
     <ClInclude Include="core\stdx.hpp">
       <Filter>Library Files\Core</Filter>
     </ClInclude>
+    <ClInclude Include="event.hpp">
+      <Filter>Library Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="example_2.cpp">
@@ -95,7 +98,10 @@
     <ClCompile Include="example_8.cpp">
       <Filter>Test Files</Filter>
     </ClCompile>
-    <ClCompile Include="example_main.cpp">
+    <ClCompile Include="example_9.cpp">
+      <Filter>Test Files</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
       <Filter>Test Files</Filter>
     </ClCompile>
   </ItemGroup>

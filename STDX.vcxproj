@@ -22,7 +22,7 @@
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{0819CA65-6C95-4782-A0BF-081988C92CEC}</ProjectGuid>
     <RootNamespace>STDX</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -152,9 +152,11 @@
     <ClCompile Include="example_5.cpp" />
     <ClCompile Include="example_6.cpp" />
     <ClCompile Include="example_8.cpp" />
-    <ClCompile Include="example_main.cpp" />
+    <ClCompile Include="example_9.cpp" />
+    <ClCompile Include="main.cpp" />
     <ClInclude Include="atomic_shared_ptr.hpp" />
     <ClInclude Include="core\stdx.hpp" />
+    <ClInclude Include="event.hpp" />
     <ClInclude Include="FileTemplates\stdx_header_file_template.hpp" />
     <ClInclude Include="flow.hpp" />
     <ClInclude Include="functional.hpp" />

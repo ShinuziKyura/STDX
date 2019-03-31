@@ -25,10 +25,13 @@
 #define STDX_DIRECTIVE(file, directive) STDX_ENQUOTE(STDX_CONCATENATE_4(./core/directives/, file, /, directive))
 
 #if defined(__clang__) || defined(__GNUG__) || defined(_MSC_VER)
-#define STDX_UNIQUE() __COUNTER__
+	#define STDX_UNIQUE() __COUNTER__
 #else
-#error STDX_UNIQUE(): Cannot guarantee uniqueness
-//#define STDX_UNIQUE() __LINE__
+//*
+	#error STDX_UNIQUE(): Cannot guarantee uniqueness
+/*/
+	#define STDX_UNIQUE() __LINE__
+//*/
 #endif
 
 // For internal usage only

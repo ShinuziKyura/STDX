@@ -7,42 +7,51 @@
 
 #include "meta.hpp"
 
-#define STDX_EVENT_HANDLER public ::stdx::event::_event_handler // TODO understand virtual base classes and figure out if they can be applied to this
+#define STDX_EVENT_HANDLER public virtual ::stdx::event::_event_handler_base
 
 namespace stdx::event
 {
 	class _event_dispatcher_base
 	{
-	public:
-		virtual ~_event_dispatcher_base() = default;
+	protected:
+		~_event_dispatcher_base() = default;
 
-		virtual void unbind(void *) = 0;
+	public:
+		virtual void unbind(class _event_handler_base const *) noexcept = 0;
 
 	};
 
-	class _event_handler
+	class _event_handler_base
 	{
-	public:
-		virtual ~_event_handler()
+	protected:
+		~_event_handler_base() noexcept
 		{
-			for (auto const & dispatcher : _dispatcher_set)
+			auto const dispatcher_set(std::move(_dispatcher_set));
+
+			for (auto const dispatcher : dispatcher_set)
 			{
 				dispatcher->unbind(this);
 			}
 		}
 
 	private:
-		void bind(_event_dispatcher_base * dispatcher)
+		void _bind(_event_dispatcher_base * dispatcher) const
 		{
 			_dispatcher_set.insert(dispatcher);
 		}
-		void unbind(_event_dispatcher_base * dispatcher)
+		void _unbind(_event_dispatcher_base * dispatcher) const noexcept
 		{
 			_dispatcher_set.erase(dispatcher);
 		}
 
-		std::set<_event_dispatcher_base *> _dispatcher_set;
+		auto _this() const noexcept
+		{
+			// Because virtual base classes vtables are weird, we need to register each _event_handler_base through its 'this' pointer (which will be different from the derived class one)
+			return this;
+		}
 
+		mutable std::set<_event_dispatcher_base *> _dispatcher_set;
+		
 		template <class>
 		friend class event_dispatcher;
 
@@ -60,77 +69,126 @@ namespace stdx::event
 		class _handler_object_base
 		{
 		public:
-			virtual ~_handler_object_base() = default;
+			virtual ~_handler_object_base() noexcept = default;
 
-			virtual void invoke(void * obj, ParamTypes && ... params) const = 0;
+			virtual void invoke(ParamTypes && ... params) = 0;
 
-		};
-		template <class ObjType, class FuncType>
-		class _handler_object : public _handler_object_base
-		{
-		public:
-			_handler_object(FuncType ObjType::* func)
-				: _function(func)
+			auto get_exception() noexcept // Resets exception_ptr
 			{
+				return std::exchange(_exception, nullptr);
 			}
-
-			void invoke(void * obj, ParamTypes && ... params) const override
+			void set_exception(std::exception_ptr && exception) noexcept
 			{
-				(static_cast<ObjType *>(obj)->*_function)(std::forward<ParamTypes>(params) ...);
+				_exception = exception;
 			}
 
 		private:
-			FuncType ObjType::* _function;
+			std::exception_ptr _exception;
+
+		};
+		template <class ObjType, class FuncType, class ClassType>
+		class _handler_object : public _handler_object_base
+		{
+		public:
+			_handler_object(ObjType * obj, FuncType ClassType::* func)
+				: _object(obj)
+				, _function(func)
+			{
+			}
+
+			void invoke(ParamTypes && ... params) override
+			{
+				(_object->*_function)(std::forward<ParamTypes>(params) ...);
+			}
+
+		private:
+			ObjType * _object;
+			FuncType ClassType::* _function;
 
 		};
 
 	public:
-		~event_dispatcher()
+		~event_dispatcher() noexcept
 		{
-			for (auto const & handler : _handler_map)
-			{
-				static_cast<_event_handler *>(handler.first)->unbind(this);
-			}
+			unbind();
 		}
 
-		template <class ObjType, class FuncType>
-		void bind(ObjType * obj, FuncType ObjType::* func)
+		template <class ObjType, class FuncType, class ClassType>
+		void bind(ObjType * obj, FuncType ClassType::* func)
 		{
-			static_assert(std::is_base_of_v<_event_handler, ObjType>, 
-						  "'stdx::event::event_dispatcher<void(ParamTypes ...)>::bind(ObjType*, FuncType ObjType::*)': "
-						  "ObjType must have base class of type 'stdx::event::_event_handler'");
+			static_assert(std::is_base_of_v<_event_handler_base, ObjType>,
+						  "'stdx::event::event_dispatcher<void(ParamTypes ...)>::bind(ObjType*, FuncType ClassType::*)': "
+						  "ObjType must have base class of type 'stdx::event::_event_handler_base'");
+			static_assert(std::is_base_of_v<ClassType, ObjType>,
+						  "'stdx::event::event_dispatcher<void(ParamTypes ...)>::bind(ObjType*, FuncType ClassType::*)': "
+						  "ClassType must be the same class or a base class of ObjType");
 			static_assert(std::is_function_v<FuncType>,
-						  "'stdx::event::event_dispatcher<void(ParamTypes ...)>::bind(ObjType*, FuncType ObjType::*)': "
+						  "'stdx::event::event_dispatcher<void(ParamTypes ...)>::bind(ObjType*, FuncType ClassType::*)': "
 						  "FuncType must be a function type");
-			static_assert(std::is_same_v<stdx::meta::pack<ParamTypes ...>, typename stdx::meta::function_signature<FuncType>::parameter_types>,
-						  "'stdx::event::event_dispatcher<void(ParamTypes ...)>::bind(ObjType*, FuncType ObjType::*)': "
+			static_assert(std::is_same_v<meta::pack<ParamTypes ...>, typename meta::function_signature<FuncType>::parameter_types>,
+						  "'stdx::event::event_dispatcher<void(ParamTypes ...)>::bind(ObjType*, FuncType ClassType::*)': "
 						  "FuncType parameters must have same type as ParamTypes");
 
-			if (_handler_map.insert_or_assign(obj, std::make_unique<_handler_object<ObjType, FuncType>>(func)).second)
+			if (_handler_map.insert_or_assign(obj->_event_handler_base::_this(), std::make_unique<_handler_object<ObjType, FuncType, ClassType>>(obj, func)).second)
 			{
-				// We use reinterpret_cast so that if the first assert fails, it's the only error displayed
-				reinterpret_cast<_event_handler *>(obj)->bind(this);
+				obj->_event_handler_base::_bind(this);
 			}
 		}
-		void unbind()
+		void unbind(_event_handler_base const * handler) noexcept override
 		{
-			_handler_map.clear();
+			if (_handler_map.erase(handler))
+			{
+				handler->_unbind(this);
+			}
 		}
-		void unbind(void * obj) override
-		{
-			_handler_map.erase(obj);
-		}
-
-		void broadcast(ParamTypes && ... params) const
+		void unbind() noexcept
 		{
 			for (auto const & handler : _handler_map)
 			{
-				handler.second->invoke(handler.first, std::forward<ParamTypes>(params) ...);
+				handler.first->_unbind(this);
 			}
+
+			_handler_map.clear();
+		}
+
+		void broadcast(ParamTypes && ... params) noexcept
+		{
+			for (auto const & handler : _handler_map)
+			{
+				try
+				{
+					handler.second->invoke(std::forward<ParamTypes>(params) ...);
+				}
+				catch (...)
+				{
+					handler.second->set_exception(std::current_exception());
+				}
+			}
+		}
+
+		auto last_exception(_event_handler_base const * handler) const noexcept -> std::exception_ptr
+		{
+			if (auto const iterator = _handler_map.find(handler); iterator != _handler_map.end())
+			{
+				return iterator->second->get_exception();
+			}
+
+			return nullptr;
+		}
+		auto last_exception() const noexcept -> std::map<_event_handler_base const *, std::exception_ptr>
+		{
+			std::map<_event_handler_base const *, std::exception_ptr> _exception_map;
+
+			for (auto const & handler : _handler_map)
+			{
+				_exception_map.insert_or_assign(handler.first, handler.second->get_exception());
+			}
+
+			return _exception_map;
 		}
 
 	private:
-		std::map<void *, std::unique_ptr<_handler_object_base>> _handler_map;
+		std::map<_event_handler_base const *, std::unique_ptr<_handler_object_base>> _handler_map;
 
 	};
 }
