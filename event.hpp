@@ -14,7 +14,7 @@ namespace stdx::event
 	class _event_dispatcher_base
 	{
 	protected:
-		~_event_dispatcher_base() = default;
+		~_event_dispatcher_base() noexcept = default;
 
 	public:
 		virtual void unbind(class _event_handler_base const *) noexcept = 0;
@@ -46,8 +46,7 @@ namespace stdx::event
 
 		auto _this() const noexcept
 		{
-			// Because virtual base classes vtables are weird, we need to register each _event_handler_base through its 'this' pointer (which will be different from the derived class one)
-			return this;
+			return this; // Because virtual base classes vtables are weird, we need to register each _event_handler_base through its 'this' pointer, which will be different from the derived class one
 		}
 
 		mutable std::set<_event_dispatcher_base *> _dispatcher_set;
