@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 
 #include "event.hpp"
 #include "utility.hpp"

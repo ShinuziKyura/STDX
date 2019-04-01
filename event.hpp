@@ -4,8 +4,7 @@
 #include <set>
 #include <map>
 #include <memory>
-
-#include "meta.hpp"
+#include <functional>
 
 #define STDX_EVENT_HANDLER public virtual ::stdx::event::_event_handler_base
 #define STDX_EVENT_HANDLER_COPY_CONSTRUCTOR(object) _event_handler_base(object)
@@ -103,9 +102,9 @@ namespace stdx::event
 
 			virtual void invoke(ParamTypes && ... params) = 0;
 
-			auto get_exception() noexcept -> std::exception_ptr // Resets exception_ptr
+			auto get_exception() noexcept -> std::exception_ptr
 			{
-				return std::exchange(_exception, nullptr);
+				return _exception;
 			}
 			void set_exception(std::exception_ptr && exception) noexcept
 			{
@@ -157,12 +156,6 @@ namespace stdx::event
 			static_assert(std::is_base_of_v<ClassType, ObjType>,
 						  "'stdx::event::event_dispatcher<void(ParamTypes ...)>::bind(ObjType*, FuncType ClassType::*)': "
 						  "ClassType must be the same class or a base class of ObjType");
-			static_assert(std::is_function_v<FuncType>,
-						  "'stdx::event::event_dispatcher<void(ParamTypes ...)>::bind(ObjType*, FuncType ClassType::*)': "
-						  "FuncType must be a function type");
-			static_assert(std::is_same_v<meta::pack<ParamTypes ...>, typename meta::function_signature<FuncType>::parameter_types>,
-						  "'stdx::event::event_dispatcher<void(ParamTypes ...)>::bind(ObjType*, FuncType ClassType::*)': "
-						  "FuncType parameters must have same type as ParamTypes");
 
 			if (_handler_map.insert_or_assign(obj->_event_handler_base::_this(), std::make_unique<_handler_object<ObjType, FuncType, ClassType>>(obj, func)).second)
 			{
@@ -190,25 +183,31 @@ namespace stdx::event
 		{
 			for (auto const & handler : _handler_map)
 			{
+				std::exception_ptr exception;
+
 				try
 				{
 					handler.second->invoke(std::forward<ParamTypes>(params) ...);
 				}
 				catch (...)
 				{
-					handler.second->set_exception(std::current_exception());
+					exception = std::current_exception();
 				}
+
+				handler.second->set_exception(exception);
 			}
 		}
 
 		auto last_exception(_event_handler_base const * handler) const noexcept -> std::exception_ptr
 		{
+			std::exception_ptr exception;
+
 			if (auto const iterator = _handler_map.find(handler); iterator != _handler_map.end())
 			{
-				return iterator->second->get_exception();
+				exception = iterator->second->get_exception();
 			}
 
-			return std::exception_ptr();
+			return exception;
 		}
 		auto last_exception() const noexcept -> std::map<_event_handler_base const *, std::exception_ptr>
 		{
