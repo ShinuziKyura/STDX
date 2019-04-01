@@ -20,7 +20,7 @@ struct base_type : STDX_EVENT_HANDLER
 	int _t;
 };
 
-// Redundant base, will have no effect
+// Redundant base, will have "no effect"
 struct derived_type : base_type, STDX_EVENT_HANDLER
 {
 	derived_type(int t)
@@ -43,14 +43,12 @@ struct derived_type : base_type, STDX_EVENT_HANDLER
 	derived_type & operator=(derived_type const & other)
 	{
 		STDX_EVENT_HANDLER_COPY_ASSIGNMENT(other);
-
 		return *this;
 	}
 
 	derived_type & operator=(derived_type && other) noexcept
 	{
 		STDX_EVENT_HANDLER_MOVE_ASSIGNMENT(other);
-
 		return *this;
 	}
 

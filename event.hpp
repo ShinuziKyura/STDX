@@ -216,7 +216,7 @@ namespace stdx::event
 
 			for (auto const & handler : _handler_map)
 			{
-				_exception_map.insert_or_assign(handler.first, handler.second->get_exception());
+				_exception_map.emplace(handler.first, handler.second->get_exception());
 			}
 
 			return _exception_map;
