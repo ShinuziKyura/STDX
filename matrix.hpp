@@ -591,7 +591,6 @@ namespace stdx::math
 			}
 		}
 
-#pragma region _LUP_upper_element declaration
 		template <class MatrixType, std::size_t ... K>
 		constexpr auto _LUP_upper_element(_matrix_expression<MatrixType> const &,
 										  std::array<std::array<typename MatrixType::value_type, MatrixType::columns>, MatrixType::rows> const &,
@@ -599,7 +598,6 @@ namespace stdx::math
 										  std::size_t,
 										  std::size_t,
 										  std::index_sequence<K ...>);
-#pragma endregion 
 
 		template <class MatrixType, std::size_t ... K>
 		constexpr auto _LUP_lower_element(_matrix_expression<MatrixType> const & matrix,
@@ -623,14 +621,12 @@ namespace stdx::math
 			return static_cast<MatrixType const &>(matrix)(i + 1, j + 1) - (typename MatrixType::value_type(0) + ... + (lower[i][K] * upper[K][j]));
 		}
 
-#pragma region _LUP_upper_row declaration
 		template <class MatrixType, std::size_t I, std::size_t J>
 		constexpr auto _LUP_upper_row(_matrix_expression<MatrixType> const &,
 									  std::array<std::array<typename MatrixType::value_type, MatrixType::columns>, MatrixType::rows>,
 									  std::array<std::array<typename MatrixType::value_type, MatrixType::columns>, MatrixType::rows>,
 									  std::integral_constant<std::size_t, I>,
 									  std::integral_constant<std::size_t, J>);
-#pragma endregion
 
 		template <class MatrixType, std::size_t I, std::size_t J>
 		constexpr auto _LUP_lower_column(_matrix_expression<MatrixType> const & matrix,

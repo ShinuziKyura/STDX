@@ -194,7 +194,7 @@ namespace stdx::event
 					exception = std::current_exception();
 				}
 
-				handler.second->set_exception(exception);
+				handler.second->set_exception(std::move(exception));
 			}
 		}
 
