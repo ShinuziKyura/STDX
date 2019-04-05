@@ -102,7 +102,7 @@ namespace stdx::event
 
 			virtual void invoke(ParamTypes && ... params) = 0;
 
-			auto get_exception() noexcept -> std::exception_ptr
+			auto get_exception() const noexcept -> std::exception_ptr
 			{
 				return _exception;
 			}
