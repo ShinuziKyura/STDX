@@ -50,7 +50,7 @@ constexpr stdx::matrix<float, 3> A2({ 1, 2, 3,
 
 int example_5()
 {
-	stdx::desync_io();
+	stdx::desync_IO();
 
 	STDX_DEFINE_STOPWATCH(std::chrono::microseconds);
 

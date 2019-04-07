@@ -36,7 +36,7 @@ int & a(int const count)
 
 int example_8()
 {
-	stdx::desync_io();
+	stdx::desync_IO();
 
 	int count = 0;
 

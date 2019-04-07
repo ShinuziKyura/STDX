@@ -151,28 +151,28 @@ namespace stdx::flow
 [&] (auto STDX_MACRO_VARIABLE(invocation_type, context)) -> decltype(invocation)\
 {\
 	using invocation_type = decltype(STDX_MACRO_VARIABLE(invocation_type, context))::type;\
-	struct STDX_MACRO_TYPE(invocation_status, context)\
+	struct STDX_MACRO_TYPE(scope_guard, context)\
 	{\
-		~STDX_MACRO_TYPE(invocation_status, context)()\
+		~STDX_MACRO_TYPE(scope_guard, context)()\
 		{\
 			::stdx::flow::_jmp_state::pop_buf();\
 		}\
 	}\
-	STDX_MACRO_VARIABLE(invocation_status, context);\
+	STDX_MACRO_VARIABLE(scope_guard, context);\
+	::stdx::flow::_jmp_state::set_status(0);\
 	auto & STDX_MACRO_VARIABLE(buf, context) = ::stdx::flow::_jmp_state::push_buf();\
 	if (setjmp(STDX_MACRO_VARIABLE(buf, context)))\
 	{\
 		if constexpr (::std::is_lvalue_reference_v<invocation_type> && !::std::is_const_v<::std::remove_reference_t<invocation_type>>)\
 		{\
-			::std::remove_reference_t<invocation_type> STDX_MACRO_VARIABLE(foobar, context);\
-			return STDX_MACRO_VARIABLE(foobar, context);\
+			::std::remove_reference_t<invocation_type> STDX_MACRO_VARIABLE(lvalue, context);\
+			return STDX_MACRO_VARIABLE(lvalue, context);\
 		}\
 		else\
 		{\
 			return ::std::remove_reference_t<invocation_type>();\
 		}\
 	}\
-	::stdx::flow::_jmp_state::set_status(0);\
 	return invocation;\
 }\
 (::stdx::meta::identity<decltype(invocation)>())
@@ -201,14 +201,14 @@ namespace stdx::flow
 #define STDX_implementation_FLOW_INVOKE(context, invocation) \
 [&] () -> decltype(invocation)\
 {\
-	struct STDX_MACRO_TYPE(invocation_status, context)\
+	struct STDX_MACRO_TYPE(scope_guard, context)\
 	{\
-		~STDX_MACRO_TYPE(invocation_status, context)()\
+		~STDX_MACRO_TYPE(scope_guard, context)()\
 		{\
 			::stdx::flow::_jmp_state::pop_scope();\
 		}\
 	}\
-	STDX_MACRO_VARIABLE(invocation_status, context);\
+	STDX_MACRO_VARIABLE(scope_guard, context);\
 	::stdx::flow::_jmp_state::push_scope();\
 	return invocation;\
 }\

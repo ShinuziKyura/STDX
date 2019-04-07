@@ -34,12 +34,15 @@ namespace stdx
 	}
 
 	// Should be called only before any IO operation has happened
-	inline void desync_io()
+	inline void buffer_IO()
 	{
-	//	std::setvbuf(stdin, NULL, _IOFBF, BUFSIZ);
-	//	std::setvbuf(stdout, NULL, _IOFBF, BUFSIZ);
-	//	std::setvbuf(stderr, NULL, _IOFBF, BUFSIZ);
-		
+		std::setvbuf(stdout, NULL, _IOFBF, BUFSIZ);
+		std::setvbuf(stderr, NULL, _IOFBF, BUFSIZ);
+	}
+
+	// Should be called only before any IO operation has happened
+	inline void desync_IO()
+	{
 		std::ios_base::sync_with_stdio(false);
 	}
 
@@ -49,7 +52,7 @@ namespace stdx
 	}
 
 	template <class Type>
-	inline void memzero(Type & obj)
+	void memzero(Type & obj)
 	{
 		static_assert(std::conjunction_v<std::negation<std::is_const<Type>>, std::is_trivially_copyable<Type>, std::is_standard_layout<Type>>, 
 					  "'stdx::memzero(Type &)': Type must be a non-const, trivially copyable, standard layout type!");
