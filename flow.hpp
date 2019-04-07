@@ -6,29 +6,14 @@
 #include <stack>
 
 #include "core/stdx.hpp"
+#include "meta.hpp"
 
-// Directive: suppress_warnings
-#ifdef STDX_directive_FLOW_SUPPRESS_WARNINGS
-	#if defined(__clang__)
-		#pragma clang diagnostic ignored "-Wreturn-type" // TODO test this
-	#elif defined(__GNUG__)
-		#pragma GCC diagnostic ignored "-Wreturn-type"
-	#elif defined(_MSC_VER)
-		#pragma warning(disable: 4611) // MSVC implementation specific warning
-//		#pragma warning(disable: 4715) // -Wreturn-type
-	#else
-		// TODO suppress warnings for other compilers
-	#endif
+#ifdef _MSC_VER
+	#pragma warning(disable: 4611) // MSVC implementation specific warning
 #endif
 
 namespace stdx::flow
 {
-	template <class Type>
-	struct identity
-	{
-		using type = Type;
-	};
-
 	class _jmp_state
 	{
 		class _jmp_var_obj_base
@@ -41,7 +26,7 @@ namespace stdx::flow
 		};
 
 		template <class Type>
-		class _jmp_var_obj : _jmp_var_obj_base
+		class alignas(Type) _jmp_var_obj : public _jmp_var_obj_base
 		{
 		public:
 			~_jmp_var_obj() override
@@ -158,27 +143,31 @@ namespace stdx::flow
 #define STDX_implementation_FLOW_SET_AND_INVOKE(context, invocation) \
 [&] (auto STDX_MACRO_VARIABLE(invocation_result, context)) -> decltype(invocation)\
 {\
-	if (setjmp(::stdx::flow::_jmp_state::push_buf()) == 0)/*TODO we need to do some voodoo shit for lvalue references*/\
+	struct STDX_MACRO_TYPE(invocation_status, context)\
 	{\
-		if constexpr (::std::negation_v<::std::is_same<void, typename decltype(STDX_MACRO_VARIABLE(invocation_result, context))::type>>)\
+		~STDX_MACRO_TYPE(invocation_status, context)()\
 		{\
-			decltype(auto) STDX_MACRO_VARIABLE(result, context) = invocation;\
-			::stdx::flow::_jmp_state::set_status(0);\
 			::stdx::flow::_jmp_state::pop_buf();\
-			return STDX_MACRO_VARIABLE(result, context);\
+		}\
+	}\
+	STDX_MACRO_VARIABLE(invocation_status, context);\
+	auto & STDX_MACRO_VARIABLE(buf, context) = ::stdx::flow::_jmp_state::push_buf();\
+	if (setjmp(STDX_MACRO_VARIABLE(buf, context)))\
+	{\
+		if constexpr (::std::is_lvalue_reference_v<decltype(STDX_MACRO_VARIABLE(invocation_result, context))::type> && !::std::is_const_v<decltype(STDX_MACRO_VARIABLE(invocation_result, context))::type>)\
+		{\
+			std::remove_reference_t<decltype(invocation)> STDX_MACRO_VARIABLE(foobar, context);\
+			return STDX_MACRO_VARIABLE(foobar, context);\
 		}\
 		else\
 		{\
-			invocation;\
-			::stdx::flow::_jmp_state::set_status(0);\
-			::stdx::flow::_jmp_state::pop_buf();\
+			return std::remove_reference_t<decltype(invocation)>();\
 		}\
 	}\
-	else\
-	{\
-	}\
+	::stdx::flow::_jmp_state::set_status(0);\
+	return invocation;\
 }\
-(::stdx::flow::identity<decltype(invocation)>())
+(::stdx::meta::identity<decltype(invocation)>())
 
 // Returns execution to last set jump point
 #define STDX_FLOW_JUMP(...) STDX_MACRO_FUNCTION_N_ARY(FLOW_JUMP, __VA_ARGS__)
@@ -202,29 +191,27 @@ namespace stdx::flow
 // Invokes a function with a jump-protected scope on any jump-protected variables declared in it
 #define STDX_FLOW_INVOKE(invocation) STDX_MACRO_FUNCTION_N_ARY(FLOW_INVOKE, invocation)
 #define STDX_implementation_FLOW_INVOKE(context, invocation) \
-[&] (auto STDX_MACRO_VARIABLE(invocation_result, context)) -> decltype(invocation)\
+[&] () -> decltype(invocation)\
 {\
+	struct STDX_MACRO_TYPE(invocation_status, context)\
+	{\
+		~STDX_MACRO_TYPE(invocation_status, context)()\
+		{\
+			::stdx::flow::_jmp_state::pop_scope();\
+		}\
+	}\
+	STDX_MACRO_VARIABLE(invocation_status, context);\
 	::stdx::flow::_jmp_state::push_scope();\
-	if constexpr (::std::negation_v<::std::is_same<void, typename decltype(STDX_MACRO_VARIABLE(invocation_result, context))::type>>)\
-	{\
-		decltype(auto) STDX_MACRO_VARIABLE(result, context) = invocation;\
-		::stdx::flow::_jmp_state::pop_scope();\
-		return STDX_MACRO_VARIABLE(result, context);\
-	}\
-	else\
-	{\
-		invocation;\
-		::stdx::flow::_jmp_state::pop_scope();\
-	}\
+	return invocation;\
 }\
-(::stdx::flow::identity<decltype(invocation)>())
+()
 
 // Declares a jump-protected variable, whose lifetime is controlled by the containing jump-protected scope
 #define STDX_FLOW_DECLARE(declaration) STDX_MACRO_FUNCTION_N_ARY(FLOW_DECLARE, declaration)
 #define STDX_implementation_FLOW_DECLARE(context, declaration) \
-[&] (auto STDX_MACRO_VARIABLE(declaration_result, context)) -> decltype(auto)\
+[&] (auto STDX_MACRO_VARIABLE(declaration_result, context)) -> decltype(declaration)\
 {\
-	if constexpr (::std::negation_v<::std::is_trivially_destructible<decltype(STDX_MACRO_VARIABLE(declaration_result, context))::type>>)\
+	if constexpr (!::std::is_trivially_destructible_v<decltype(STDX_MACRO_VARIABLE(declaration_result, context))::type>)\
 	{\
 		return *new (::stdx::flow::_jmp_state::push_var<decltype(declaration)>()) declaration;\
 	}\
@@ -233,7 +220,7 @@ namespace stdx::flow
 		return declaration;\
 	}\
 }\
-(::stdx::flow::identity<decltype(declaration)>())
+(::stdx::meta::identity<decltype(declaration)>())
 
 // Introduces a jump-protected scope on any jump-protected variables declared in the next statement
 // Continue and break statements are allowed in the next statement: both cause the execution flow to exit the scope and move to the next instruction

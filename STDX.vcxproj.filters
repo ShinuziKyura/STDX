@@ -22,9 +22,6 @@
     <Filter Include="Library Files\Core\Directives">
       <UniqueIdentifier>{6316d378-d148-418c-82a5-7276f893f3a5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Library Files\Core\Directives\Flow">
-      <UniqueIdentifier>{81308371-4053-4a2e-a23e-bd325a6a2fde}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="concurrent_queue.hpp">
@@ -111,9 +108,6 @@
     </None>
     <None Include="while_else.lpp">
       <Filter>Language Files</Filter>
-    </None>
-    <None Include="core\directives\flow\suppress_warnings">
-      <Filter>Library Files\Core\Directives\Flow</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
