@@ -1,10 +1,8 @@
-#define FUNCTION(function) \
+#define INVOKE(function) \
 int function();\
-int(&main_function)() = function;
-
-FUNCTION(example_5);
+return function()
 
 int main()
 {
-	return main_function();
+	INVOKE(example_8);
 }

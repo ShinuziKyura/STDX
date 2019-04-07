@@ -173,7 +173,6 @@
     <ClInclude Include="utility.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="core\directives\flow\suppress_warnings" />
     <None Include="do_while.lpp" />
     <None Include="while_else.lpp" />
   </ItemGroup>
