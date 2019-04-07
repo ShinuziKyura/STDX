@@ -1,9 +1,7 @@
 #include <iostream>
 
-#include "core/stdx.hpp"
-
-#include "flow.hpp"
 #include "utility.hpp"
+#include "flow.hpp"
 
 namespace
 {

@@ -2,11 +2,12 @@
 #define STDX_header_FLOW
 
 #include <csetjmp>
+#include <type_traits>
 #include <memory>
+#include <new>
 #include <stack>
 
 #include "core/stdx.hpp"
-#include "meta.hpp"
 
 #ifdef _MSC_VER
 	#pragma warning(disable: 4611) // MSVC implementation specific warning
@@ -175,7 +176,7 @@ namespace stdx::flow
 	}\
 	return invocation;\
 }\
-(::stdx::meta::identity<decltype(invocation)>())
+(::stdx::type_identity<decltype(invocation)>())
 
 // Returns execution to last set jump point
 #define STDX_FLOW_JUMP(...) STDX_MACRO_FUNCTION_N_ARY(FLOW_JUMP, __VA_ARGS__)
@@ -229,7 +230,7 @@ namespace stdx::flow
 		return declaration;\
 	}\
 }\
-(::stdx::meta::identity<decltype(declaration)>())
+(::stdx::type_identity<decltype(declaration)>())
 
 // Introduces a jump-protected scope on any jump-protected variables declared in the next statement
 // Continue and break statements are allowed in the next statement: both cause the execution flow to exit the scope and move to the next instruction

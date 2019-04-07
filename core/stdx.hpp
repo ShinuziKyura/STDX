@@ -27,7 +27,7 @@
 #if defined(__clang__) || defined(__GNUG__) || defined(_MSC_VER)
 	#define STDX_UNIQUE() __COUNTER__
 #else
-//*
+/*
 	#error STDX_UNIQUE(): Cannot guarantee uniqueness
 /*/
 	#define STDX_UNIQUE() __LINE__
@@ -40,5 +40,16 @@
 #define STDX_MACRO_FUNCTION_N_ARY(identifier, ...) STDX_CONCATENATE_2(STDX_implementation_, identifier)(STDX_CONCATENATE_3(identifier, _, STDX_UNIQUE()), __VA_ARGS__)
 #define STDX_MACRO_TYPE(identifier, context) STDX_CONCATENATE_4(STDX_implementation_, context, _TYPE_, identifier)
 #define STDX_MACRO_VARIABLE(identifier, context) STDX_CONCATENATE_4(STDX_implementation_, context, _VARIABLE_, identifier)
+
+namespace stdx
+{
+	// Type_identity trait, provides type alias for the type with which it was instantiated (remove in C++2a)
+
+	template <class Type>
+	struct type_identity
+	{
+		using type = Type;
+	};
+}
 
 #endif

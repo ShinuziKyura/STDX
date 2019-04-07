@@ -264,14 +264,6 @@ namespace stdx::meta
 
 	// Type traits
 
-		// Identity trait, provides type alias for the type with which it was instantiated
-
-	template <class Type>
-	struct identity
-	{
-		using type = Type;
-	};
-
 		// Check if a type is an instantiation of a class template
 
 	template <class, template <class ...> class>

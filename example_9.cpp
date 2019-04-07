@@ -1,8 +1,8 @@
 #include <iostream>
 #include <string>
 
-#include "event.hpp"
 #include "utility.hpp"
+#include "event.hpp"
 
 // Any type we want to use to handle events must have 'STDX_EVENT_HANDLER' as a base
 struct base_type : STDX_EVENT_HANDLER
@@ -21,7 +21,7 @@ struct base_type : STDX_EVENT_HANDLER
 	int _t;
 };
 
-// Redundant base, will have "no effect"
+// Redundant base, will have no "effect"
 struct derived_type : base_type, STDX_EVENT_HANDLER
 {
 	derived_type(int t)

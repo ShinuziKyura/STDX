@@ -1,10 +1,13 @@
 #ifndef STDX_header_EVENT
 #define STDX_header_EVENT
 
-#include <set>
-#include <map>
+#include <type_traits>
+#include <utility>
+#include <exception>
 #include <memory>
 #include <functional>
+#include <set>
+#include <map>
 
 #define STDX_EVENT_HANDLER public virtual ::stdx::event::_event_handler_base
 #define STDX_EVENT_HANDLER_COPY_CONSTRUCTOR(object) _event_handler_base(object)
@@ -127,7 +130,7 @@ namespace stdx::event
 
 			void invoke(ParamTypes && ... params) override
 			{
-				(_object->*_function)(std::forward<ParamTypes>(params) ...);
+				std::invoke(_function, _object, std::forward<ParamTypes>(params) ...);
 			}
 
 		private:
