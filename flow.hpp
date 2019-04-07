@@ -148,8 +148,9 @@ namespace stdx::flow
 // The point is removed once the function returns or is jumped from
 #define STDX_FLOW_SET_AND_INVOKE(invocation) STDX_MACRO_FUNCTION_N_ARY(FLOW_SET_AND_INVOKE, invocation)
 #define STDX_implementation_FLOW_SET_AND_INVOKE(context, invocation) \
-[&] (auto STDX_MACRO_VARIABLE(invocation_result, context)) -> decltype(invocation)\
+[&] (auto STDX_MACRO_VARIABLE(invocation_type, context)) -> decltype(invocation)\
 {\
+	using invocation_type = decltype(STDX_MACRO_VARIABLE(invocation_type, context))::type;\
 	struct STDX_MACRO_TYPE(invocation_status, context)\
 	{\
 		~STDX_MACRO_TYPE(invocation_status, context)()\
@@ -161,14 +162,14 @@ namespace stdx::flow
 	auto & STDX_MACRO_VARIABLE(buf, context) = ::stdx::flow::_jmp_state::push_buf();\
 	if (setjmp(STDX_MACRO_VARIABLE(buf, context)))\
 	{\
-		if constexpr (::std::is_lvalue_reference_v<decltype(STDX_MACRO_VARIABLE(invocation_result, context))::type> && !::std::is_const_v<decltype(STDX_MACRO_VARIABLE(invocation_result, context))::type>)\
+		if constexpr (::std::is_lvalue_reference_v<invocation_type> && !::std::is_const_v<::std::remove_reference_t<invocation_type>>)\
 		{\
-			std::remove_reference_t<decltype(invocation)> STDX_MACRO_VARIABLE(foobar, context);\
+			::std::remove_reference_t<invocation_type> STDX_MACRO_VARIABLE(foobar, context);\
 			return STDX_MACRO_VARIABLE(foobar, context);\
 		}\
 		else\
 		{\
-			return std::remove_reference_t<decltype(invocation)>();\
+			return ::std::remove_reference_t<invocation_type>();\
 		}\
 	}\
 	::stdx::flow::_jmp_state::set_status(0);\
@@ -216,11 +217,12 @@ namespace stdx::flow
 // Declares a jump-protected variable, whose lifetime is controlled by the containing jump-protected scope
 #define STDX_FLOW_DECLARE(declaration) STDX_MACRO_FUNCTION_N_ARY(FLOW_DECLARE, declaration)
 #define STDX_implementation_FLOW_DECLARE(context, declaration) \
-[&] (auto STDX_MACRO_VARIABLE(declaration_result, context)) -> decltype(declaration)\
+[&] (auto STDX_MACRO_VARIABLE(declaration_type, context)) -> decltype(declaration)\
 {\
-	if constexpr (!::std::is_trivially_destructible_v<decltype(STDX_MACRO_VARIABLE(declaration_result, context))::type>)\
+	using declaration_type = decltype(STDX_MACRO_VARIABLE(declaration_type, context))::type;\
+	if constexpr (!::std::is_trivially_destructible_v<::std::decay_t<declaration_type>>)\
 	{\
-		return *new (::stdx::flow::_jmp_state::push_var<decltype(declaration)>()) declaration;\
+		return *new (::stdx::flow::_jmp_state::push_var<declaration_type>()) declaration;\
 	}\
 	else\
 	{\
