@@ -816,10 +816,10 @@ namespace stdx::meta
 		// Function signature
 
 	template <class, class ...>
-	struct _function_signature;
+	struct _function_signature_base;
 
 	template <class RetType, class ... ParamTypes, class ... QSTypes>
-	struct _function_signature<RetType(ParamTypes ...), QSTypes ...>
+	struct _function_signature_base<RetType(ParamTypes ...), QSTypes ...>
 	{
 		// Return type
 		using return_type = RetType;
@@ -830,136 +830,141 @@ namespace stdx::meta
 	};
 
 	template <class>
-	struct function_signature;
+	struct _function_signature;
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...)> : _function_signature<RetType(ParamTypes ...)>
+	struct _function_signature<RetType(ParamTypes ...)> : _function_signature_base<RetType(ParamTypes ...)>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const> : _function_signature<RetType(ParamTypes ...), qualifiers::_const>
+	struct _function_signature<RetType(ParamTypes ...) const> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_const>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) volatile> : _function_signature<RetType(ParamTypes ...), qualifiers::_volatile>
+	struct _function_signature<RetType(ParamTypes ...) volatile> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_volatile>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const volatile> : _function_signature<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_volatile>
+	struct _function_signature<RetType(ParamTypes ...) const volatile> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_volatile>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) &> : _function_signature<RetType(ParamTypes ...), qualifiers::_lvalue_reference>
+	struct _function_signature<RetType(ParamTypes ...) &> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_lvalue_reference>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const &> : _function_signature<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_lvalue_reference>
+	struct _function_signature<RetType(ParamTypes ...) const &> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_lvalue_reference>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) volatile &> : _function_signature<RetType(ParamTypes ...), qualifiers::_volatile, qualifiers::_lvalue_reference>
+	struct _function_signature<RetType(ParamTypes ...) volatile &> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_volatile, qualifiers::_lvalue_reference>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const volatile &> : _function_signature<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_volatile, qualifiers::_lvalue_reference>
+	struct _function_signature<RetType(ParamTypes ...) const volatile &> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_volatile, qualifiers::_lvalue_reference>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) &&> : _function_signature<RetType(ParamTypes ...), qualifiers::_rvalue_reference>
+	struct _function_signature<RetType(ParamTypes ...) &&> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_rvalue_reference>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const &&> : _function_signature<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_rvalue_reference>
+	struct _function_signature<RetType(ParamTypes ...) const &&> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_rvalue_reference>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) volatile &&> : _function_signature<RetType(ParamTypes ...), qualifiers::_volatile, qualifiers::_rvalue_reference>
+	struct _function_signature<RetType(ParamTypes ...) volatile &&> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_volatile, qualifiers::_rvalue_reference>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const volatile &&> : _function_signature<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_volatile, qualifiers::_rvalue_reference>
+	struct _function_signature<RetType(ParamTypes ...) const volatile &&> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_volatile, qualifiers::_rvalue_reference>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) noexcept> : _function_signature<RetType(ParamTypes ...), specifiers::_noexcept>
+	struct _function_signature<RetType(ParamTypes ...) noexcept> : _function_signature_base<RetType(ParamTypes ...), specifiers::_noexcept>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers::_const, specifiers::_noexcept>
+	struct _function_signature<RetType(ParamTypes ...) const noexcept> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_const, specifiers::_noexcept>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) volatile noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers::_volatile, specifiers::_noexcept>
+	struct _function_signature<RetType(ParamTypes ...) volatile noexcept> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_volatile, specifiers::_noexcept>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const volatile noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_volatile, specifiers::_noexcept>
+	struct _function_signature<RetType(ParamTypes ...) const volatile noexcept> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_volatile, specifiers::_noexcept>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) & noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers::_lvalue_reference, specifiers::_noexcept>
+	struct _function_signature<RetType(ParamTypes ...) & noexcept> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_lvalue_reference, specifiers::_noexcept>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const & noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_lvalue_reference, specifiers::_noexcept>
+	struct _function_signature<RetType(ParamTypes ...) const & noexcept> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_lvalue_reference, specifiers::_noexcept>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) volatile & noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers::_volatile, qualifiers::_lvalue_reference, specifiers::_noexcept>
+	struct _function_signature<RetType(ParamTypes ...) volatile & noexcept> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_volatile, qualifiers::_lvalue_reference, specifiers::_noexcept>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const volatile & noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_volatile, qualifiers::_lvalue_reference, specifiers::_noexcept>
+	struct _function_signature<RetType(ParamTypes ...) const volatile & noexcept> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_volatile, qualifiers::_lvalue_reference, specifiers::_noexcept>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) && noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers::_rvalue_reference, specifiers::_noexcept>
+	struct _function_signature<RetType(ParamTypes ...) && noexcept> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_rvalue_reference, specifiers::_noexcept>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const && noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_rvalue_reference, specifiers::_noexcept>
+	struct _function_signature<RetType(ParamTypes ...) const && noexcept> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_rvalue_reference, specifiers::_noexcept>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) volatile && noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers::_volatile, qualifiers::_rvalue_reference, specifiers::_noexcept>
+	struct _function_signature<RetType(ParamTypes ...) volatile && noexcept> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_volatile, qualifiers::_rvalue_reference, specifiers::_noexcept>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const volatile && noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_volatile, qualifiers::_rvalue_reference, specifiers::_noexcept>
+	struct _function_signature<RetType(ParamTypes ...) const volatile && noexcept> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_volatile, qualifiers::_rvalue_reference, specifiers::_noexcept>
 	{
 	};
 
 	template <class FuncType>
-	struct function_signature<FuncType *> : function_signature<FuncType>
+	struct function_signature : _function_signature<std::remove_pointer_t<std::remove_reference_t<FuncType>>>
 	{
+		static_assert(std::is_function_v<std::remove_pointer_t<std::remove_reference_t<FuncType>>>, ""); // TODO
+
+		using object_type = void;
 	};
 
 	template <class FuncType, class ObjType>
-	struct function_signature<FuncType ObjType::*> : function_signature<FuncType>
+	struct function_signature<FuncType ObjType::*> : _function_signature<FuncType>
 	{
+		static_assert(std::is_member_function_pointer_v<FuncType ObjType::*>, ""); // TODO
+
 		using object_type = ObjType;
 	};
 

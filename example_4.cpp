@@ -7,6 +7,7 @@ class MyClass
 {
 public:
 	int i;
+	bool print = true;
 
 	MyClass() : i(0)
 	{
@@ -14,11 +15,18 @@ public:
 	MyClass(MyClass const & obj) : i(obj.i)
 	{
 		std::cout << "\t\tCopy\n";
+		print = false;
 	}
 	MyClass(MyClass && obj) : i(std::move(obj.i))
 	{
 		std::cout << "\t\tMove\n";
+		print = false;
 	}
+
+	void operator()(){}
+//	void operator()(int){}
+	void func(int){}
+	int obj;
 };
 using MyClassC = MyClass const;
 using MyClassL = MyClass &;
@@ -28,32 +36,50 @@ using MyClassRC = MyClass const &&;
 
 int MyMethod(MyClass object)
 {
-	std::cout << "\t\t----\n";
+	if (object.print)
+	{
+		std::cout << "\t\t----\n";
+	}
 	return object.i += 1;
 }
 int MyMethodC(MyClass const object)
 {
-	std::cout << "\t\t----\n";
+	if (object.print)
+	{
+		std::cout << "\t\t----\n";
+	}
 	return object.i + 1;
 }
 int MyMethodL(MyClass & object)
 {
-	std::cout << "\t\t----\n";
+	if (object.print)
+	{
+		std::cout << "\t\t----\n";
+	}
 	return object.i += 1;
 }
 int MyMethodLC(MyClass const & object)
 {
-	std::cout << "\t\t----\n";
+	if (object.print)
+	{
+		std::cout << "\t\t----\n";
+	}
 	return object.i + 1;
 }
 int MyMethodR(MyClass && object)
 {
-	std::cout << "\t\t----\n";
+	if (object.print)
+	{
+		std::cout << "\t\t----\n";
+	}
 	return object.i += 1;
 }
 int MyMethodRC(MyClass const && object)
 {
-	std::cout << "\t\t----\n";
+	if (object.print)
+	{
+		std::cout << "\t\t----\n";
+	}
 	return object.i + 1;
 }
 
@@ -61,6 +87,11 @@ int example_4()
 {
 	MyClass MyObject;
 	MyClassC MyObjectC;
+
+	stdx::functional::_is_invocable<decltype(MyMethod)>::value;
+	stdx::functional::_is_invocable_member_function_or_member_object_ptr<decltype(&MyClass::func), decltype(&MyObject)>::value;
+	stdx::functional::_is_invocable_function_object<MyClass>::value;
+	stdx::functional::_is_invocable_member_function_ptr<decltype(&MyClass::func)>::signature::object_type;
 
 	std::cout << "Call\n\tPRvalue\n";
 	
