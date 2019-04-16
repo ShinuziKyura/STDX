@@ -12,36 +12,33 @@ namespace stdx::functional
 			// _is_bindable
 
 		template <class ParamTypes, class ArgTypes, class = void>
-		struct _is_bindable_base : std::false_type
+		struct _is_bindable : std::false_type
 		{
 		};
 
 		template <class ParamTypes, class ArgTypes>
-		struct _is_bindable_base<ParamTypes, ArgTypes, std::enable_if_t<std::is_convertible_v<typename ArgTypes::first, typename ParamTypes::first> || std::is_placeholder_v<typename ArgTypes::first>>>
-			: _is_bindable_base<typename ParamTypes::template pop<1>, typename ArgTypes::template pop<1>>
+		struct _is_bindable<ParamTypes, ArgTypes, std::enable_if_t<std::is_convertible_v<typename ArgTypes::first, typename ParamTypes::first> || std::is_placeholder_v<typename ArgTypes::first>>>
+			: _is_bindable<typename ParamTypes::template pop<1>, typename ArgTypes::template pop<1>>
 		{
 		};
 
 		template <>
-		struct _is_bindable_base<meta::pack<>, meta::pack<>, void> : std::true_type
+		struct _is_bindable<meta::pack<>, meta::pack<>, void> : std::true_type
 		{
 		};
-
-		template <class FuncType, class ArgTypes>
-		using _is_bindable = _is_bindable_base<typename FuncType::signature::parameter_types, ArgTypes>;
 
 			// _is_invocable_function_ptr_or_ref
 
 		template <class FuncType, class = void>
 		struct _is_invocable_function_ptr_or_ref_base : std::false_type
 		{
-			struct signature { using parameter_types = meta::_implementation::_undefined; };
+			using parameter_types = meta::_implementation::_undefined;
 		};
 
 		template <class FuncType>
 		struct _is_invocable_function_ptr_or_ref_base<FuncType, std::enable_if_t<std::is_function_v<std::remove_pointer_t<std::remove_reference_t<FuncType>>>>> : std::true_type
 		{
-			using signature = meta::function_signature<FuncType>;
+			using parameter_types = typename meta::function_signature<FuncType>::parameter_types;
 		};
 
 		template <class FuncType>
@@ -51,26 +48,32 @@ namespace stdx::functional
 
 			// _is_invocable_member_function_or_member_object_ptr
 
-		template <class FuncType, class = void>
-		struct _is_invocable_member_function_or_member_object_ptr_base : std::true_type
+		template <class, class = void>
+		struct _is_invocable_member_function_or_member_object_ptr_base : std::false_type
 		{
-			struct signature { using parameter_types = meta::pack<>; };
+			using parameter_types = meta::_implementation::_undefined;
+		};
+
+		template <class ObjType>
+		struct _is_invocable_member_function_or_member_object_ptr_base<ObjType, std::enable_if_t<std::is_member_object_pointer_v<ObjType>>> : std::true_type
+		{
+			using parameter_types = meta::pack<>;
 		};
 
 		template <class FuncType>
 		struct _is_invocable_member_function_or_member_object_ptr_base<FuncType, std::enable_if_t<std::is_member_function_pointer_v<FuncType>>> : std::true_type
 		{
-			using signature = meta::function_signature<FuncType>;
+			using parameter_types = typename meta::function_signature<FuncType>::parameter_types;
 		};
 
 		template <class, class ...>
 		struct _is_invocable_member_function_or_member_object_ptr : std::false_type
 		{
-			struct signature { using parameter_types = meta::_implementation::_undefined; };
+			using parameter_types = meta::_implementation::_undefined;
 		};
 
-		template <class FuncObjType, class ObjType, class ... ArgTypes>
-		struct _is_invocable_member_function_or_member_object_ptr<FuncObjType ObjType::*, ArgTypes ...> : _is_invocable_member_function_or_member_object_ptr_base<FuncObjType ObjType::*>
+		template <class FuncObjType, class ClassType, class ... ArgTypes>
+		struct _is_invocable_member_function_or_member_object_ptr<FuncObjType std::decay_t<ClassType>::*, ClassType, ArgTypes ...> : _is_invocable_member_function_or_member_object_ptr_base<FuncObjType std::decay_t<ClassType>::*>
 		{
 		};
 
@@ -79,13 +82,13 @@ namespace stdx::functional
 		template <class, class = void>
 		struct _is_invocable_function_object_base : std::false_type
 		{
-			struct signature { using parameter_types = meta::_implementation::_undefined; };
+			using parameter_types = meta::_implementation::_undefined;
 		};
 
-		template <class ObjType>
-		struct _is_invocable_function_object_base<ObjType, std::void_t<std::enable_if_t<std::is_object_v<ObjType>>, decltype(&ObjType::operator())>> : std::true_type
+		template <class FuncObjType>
+		struct _is_invocable_function_object_base<FuncObjType, std::void_t<std::enable_if_t<std::is_object_v<FuncObjType>>, decltype(&FuncObjType::operator())>> : std::true_type
 		{
-			using signature = meta::function_signature<decltype(&ObjType::operator())>;
+			using parameter_types = typename meta::function_signature<decltype(&FuncObjType::operator())>::parameter_types;
 		};
 
 		template <class FuncObjType>
@@ -99,16 +102,16 @@ namespace stdx::functional
 		struct _is_invocable 
 			: std::bool_constant<
 				meta::value_if<_is_invocable_function_ptr_or_ref<FuncType>::value>::template then<
-					_is_bindable<_is_invocable_function_ptr_or_ref<FuncType>, meta::pack<ArgTypes ...>>::value
+					_is_bindable<typename _is_invocable_function_ptr_or_ref<FuncType>::parameter_types, meta::pack<ArgTypes ...>>::value
 				>::template else_if<_is_invocable_member_function_or_member_object_ptr<FuncType, ArgTypes ...>::value>::template then<
-					_is_bindable<_is_invocable_member_function_or_member_object_ptr<FuncType, ArgTypes ...>, typename meta::pack<ArgTypes ...>::template pop<1>>::value
+					_is_bindable<typename _is_invocable_member_function_or_member_object_ptr<FuncType, ArgTypes ...>::parameter_types, typename meta::pack<ArgTypes ...>::template pop<1>>::value
 				>::template else_if<_is_invocable_function_object<FuncType>::value>::template then<
-					_is_bindable<_is_invocable_function_object<FuncType>, meta::pack<ArgTypes ...>>::value
+					_is_bindable<typename _is_invocable_function_object<FuncType>::parameter_types, meta::pack<ArgTypes ...>>::value
 				>::template else_then<
 					false
-				>::end_if
+				>::end_if	
 			>
-		{
+		{	
 		};
 	}
 
@@ -208,7 +211,7 @@ namespace stdx::functional
 	auto bind_WIP([[maybe_unused]] FuncType && func, ArgTypes && ... args)
 	{
 		((args, void()), ...);
-		static_assert(_implementation::_is_invocable<FuncType, ArgTypes ...>::value, ""); // TODO
+		static_assert(_implementation::_is_invocable<FuncType, ArgTypes ...>::value, "TODO"); // TODO
 	}
 }
 
