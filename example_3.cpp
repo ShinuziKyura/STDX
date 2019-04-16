@@ -42,7 +42,7 @@ int example_3()
 		double
 	>::else_then<
 		char
-	>::endif();
+	>::end_if();
 
 	return 0;
 }

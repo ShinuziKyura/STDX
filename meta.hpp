@@ -405,7 +405,7 @@ namespace stdx::meta
 
 	// Logic traits
 
-		// Type if statement, endif is an alias of the first type for which corresponding condition is true, or non-defined if all are false
+		// Type if statement, end_if is an alias of the first type for which corresponding condition is true, or non-defined if all are false
 
 	template <bool, class>
 	struct _type_if;
@@ -419,7 +419,7 @@ namespace stdx::meta
 		template <class>
 		using else_then = _type_then<Type>;
 
-		using endif = Type;
+		using end_if = Type;
 	};
 
 	template <>
@@ -456,7 +456,7 @@ namespace stdx::meta
 	template <bool Condition>
 	using type_if = _type_if<Condition, _implementation::_undefined>;
 	
-		// Value if statement, endif is an alias of the first value for which corresponding condition is true, or non-defined if all are false
+		// Value if statement, end_if is an alias of the first value for which corresponding condition is true, or non-defined if all are false
 
 	template <bool, class>
 	struct _value_if;
@@ -470,7 +470,7 @@ namespace stdx::meta
 		template <auto>
 		using else_then = _value_then<Val>;
 
-		static constexpr auto endif = Val::value;
+		static constexpr auto end_if = Val::value;
 	};
 
 	template <>
@@ -540,7 +540,7 @@ namespace stdx::meta
 			int
 		>::else_if<bool(sizeof(std::size_t) == sizeof(unsigned short))>::then<
 			short
-		>::endif;
+		>::end_if;
 
 	template <class ArithmeticType>
 	using half_t = 
@@ -554,7 +554,7 @@ namespace stdx::meta
 					unsigned short
 				>::else_if<bool(sizeof(unsigned char) < sizeof(unsigned long long))>::then<
 					unsigned char
-				>::endif
+				>::end_if
 			>::template else_if<bool(sizeof(ArithmeticType) == sizeof(unsigned long))>::template then<
 				type_if<bool(sizeof(unsigned int) < sizeof(unsigned long))>::then<
 					unsigned int
@@ -562,18 +562,18 @@ namespace stdx::meta
 					unsigned short
 				>::else_if<bool(sizeof(unsigned char) < sizeof(unsigned long))>::then<
 					unsigned char
-				>::endif
+				>::end_if
 			>::template else_if<bool(sizeof(ArithmeticType) == sizeof(unsigned int))>::template then<
 				type_if<bool(sizeof(unsigned short) < sizeof(unsigned int))>::then<
 					unsigned short
 				>::else_if<bool(sizeof(unsigned char) < sizeof(unsigned int))>::then<
 					unsigned char
-				>::endif
+				>::end_if
 			>::template else_if<bool(sizeof(ArithmeticType) == sizeof(unsigned short))>::template then<
 				type_if<bool(sizeof(unsigned char) < sizeof(unsigned short))>::then<
 					unsigned char
-				>::endif
-			>::endif
+				>::end_if
+			>::end_if
 		>::template else_if<std::is_integral_v<ArithmeticType>>::template then<
 			typename type_if<bool(sizeof(ArithmeticType) == sizeof(long long))>::template then<
 				type_if<bool(sizeof(long) < sizeof(long long))>::then<
@@ -584,7 +584,7 @@ namespace stdx::meta
 					short
 				>::else_if<bool(sizeof(char) < sizeof(long long))>::then<
 					char
-				>::endif
+				>::end_if
 			>::template else_if<bool(sizeof(ArithmeticType) == sizeof(long))>::template then<
 				type_if<bool(sizeof(int) < sizeof(long))>::then<
 					int
@@ -592,31 +592,31 @@ namespace stdx::meta
 					short
 				>::else_if<bool(sizeof(char) < sizeof(long))>::then<
 					char
-				>::endif
+				>::end_if
 			>::template else_if<bool(sizeof(ArithmeticType) == sizeof(int))>::template then<
 				type_if<bool(sizeof(short) < sizeof(int))>::then<
 					short
 				>::else_if<bool(sizeof(char) < sizeof(int))>::then<
 					char
-				>::endif
+				>::end_if
 			>::template else_if<bool(sizeof(ArithmeticType) == sizeof(short))>::template then<
 				type_if<bool(sizeof(char) < sizeof(short))>::then<
 					char
-				>::endif
-			>::endif
+				>::end_if
+			>::end_if
 		>::template else_if<std::is_floating_point_v<ArithmeticType>>::template then<
 			typename type_if<bool(sizeof(ArithmeticType) == sizeof(long double))>::template then<
 				type_if<bool(sizeof(double) < sizeof(long double))>::then<
 					double
 				>::else_if<bool(sizeof(float) < sizeof(long double))>::then<
 					float
-				>::endif
+				>::end_if
 			>::template else_if<bool(sizeof(ArithmeticType) == sizeof(double))>::template then<
 				type_if<bool(sizeof(float) < sizeof(double))>::then<
 					float
-				>::endif
-			>::endif
-		>::endif;
+				>::end_if
+			>::end_if
+		>::end_if;
 
 		// Boolean checks
 

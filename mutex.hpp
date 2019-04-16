@@ -130,7 +130,7 @@ namespace stdx::mutex
 				std::atomic_int_least8_t
 			>::else_then<
 				std::atomic_int_least64_t
-			>::endif;
+			>::end_if;
 		using _int_largest_lock_free_t =
 			_atomic_int_largest_lock_free_t::value_type;
 	public:

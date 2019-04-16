@@ -88,11 +88,6 @@ int example_4()
 	MyClass MyObject;
 	MyClassC MyObjectC;
 
-	stdx::functional::_is_invocable<decltype(MyMethod)>::value;
-	stdx::functional::_is_invocable_member_function_or_member_object_ptr<decltype(&MyClass::func), decltype(&MyObject)>::value;
-	stdx::functional::_is_invocable_function_object<MyClass>::value;
-	stdx::functional::_is_invocable_member_function_ptr<decltype(&MyClass::func)>::signature::object_type;
-
 	std::cout << "Call\n\tPRvalue\n";
 	
 	MyMethod(MyClass()); // Copy Elided
