@@ -113,6 +113,51 @@ namespace stdx::functional
 			>
 		{	
 		};
+
+		template <class ...>
+		class _tuple_base
+		{
+			template <std::size_t Index>
+			decltype(auto) get()
+			{
+				static_assert(false, "Invalid index!"); // TODO
+				return 0;
+			}
+		};
+
+		template <class Type, class ... Types>
+		class _tuple_base<Type, Types ...> : public _tuple_base<Types ...>
+		{
+			using base_type = _tuple_base<Types ...>;
+		public:
+			template <std::size_t Index>
+			decltype(auto) get()
+			{
+				if constexpr (Index == 0)
+				{
+					return (_element); // Parenthesis make this an lvalue-reference
+				}
+				else
+				{
+					return base_type::template get<Index - 1>();
+				}
+			}
+
+		private:
+			Type _element;
+		};
+
+		template <class ... Types>
+		class tuple : public _tuple_base<Types ...>
+		{
+			using base_type = _tuple_base<Types ...>;
+		public:
+			template <std::size_t Index>
+			decltype(auto) get()
+			{
+				return base_type::template get<Index>();
+			}
+		};
 	}
 
 	template <class Type>

@@ -23,6 +23,12 @@ public:
 		print = false;
 	}
 
+	MyClass& operator=(MyClass obj)
+	{
+		std::swap(*this, obj);
+		return *this;
+	}
+
 	void operator()(){}
 //	void operator()(int){}
 	void func(int){}
