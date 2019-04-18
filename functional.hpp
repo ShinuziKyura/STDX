@@ -9,6 +9,66 @@ namespace stdx::functional
 {
 	namespace _implementation
 	{
+			// _move_binder
+
+		template <class Type>
+		struct _move_binder
+		{
+			using type = Type; // TODO add stuff to interface as necessary
+
+			_move_binder(Type && object)
+				: _object(std::forward<Type>(object))
+			{
+			}
+
+			Type && _object; // TODO Validate this
+
+		};
+
+			// _is_move_bound
+
+		template <class Type>
+		struct _is_move_bound : std::false_type
+		{
+		};
+
+		template <class Type>
+		struct _is_move_bound<_move_binder<Type>> : std::true_type
+		{
+		};
+
+		template <class Type>
+		constexpr bool _is_move_bound_v = _is_move_bound<Type>::value;
+
+			// _value_category
+
+		namespace _value_category
+		{
+			struct _prvalue;
+			struct _lvalue;
+			struct _xvalue;
+		}
+
+			// _bind_value_category
+
+		template <class Type, class = void>
+		struct _bind_value_category
+		{
+			using type = meta::pack<Type, _value_category::_prvalue>; // Replace this with specialized pair type
+		};
+
+		template <class Type>
+		struct _bind_value_category<Type, std::enable_if_t<std::is_lvalue_reference_v<Type>>>
+		{
+			using type = meta::pack<Type, _value_category::_lvalue>;
+		};
+
+		template <class Type>
+		struct _bind_value_category<Type, std::enable_if_t<_is_move_bound_v<Type>>> // TODO if this, maybe get rid of _move_binder and store just the reference (plus this metadata)
+		{
+			using type = meta::pack<Type, _value_category::_xvalue>;
+		};
+
 			// _is_bindable
 
 		template <class ParamTypes, class ArgTypes, class = void>
@@ -113,84 +173,14 @@ namespace stdx::functional
 			>
 		{	
 		};
-
-		template <class ...>
-		class _tuple_base
-		{
-			template <std::size_t Index>
-			decltype(auto) get()
-			{
-				static_assert(false, "Invalid index!"); // TODO
-				return 0;
-			}
-		};
-
-		template <class Type, class ... Types>
-		class _tuple_base<Type, Types ...> : public _tuple_base<Types ...>
-		{
-			using base_type = _tuple_base<Types ...>;
-		public:
-			template <std::size_t Index>
-			decltype(auto) get()
-			{
-				if constexpr (Index == 0)
-				{
-					return (_element); // Parenthesis make this an lvalue-reference
-				}
-				else
-				{
-					return base_type::template get<Index - 1>();
-				}
-			}
-
-		private:
-			Type _element;
-		};
-
-		template <class ... Types>
-		class tuple : public _tuple_base<Types ...>
-		{
-			using base_type = _tuple_base<Types ...>;
-		public:
-			template <std::size_t Index>
-			decltype(auto) get()
-			{
-				return base_type::template get<Index>();
-			}
-		};
 	}
 
 	template <class Type>
-	struct _movable_t // TODO get a better name
+	_implementation::_move_binder<Type> move_bind(Type && object)
 	{
-		using type = Type; // TODO add stuff to interface as necessary
-
-		_movable_t(Type && object)
-			: _object(object)
-		{
-		}
-
-		Type && _object;
-
-	};
-
-	template <class Type>
-	struct _is_movable_t : std::false_type
-	{
-	};
-
-	template <class Type>
-	struct _is_movable_t<_movable_t<Type>> : std::true_type
-	{
-	};
-
-	// TODO _is_movable_t convenience type alias
-
-	template <class Type>
-	_movable_t<Type> bind_move(std::remove_reference_t<Type> & object)
-	{
-		// TODO disallow nested calls - make it transparent to the user and return object if it's already of type _movable_t<T>
-		return _movable_t<Type>(object); // TODO review this
+		static_assert(std::is_lvalue_reference_v<Type>, "TODO"); // TODO
+		// TODO disallow nested calls - make it transparent to the user and return object if it's already of type _move_binder<T>
+		return _implementation::_move_binder<Type>(object);
 	}
 
 	//	TODO: implement own bind - ideas:
@@ -203,6 +193,35 @@ namespace stdx::functional
 	//		- provide better defined semantics for std::placeholders
 	//		- provide semantics for nested/curried bind calls
 	//		- provide re-bind/re-invoke semantics
+
+	template <class FuncType, class ... ArgTypes>
+	class _binder
+	{
+
+	};
+
+	// TODO review this, not too sure about it
+	template <class Type, class = void>
+	struct _array_decay
+	{
+		using type = Type;
+	};
+
+	template <class Type>
+	struct _array_decay<Type, std::void_t<std::enable_if_t<std::is_lvalue_reference_v<Type> && std::is_array_v<std::remove_reference_t<Type>> && std::is_same_v<char const, std::remove_extent_t<std::remove_reference_t<Type>>>>>>
+	{
+		using type = std::decay_t<Type>;
+	};
+
+	template <class Type>
+	using _array_decay_t = typename _array_decay<Type>::type;
+
+	template <class FuncType, class ... ArgTypes>
+	constexpr auto bind_WIP([[maybe_unused]] FuncType && func, ArgTypes && ... args)
+	{
+		//		static_assert(_implementation::_is_invocable<FuncType, ArgTypes ...>::value, "TODO"); // TODO
+		return meta::transformed_pack<_implementation::_bind_value_category, meta::pack<_array_decay_t<ArgTypes> ...>>();
+	}
 
 	///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -250,13 +269,6 @@ namespace stdx::functional
 					  "'stdx::functional::bind(FuncType ObjType::*, ObjType *, ArgTypes && ...)': "
 					  "FuncType must be a function, a pointer to function, or a pointer to member function");
 		return std::bind(func, obj, stdx::functional::forward<ArgTypes>(args) ...);
-	}
-
-	template <class FuncType, class ... ArgTypes>
-	auto bind_WIP([[maybe_unused]] FuncType && func, ArgTypes && ... args)
-	{
-		((args, void()), ...);
-		static_assert(_implementation::_is_invocable<FuncType, ArgTypes ...>::value, "TODO"); // TODO
 	}
 }
 
