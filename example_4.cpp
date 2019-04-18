@@ -12,20 +12,20 @@ public:
 	MyClass() : i(0)
 	{
 	};
-	MyClass(MyClass const & obj) : i(obj.i)
+	MyClass(MyClass const & other) : i(other.i)
 	{
 		std::cout << "\t\tCopy\n";
 		print = false;
 	}
-	MyClass(MyClass && obj) : i(std::move(obj.i))
+	MyClass(MyClass && other) : i(std::move(other.i))
 	{
 		std::cout << "\t\tMove\n";
 		print = false;
 	}
 
-	MyClass& operator=(MyClass obj)
+	MyClass& operator=(MyClass other)
 	{
-		std::swap(*this, obj);
+		std::swap(*this, other);
 		return *this;
 	}
 
