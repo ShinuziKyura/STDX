@@ -55,6 +55,40 @@ namespace stdx::meta
 		using _20 = _implementation::_placeholder<20>;
 	}
 
+	namespace literals
+	{
+		constexpr auto operator "" _constexpr_string(const char * string, std::size_t)
+		{
+			return string;
+		}
+		constexpr auto operator "" _constexpr_string(const wchar_t * string, std::size_t)
+		{
+			return string;
+		}
+#if _HAS_CXX2A
+		constexpr auto operator "" _constexpr_string(const char8_t * string, std::size_t)
+		{
+			return string;
+		}
+#endif
+		constexpr auto operator "" _constexpr_string(const char16_t * string, std::size_t)
+		{
+			return string;
+		}
+		constexpr auto operator "" _constexpr_string(const char32_t * string, std::size_t)
+		{
+			return string;
+		}
+	}
+	
+		// Type_identity trait, provides type alias for the type with which it was instantiated (remove in C++2a)
+
+	template <class Type>
+	struct type_identity
+	{
+		using type = Type;
+	};
+
 	// Container types
 
 		// Vals
@@ -411,13 +445,19 @@ namespace stdx::meta
 	struct _type_if;
 
 	template <class Type>
+	struct _type_end_if
+	{
+		using end_if = Type;
+	};
+
+	template <class Type>
 	struct _type_then
 	{
 		template <bool>
 		using else_if = _type_if<false, Type>;
 
 		template <class>
-		using else_then = _type_then<Type>;
+		using else_then = _type_end_if<Type>;
 
 		using end_if = Type;
 	};
@@ -429,7 +469,7 @@ namespace stdx::meta
 		using else_if = _type_if<Condition, _implementation::_undefined>;
 
 		template <class Type>
-		using else_then = _type_then<Type>;
+		using else_then = _type_end_if<Type>;
 	};
 
 	template <bool, class Type>
@@ -462,13 +502,19 @@ namespace stdx::meta
 	struct _value_if;
 
 	template <class Val>
+	struct _value_end_if
+	{
+		static constexpr auto end_if = Val::value;
+	};
+
+	template <class Val>
 	struct _value_then
 	{
 		template <bool>
 		using else_if = _value_if<false, Val>;
 
 		template <auto>
-		using else_then = _value_then<Val>;
+		using else_then = _value_end_if<Val>;
 
 		static constexpr auto end_if = Val::value;
 	};
@@ -480,7 +526,7 @@ namespace stdx::meta
 		using else_if = _value_if<Condition, _implementation::_undefined>;
 
 		template <auto Value>
-		using else_then = _value_then<val<Value>>;
+		using else_then = _value_end_if<val<Value>>;
 	};
 
 	template <bool, class Val>
@@ -784,32 +830,32 @@ namespace stdx::meta
 		// Merged pack, merges several packs of the same size into one pack of packs where the nth pack contains the nth elements of each original pack
 
 	template <std::size_t N, class OutPack, class ... InPack>
-	struct _merged_pack : _merged_pack<N - 1, typename OutPack::template push<pack<typename InPack::first ...>>, typename InPack::template pop<1> ...>
+	struct _transposed_pack : _transposed_pack<N - 1, typename OutPack::template push<pack<typename InPack::first ...>>, typename InPack::template pop<1> ...>
 	{
 	};
 
 	template <class OutPack, class ... InPack>
-	struct _merged_pack<0, OutPack, InPack ...>
+	struct _transposed_pack<0, OutPack, InPack ...>
 	{
 		using _type = OutPack;
 	};
 
 	template <class SizeType, class ... SizeTypes>
-	constexpr bool _assert_pack_sizes_merged_pack(SizeType size, SizeTypes ... sizes)
+	constexpr bool _assert_pack_sizes_transposed_pack(SizeType size, SizeTypes ... sizes)
 	{
 		return (... && (size == sizes));
 	};
 
 	template <class ... InPack>
-	struct _assert_merged_pack : _merged_pack<pack<InPack ...>::first::size, pack<>, InPack ...>
+	struct _assert_transposed_pack : _transposed_pack<pack<InPack ...>::first::size, pack<>, InPack ...>
 	{
-		static_assert(_assert_pack_sizes_merged_pack(InPack::size ...),
-					  "'stdx::meta::merged_pack<InPack ...>': "
+		static_assert(_assert_pack_sizes_transposed_pack(InPack::size ...),
+					  "'stdx::meta::transposed_pack<InPack ...>': "
 					  "InPack::size must be equal for all packs");
 	};
 
 	template <class ... InPack>
-	using merged_pack = typename _assert_merged_pack<InPack ...>::_type;
+	using transposed_pack = typename _assert_transposed_pack<InPack ...>::_type;
 
 	// Functional traits
 
@@ -1257,17 +1303,6 @@ namespace stdx::meta
 
 	template <class Type>
 	constexpr bool is_lock_free_v = is_lock_free<Type>::value;
-}
-
-#endif
-
-//=====
-
-#if defined(STDX_USING_META) || defined(STDX_USING_ALL)
-
-namespace stdx 
-{
-	using namespace meta; 
 }
 
 #endif

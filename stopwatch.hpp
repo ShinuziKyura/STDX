@@ -85,14 +85,3 @@ namespace stdx::chrono
 }
 
 #endif
-
-//=====
-
-#if defined(STDX_USING_CHRONO) || defined(STDX_USING_ALL)
-
-namespace stdx
-{ 
-	using namespace chrono;
-}
-
-#endif

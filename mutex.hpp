@@ -8,7 +8,12 @@
 
 #include "meta.hpp"
 
-namespace stdx::mutex
+namespace stdx
+{
+#if !(defined(STDX_NAMESPACE_THREAD) || defined(STDX_NAMESPACE_ALL))
+inline
+#endif
+namespace thread
 {	
 	class ranked_mutex
 	{
@@ -240,16 +245,6 @@ namespace stdx::mutex
 		spin_mutex _upgrade_mutex;
 	};
 }
-
-#endif
-
-//=====
-
-#if defined(STDX_USING_MUTEX) || defined(STDX_USING_ALL)
-
-namespace stdx
-{ 
-	using namespace mutex; 
 }
 
 #endif

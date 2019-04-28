@@ -2,7 +2,6 @@
 #include <mutex>
 #include <shared_mutex>
 
-#define STDX_USING_ALL
 #include "utility.hpp"
 #include "mutex.hpp"
 #include "stopwatch.hpp"

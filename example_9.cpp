@@ -2,6 +2,7 @@
 #include <string>
 
 #include "utility.hpp"
+#include "meta.hpp"
 #include "event.hpp"
 
 // Any type we want to use to handle events must have 'STDX_EVENT_HANDLER' as a base
@@ -12,10 +13,18 @@ struct base_type : STDX_EVENT_HANDLER
 	{
 	}
 
-	int function(int i, std::string const & str) const &
+	int function(int i, std::string const & str) &
 	{
 		std::cout << _t << " " << i << "\t" << str << "\n";
 		return 0;
+	}
+
+	void foobar(int i, std::string const & str) const
+	{
+		if (i > 3)
+		{
+			std::cout << _t << " " << i << "\t" << str << "\n";
+		}
 	}
 
 	int _t;
@@ -66,13 +75,28 @@ int example_9()
 	derived_type const e(4);
 
 	{
-		// Instantiation must be made with void-returning function type
-		stdx::event::event_dispatcher<void(int, std::string const &)> test_event;
+		STDX_DEFINE_EVENT_DISPATCHER(event_type, int, std::string const &);
+		event_type test_event;
+
+		// The only requirement for the actual functions is that the parameter types match
+		stdx::event_future result = test_event.bind(&e, &derived_type::foobar);
+		stdx::event_future<void> result_empty;
+		stdx::event_future result_copy1 = result;
+		stdx::event_future result_copy2 = result_copy1;
+		stdx::event_future result_move = std::move(result_copy2);
+		
+		// Calling any function other than valid() and constructors/destructor for a event_future where valid() == false is undefined behaviour
+		std::cout << std::boolalpha;
+		std::cout << "result:\t" << result.valid() << "\n";
+		std::cout << "empty:\t" << result_empty.valid() << "\n";
+		std::cout << "copy 1:\t" << result_copy1.valid() << "\n";
+		std::cout << "copy 2:\t" << result_copy2.valid() << "\n";
+		std::cout << "move:\t" << result_move.valid() << "\n\n";
 
 		{
 			base_type a(3);
 			test_event.bind(&a, &base_type::function);
-
+			
 			{
 				base_type b(2);
 				test_event.bind(&b, &base_type::function);
@@ -83,7 +107,6 @@ int example_9()
 
 					{
 						base_type d(0);
-						// The only requirement for the actual functions is that the parameter types match
 						test_event.bind(&d, &base_type::function);
 
 						test_event.broadcast(0, "H"); 
@@ -99,13 +122,12 @@ int example_9()
 			test_event.broadcast(3, "a\n\t!");
 		}
 
-		test_event.bind(&e, &base_type::function);
 		test_event.unbind(static_cast<base_type const *>(&e));
 
 		// No one will receive this event
 		test_event.broadcast(4, "Wait for me! :(");
 
-		test_event.bind(static_cast<base_type const *>(&e), &base_type::function);
+		test_event.bind(static_cast<base_type const *>(&e), &base_type::foobar);
 		// Event dispatcher destructor will also make sure any handler which bound itself to this event is informed that this object is no longer valid
 	}
 

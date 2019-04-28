@@ -15,6 +15,14 @@
 
 namespace stdx::flow
 {
+	// Type_identity trait, provides type alias for the type with which it was instantiated
+
+	template <class Type>
+	struct _type_identity
+	{
+		using type = Type;
+	};
+
 	class _jmp_state
 	{
 	public:
@@ -176,7 +184,7 @@ namespace stdx::flow
 	}\
 	return invocation;\
 }\
-(::stdx::type_identity<decltype(invocation)>())
+(::stdx::flow::_type_identity<decltype(invocation)>())
 
 // Returns execution to last set jump point
 #define STDX_FLOW_JUMP(...) STDX_MACRO_FUNCTION_N_ARY(FLOW_JUMP, __VA_ARGS__)
@@ -230,7 +238,7 @@ namespace stdx::flow
 		return declaration;\
 	}\
 }\
-(::stdx::type_identity<decltype(declaration)>())
+(::stdx::flow::_type_identity<decltype(declaration)>())
 
 // Introduces a jump-protected scope on any jump-protected variables declared in the next statement
 // Continue and break statements are allowed in the next statement: both cause the execution flow to exit the scope and move to the next instruction

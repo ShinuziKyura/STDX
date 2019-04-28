@@ -1,7 +1,5 @@
 #include <iostream>
 
-#define STDX_USING_ALL
-
 #include "meta.hpp"
 #include "language.hpp"
 #include "utility.hpp"
