@@ -129,13 +129,13 @@ namespace functional
 		};
 
 		template <class FuncType>
-		struct _is_invocable_function_ptr_or_ref_base<FuncType, std::enable_if_t<std::is_function_v<std::remove_pointer_t<std::remove_reference_t<FuncType>>>>> : std::true_type
+		struct _is_invocable_function_ptr_or_ref_base<FuncType, std::enable_if_t<std::is_function_v<FuncType>>> : std::true_type
 		{
 			using parameter_types = typename meta::function_signature<FuncType>::parameter_types;
 		};
 
 		template <class FuncType>
-		struct _is_invocable_function_ptr_or_ref : _is_invocable_function_ptr_or_ref_base<FuncType>
+		struct _is_invocable_function_ptr_or_ref : _is_invocable_function_ptr_or_ref_base<std::remove_pointer_t<std::decay_t<FuncType>>>
 		{
 		};
 
@@ -166,7 +166,7 @@ namespace functional
 		};
 
 		template <class FuncObjType, class ClassType>
-		struct _is_invocable_member_function_or_member_object_ptr<FuncObjType std::decay_t<ClassType>::*, ClassType> : _is_invocable_member_function_or_member_object_ptr_base<FuncObjType std::decay_t<ClassType>::*>
+		struct _is_invocable_member_function_or_member_object_ptr<FuncObjType std::remove_pointer_t<std::decay_t<ClassType>>::*, ClassType> : _is_invocable_member_function_or_member_object_ptr_base<FuncObjType std::remove_pointer_t<std::decay_t<ClassType>>::*>
 		{
 		};
 
@@ -178,14 +178,14 @@ namespace functional
 			using parameter_types = meta::_implementation::_undefined;
 		};
 
-		template <class FuncObjType>
-		struct _is_invocable_function_object_base<FuncObjType, std::void_t<std::enable_if_t<std::is_object_v<FuncObjType>>, decltype(&FuncObjType::operator())>> : std::true_type
+		template <class ObjType>
+		struct _is_invocable_function_object_base<ObjType, std::void_t<std::enable_if_t<std::is_object_v<ObjType>>, decltype(&ObjType::operator())>> : std::true_type
 		{
-			using parameter_types = typename meta::function_signature<decltype(&FuncObjType::operator())>::parameter_types;
+			using parameter_types = typename meta::function_signature<decltype(&ObjType::operator())>::parameter_types;
 		};
 
-		template <class FuncObjType>
-		struct _is_invocable_function_object : _is_invocable_function_object_base<std::decay_t<FuncObjType>>
+		template <class ObjType>
+		struct _is_invocable_function_object : _is_invocable_function_object_base<std::remove_pointer_t<std::decay_t<ObjType>>>
 		{
 		};
 
