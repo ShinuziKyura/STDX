@@ -6,6 +6,7 @@
 #include <exception>
 #include <memory>
 #include <variant>
+#include <functional>
 #include <unordered_set>
 #include <unordered_map>
 
@@ -14,8 +15,8 @@
 
 #define STDX_EVENT_HANDLER_COPY_CONSTRUCTOR(object) _event_handler_base(object)
 #define STDX_EVENT_HANDLER_COPY_ASSIGNMENT(object) _event_handler_base::operator=(object)
-#define STDX_EVENT_HANDLER_MOVE_CONSTRUCTOR(object) _event_handler_base(std::move(object))
-#define STDX_EVENT_HANDLER_MOVE_ASSIGNMENT(object) _event_handler_base::operator=(std::move(object))
+#define STDX_EVENT_HANDLER_MOVE_CONSTRUCTOR(object) _event_handler_base(::std::move(object))
+#define STDX_EVENT_HANDLER_MOVE_ASSIGNMENT(object) _event_handler_base::operator=(::std::move(object))
 
 // Event dispatcher classes should be defined through this
 #define STDX_DEFINE_EVENT_DISPATCHER(identifier, ...) using identifier = ::stdx::event::_event_dispatcher<__VA_ARGS__>
@@ -31,7 +32,7 @@ namespace event
 	{
 	public:
 		template <class ... Types>
-		_any_type(Types && ...)
+		_any_type(Types && ...) noexcept
 		{
 		}
 
@@ -40,7 +41,7 @@ namespace event
 	class event_error final : public std::logic_error
 	{
 	public:
-		event_error()
+		explicit event_error()
 			: logic_error("'stdx::event::event_error': no state")
 		{
 		}
@@ -74,11 +75,11 @@ namespace event
 		class _exception_type
 		{
 		public:
-			_exception_type(std::exception_ptr && exception)
+			_exception_type(std::exception_ptr && exception) noexcept
 				: _exception(exception)
 			{
 			}
-			operator std::exception_ptr() const
+			operator std::exception_ptr() const noexcept
 			{
 				return _exception;
 			}
@@ -92,6 +93,8 @@ namespace event
 		static constexpr std::size_t _exception_index = 2;
 
 	public:
+		_event_result() noexcept = default;
+
 		auto get_value() const -> Type
 		{
 			return Type(std::get<_value_index>(_result));
@@ -117,7 +120,7 @@ namespace event
 		{
 			_result.emplace<_value_index>(std::forward<std::conditional_t<std::is_void_v<Type>, ValueType, Type>>(value));
 		}
-		void set_exception(std::exception_ptr && exception)
+		void set_exception(std::exception_ptr && exception) noexcept
 		{
 			_result.emplace<_exception_index>(std::move(exception));
 		}
@@ -131,6 +134,8 @@ namespace event
 	class event_future final
 	{
 	public:
+		event_future() noexcept = default;
+
 		auto get() const -> Type
 		{
 			auto const result_ptr = _result_ptr.lock();
@@ -145,7 +150,7 @@ namespace event
 					throw event_error();
 			}
 		}
-		bool has_state() const
+		bool has_state() const noexcept
 		{
 			return _result_ptr.lock()->get_type() != _event_result_type::none;
 		}
@@ -183,7 +188,7 @@ namespace event
 			return *this;
 		}
 
-		auto get_future() const -> event_future<Type>
+		auto get_future() const noexcept -> event_future<Type>
 		{
 			event_future<Type> future;
 
@@ -196,7 +201,7 @@ namespace event
 		{
 			_result_ptr->set_value(std::forward<ValueType>(value));
 		}
-		void set_exception(std::exception_ptr && exception)
+		void set_exception(std::exception_ptr && exception) noexcept
 		{
 			_result_ptr->set_exception(std::move(exception));
 		}
@@ -250,7 +255,8 @@ namespace event
 	private:
 		auto _this() const noexcept -> _event_handler_base const *
 		{
-			return this; // Because virtual base classes are weird, we need to register each _event_handler_base through its 'this' pointer, which will be different from the derived class one
+			// We need to register each _event_handler_base through its 'this' pointer, because it will be different from the derived class one
+			return this;
 		}
 		void _bind(_event_dispatcher_base * dispatcher) const
 		{
@@ -299,13 +305,13 @@ namespace event
 			using result_type = std::invoke_result_t<FuncType std::decay_t<ObjType>::*, ObjType *, ParamTypes ...>;
 
 		public:
-			_event_handler_data(ObjType * obj, FuncType std::decay_t<ObjType>::* func)
+			_event_handler_data(ObjType * obj, FuncType std::decay_t<ObjType>::* func) noexcept
 				: _object(obj)
 				, _function(func)
 			{
 			}
 
-			auto get_future() const -> event_future<result_type>
+			auto get_future() const noexcept -> event_future<result_type>
 			{
 				return _promise.get_future();
 			}
@@ -316,13 +322,11 @@ namespace event
 				{
 					if constexpr (std::is_void_v<result_type>)
 					{
-						(_object->*_function)(std::forward<ParamTypes>(params) ...);
-
-						_promise.set_value(0); // Value needs to be set
+						_promise.set_value((std::invoke(_function, _object, std::forward<ParamTypes>(params) ...), 0));
 					}
 					else
 					{
-						_promise.set_value((_object->*_function)(std::forward<ParamTypes>(params) ...));
+						_promise.set_value(std::invoke(_function, _object, std::forward<ParamTypes>(params) ...));
 					}
 				}
 				catch (...)
@@ -350,7 +354,8 @@ namespace event
 		}
 
 		template <class ObjType, class FuncType>
-		auto bind(ObjType * obj, FuncType std::decay_t<ObjType>::* func)
+		auto bind(ObjType * obj, FuncType std::decay_t<ObjType>::* func) 
+			-> event_future<std::invoke_result_t<FuncType std::decay_t<ObjType>::*, ObjType *, ParamTypes ...>>
 		{
 			static_assert(std::is_base_of_v<_event_handler_base, std::decay_t<ObjType>>,
 						  "'stdx::event::_event_dispatcher<ParamTypes ...>::bind(ObjType*, FuncType std::decay_t<ObjType>::*)': "

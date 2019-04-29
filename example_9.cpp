@@ -2,7 +2,6 @@
 #include <string>
 
 #include "utility.hpp"
-#include "meta.hpp"
 #include "event.hpp"
 
 // Any type we want to use to handle events must have 'STDX_EVENT_HANDLER' as a base
@@ -72,11 +71,13 @@ struct derived_type : base_type, STDX_EVENT_HANDLER
 
 int example_9()
 {
+	STDX_DEFINE_EVENT_DISPATCHER(event_type, int, std::string const &);
+
 	derived_type const e(4);
 	stdx::event_future<void> result;
 	stdx::event_future<void> result_empty;
+	
 	{
-		STDX_DEFINE_EVENT_DISPATCHER(event_type, int, std::string const &);
 		event_type test_event;
 
 		// The only requirement for the actual functions is that the parameter types match
