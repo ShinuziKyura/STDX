@@ -15,8 +15,6 @@
 
 namespace stdx::flow
 {
-	// Type_identity trait, provides type alias for the type with which it was instantiated
-
 	template <class Type>
 	struct _type_identity
 	{

@@ -1,6 +1,5 @@
 #include <iostream>
 
-#define STDX_USING_FUNCTIONAL
 #include "functional.hpp"
 #include "utility.hpp"
 
@@ -95,8 +94,9 @@ int example_4()
 	MyClass MyObject;
 	MyClassC MyObjectC;
 
-	auto pack = stdx::bind_WIP(MyMethod, 1, stdx::move_bind(MyObject), &MyObject, "asd", MyObjectC);
-
+	auto xobj = stdx::bind_move(MyObject);
+	auto binder = stdx::xbind(MyMethod, stdx::bind_move(stdx::bind_move(xobj)));
+	
 	std::cout << "Call\n\tPRvalue\n";
 	
 	MyMethod(MyClass()); // Copy Elided

@@ -27,7 +27,7 @@ inline
 #endif
 namespace event
 {
-	class _any_type
+	class _any_type final
 	{
 	public:
 		template <class ... Types>
@@ -60,7 +60,16 @@ namespace event
 		static_assert(!(std::is_array_v<Type> || std::is_rvalue_reference_v<Type>),
 					  "'stdx::event::_event_result<Type>': 'Type' must be of non-array, non-rvalue-reference type");
 
-		using _value_type = std::conditional_t<std::is_void_v<Type>, _any_type, std::conditional_t<std::is_lvalue_reference_v<Type>, std::reference_wrapper<std::remove_reference_t<Type>>, Type>>;
+		using _value_type = 
+			std::conditional_t<
+				std::is_void_v<Type>, 
+				_any_type, 
+				std::conditional_t<
+					std::is_lvalue_reference_v<Type>, 
+					std::reference_wrapper<std::remove_reference_t<Type>>, 
+					Type
+				>
+			>;
 
 		class _exception_type
 		{

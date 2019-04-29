@@ -17,7 +17,8 @@ accesses uses a non-const member function of shared_ptr then a data race will oc
 // Note to self: check https://blogs.msdn.microsoft.com/vcblog/2018/04/09/intellisense-for-remote-linux-headers/?utm_source=vs_developer_news&utm_medium=referral
 
 // TODO should probably test this with seq_cst first
-namespace stdx // This may be moved to stp
+
+namespace stdx
 {
 	/* Unsigned integer type T of the largest size for which std::atomic<T> is lock free.
 	 * If there is no type T for which std::atomic<T> is lock free, T is the largest size supported by the architecture.
