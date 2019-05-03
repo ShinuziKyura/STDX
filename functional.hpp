@@ -279,7 +279,7 @@ namespace functional
 					>
 				>, 
 				meta::pack<>
-			>;
+			>; // TODO permutate arguments (chance for better defined semantics)
 	public:
 		template <class ... ArgTypes>
 		_binder(FuncType && func, ArgTypes && ... args)

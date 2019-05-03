@@ -4,8 +4,8 @@
 #include "utility.hpp"
 #include "event.hpp"
 
-// Any type we want to use to handle events must have 'STDX_EVENT_HANDLER' as a base
-struct base_type : STDX_EVENT_HANDLER
+// Any type we want to use to handle events must have 'STDX_EVENT_HANDLER_BASE' as a base
+struct base_type : STDX_EVENT_HANDLER_BASE
 {
 	base_type(int t)
 		: _t(t)
@@ -29,8 +29,8 @@ struct base_type : STDX_EVENT_HANDLER
 	int _t;
 };
 
-// Redundant STDX_EVENT_HANDLER, base_type already has it as a base
-struct derived_type : base_type, STDX_EVENT_HANDLER
+// Redundant STDX_EVENT_HANDLER_BASE, base_type already has it as a base
+struct derived_type : base_type, STDX_EVENT_HANDLER_BASE
 {
 	derived_type(int t)
 		: base_type(t)
@@ -39,25 +39,25 @@ struct derived_type : base_type, STDX_EVENT_HANDLER
 
 	derived_type(derived_type const & other)
 		: base_type(other)
-		, STDX_EVENT_HANDLER_COPY_CONSTRUCTOR(other)
+		, STDX_EVENT_HANDLER_BASE_COPY_CONSTRUCT(other)
 	{
 	}
 
 	derived_type(derived_type && other) noexcept
 		: base_type(other)
-		, STDX_EVENT_HANDLER_MOVE_CONSTRUCTOR(other)
+		, STDX_EVENT_HANDLER_BASE_MOVE_CONSTRUCT(other)
 	{
 	}
 
 	derived_type & operator=(derived_type const & other)
 	{
-		STDX_EVENT_HANDLER_COPY_ASSIGNMENT(other);
+		STDX_EVENT_HANDLER_BASE_COPY_ASSIGN(other);
 		return *this;
 	}
 
 	derived_type & operator=(derived_type && other) noexcept
 	{
-		STDX_EVENT_HANDLER_MOVE_ASSIGNMENT(other);
+		STDX_EVENT_HANDLER_BASE_MOVE_ASSIGN(other);
 		return *this;
 	}
 

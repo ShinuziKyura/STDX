@@ -11,12 +11,12 @@
 #include <unordered_map>
 
 // Types that are intended to be event handlers must derive from this
-#define STDX_EVENT_HANDLER public virtual ::stdx::event::_event_handler_base
+#define STDX_EVENT_HANDLER_BASE	public virtual ::stdx::event::_event_handler_base
 
-#define STDX_EVENT_HANDLER_COPY_CONSTRUCTOR(object) _event_handler_base(object)
-#define STDX_EVENT_HANDLER_COPY_ASSIGNMENT(object) _event_handler_base::operator=(object)
-#define STDX_EVENT_HANDLER_MOVE_CONSTRUCTOR(object) _event_handler_base(::std::move(object))
-#define STDX_EVENT_HANDLER_MOVE_ASSIGNMENT(object) _event_handler_base::operator=(::std::move(object))
+#define STDX_EVENT_HANDLER_BASE_COPY_CONSTRUCT(object) ::stdx::event::_event_handler_base(object)
+#define STDX_EVENT_HANDLER_BASE_COPY_ASSIGN(object) ::stdx::event::_event_handler_base::operator=(object)
+#define STDX_EVENT_HANDLER_BASE_MOVE_CONSTRUCT(object) ::stdx::event::_event_handler_base(::std::move(object))
+#define STDX_EVENT_HANDLER_BASE_MOVE_ASSIGN(object) ::stdx::event::_event_handler_base::operator=(::std::move(object))
 
 // Event dispatcher classes should be defined through this
 #define STDX_DEFINE_EVENT_DISPATCHER(identifier, ...) using identifier = ::stdx::event::_event_dispatcher<__VA_ARGS__>
@@ -28,21 +28,11 @@ inline
 #endif
 namespace event
 {
-	class _any_type final
-	{
-	public:
-		template <class ... Types>
-		_any_type(Types && ...) noexcept
-		{
-		}
-
-	};
-
 	class event_error final : public std::logic_error
 	{
 	public:
 		explicit event_error()
-			: logic_error("'stdx::event::event_error': no state")
+			: logic_error("'stdx::event::event_error': empty result")
 		{
 		}
 
@@ -52,7 +42,7 @@ namespace event
 	{
 		value,
 		exception,
-		none
+		empty
 	};
 
 	template <class Type>
@@ -60,6 +50,16 @@ namespace event
 	{
 		static_assert(!(std::is_array_v<Type> || std::is_rvalue_reference_v<Type>),
 					  "'stdx::event::_event_result<Type>': 'Type' must be of non-array, non-rvalue-reference type");
+
+		class _any_type
+		{
+		public:
+			template <class ... Types>
+			_any_type(Types && ...) noexcept
+			{
+			}
+
+		};
 
 		using _value_type = 
 			std::conditional_t<
@@ -112,13 +112,13 @@ namespace event
 				case _exception_index:
 					return _event_result_type::exception;
 				default:
-					return _event_result_type::none;
+					return _event_result_type::empty;
 			}
 		}
 		template <class ValueType>
 		void set_value(ValueType && value)
 		{
-			_result.emplace<_value_index>(std::forward<std::conditional_t<std::is_void_v<Type>, ValueType, Type>>(value));
+			_result.emplace<_value_index>(std::forward<ValueType>(value));
 		}
 		void set_exception(std::exception_ptr && exception) noexcept
 		{
@@ -150,9 +150,9 @@ namespace event
 					throw event_error();
 			}
 		}
-		bool has_state() const noexcept
+		bool has_result() const noexcept
 		{
-			return _result_ptr.lock()->get_type() != _event_result_type::none;
+			return _result_ptr.lock()->get_type() != _event_result_type::empty;
 		}
 		bool valid() const noexcept
 		{
@@ -322,7 +322,7 @@ namespace event
 				{
 					if constexpr (std::is_void_v<result_type>)
 					{
-						_promise.set_value((std::invoke(_function, _object, std::forward<ParamTypes>(params) ...), 0));
+						std::invoke(_function, _object, std::forward<ParamTypes>(params) ...);
 					}
 					else
 					{

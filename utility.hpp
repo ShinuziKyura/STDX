@@ -17,16 +17,16 @@
 // Function that returns true on first invocation at a particular callsite, and false on next invocations at the same callsite; invocation is thread-safe and only the first invocation among multiple threads will return true (threads will not synchronize)
 #define STDX_ONCE() ::stdx::_once([]{})
 
-#define STDX_UNUSED_PARAM(arg) (arg, void())
-#define STDX_UNUSED_PARAM_PACK(args) ((args, void()), ...)
+#define STDX_UNUSED_PARAM(arg) do{ (arg, void()); }while(0)
+#define STDX_UNUSED_PARAM_PACK(args) do{ ((args, void()), ...); }while(0)
 
 namespace stdx
 {
 	class _polymorphic
 	{
 	protected:
-		_polymorphic() = default;
-		virtual ~_polymorphic() = default;
+		_polymorphic() noexcept = default;
+		virtual ~_polymorphic() noexcept = default;
 
 	};
 
@@ -36,7 +36,7 @@ namespace stdx
 	{
 	public:
 		template <class ... Types>
-		any_type(Types && ...)
+		any_type(Types && ...) noexcept
 		{
 		}
 
@@ -68,7 +68,7 @@ namespace stdx
 	}
 
 	template <class Type>
-	void memzero(Type & obj)
+	void memzero(Type & obj) noexcept
 	{
 		static_assert(std::conjunction_v<std::negation<std::is_const<Type>>, std::is_trivially_copyable<Type>, std::is_standard_layout<Type>>, 
 					  "'stdx::memzero(Type &)': Type must be a non-const, trivially copyable, standard layout type!");
