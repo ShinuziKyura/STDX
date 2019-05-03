@@ -76,7 +76,7 @@ namespace event
 		{
 		public:
 			_exception_type(std::exception_ptr && exception) noexcept
-				: _exception(exception)
+				: _exception(std::move(exception))
 			{
 			}
 			operator std::exception_ptr() const noexcept
@@ -160,6 +160,11 @@ namespace event
 		}
 
 	private:
+		event_future(std::shared_ptr<_event_result<Type>> const & result_ptr) noexcept
+			: _result_ptr(result_ptr)
+		{
+		}
+
 		std::weak_ptr<_event_result<Type>> _result_ptr;
 
 		template <class>
@@ -190,11 +195,7 @@ namespace event
 
 		auto get_future() const noexcept -> event_future<Type>
 		{
-			event_future<Type> future;
-
-			future._result_ptr = _result_ptr;
-
-			return future;
+			return event_future(_result_ptr);
 		}
 		template <class ValueType>
 		void set_value(ValueType && value)
