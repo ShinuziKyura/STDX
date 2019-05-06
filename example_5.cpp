@@ -1,7 +1,5 @@
 #include <iostream>
 
-#define STDX_USING_ALL
-
 #include "meta.hpp"
 #include "language.hpp"
 #include "utility.hpp"
@@ -40,17 +38,17 @@ constexpr auto operator "" _n()
 }
 
 [[maybe_unused]]
-constexpr stdx::matrix<int, 3> A1({ 1, 2, 3,
+constexpr stdx::matrix<float, 3> A1({ 1, 2, 3,
 									4, 5, 6,
 									7, 8, 9 });
 [[maybe_unused]]
-constexpr stdx::matrix<int, 3> A2({ 1, 2, 3,
+constexpr stdx::matrix<float, 3> A2({ 1, 2, 3,
 									4, 5, 6,
 									7, 8, 9 });
 
 int example_5()
 {
-	stdx::desync_io();
+	stdx::desync_IO();
 
 	STDX_DEFINE_STOPWATCH(std::chrono::microseconds);
 
@@ -59,7 +57,7 @@ int example_5()
 
 //	MSVC can't compile this line, GCC can
 //	Which of them is right (if any)?
-//	[[maybe_unused]] constexpr stdx::matrix P1 = A1.pivot();
+//	[[maybe_unused]] constexpr stdx::matrix P1 = A1.partial_pivoting();
 /*	for (std::size_t i = 1; i <= M1.rows; ++i)
 	{
 		for (std::size_t j = 1; j <= M1.columns; ++j)
@@ -69,25 +67,37 @@ int example_5()
 		std::cout << "\n";
 	} */
 
-	const auto M1 = A1.LUP_decomposition();
+	auto const M1 = A1.LUP_decomposition();
 
-	for (std::size_t i = 1; i <= std::get<0>(M1).size(); ++i)
+	for (std::size_t i = 1; i <= M1.rows; ++i)
 	{
-		for (std::size_t j = 1; j <= std::get<0>(M1).size(); ++j)
+		for (std::size_t j = 1; j <= M1.columns; ++j)
 		{
-			std::cout << std::get<0>(M1)[i - 1][j - 1] << " ";
+			std::cout << M1(i, j) << " ";
 		}
 		std::cout << "\n";
 	}
+	std::cout << "\n";
 
-	for (std::size_t i = 1; i <= std::get<1>(M1).size(); ++i)
+	for (std::size_t i = 1; i <= M1.rows; ++i)
 	{
-		for (std::size_t j = 1; j <= std::get<1>(M1).size(); ++j)
+		for (std::size_t j = 1; j <= M1.columns; ++j)
 		{
-			std::cout << std::get<1>(M1)[i - 1][j - 1] << " ";
+			std::cout << M1.lower(i, j) << " ";
 		}
 		std::cout << "\n";
 	}
+	std::cout << "\n";
+
+	for (std::size_t i = 1; i <= M1.rows; ++i)
+	{
+		for (std::size_t j = 1; j <= M1.columns; ++j)
+		{
+			std::cout << M1.upper(i, j) << " ";
+		}
+		std::cout << "\n";
+	}
+	std::cout << "\n";
 
 	/// Matrix test end
 	////////////////////////////////////////

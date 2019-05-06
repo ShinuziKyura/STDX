@@ -97,15 +97,4 @@ namespace stdx::random
 
 #endif
 
-//=====
-
-#if defined(STDX_USING_RANDOM) || defined(STDX_USING_ALL)
-
-namespace stdx 
-{ 
-	using namespace random; 
-}
-
-#endif
-
 #endif

@@ -1,11 +1,7 @@
 #include <iostream>
 
-#include "core/stdx.hpp"
-
-#include STDX_DIRECTIVE(flow, suppress_warnings)
-#include "flow.hpp"
-
 #include "utility.hpp"
+#include "flow.hpp"
 
 namespace
 {
@@ -27,10 +23,10 @@ int & a(int const count)
 	if (count != b)
 	{
 		std::cout << "a(" << count << ")\n";
-		
-		STDX_FLOW_INVOKE(func(true));
 
-	//	std::cout << "Will never execute!"; // Causes 'unreachable code' warning
+		STDX_FLOW_INVOKE(func(count));
+
+		std::cout << "Will never execute!";
 	}
 
 	return b;
@@ -38,7 +34,7 @@ int & a(int const count)
 
 int example_8()
 {
-	stdx::desync_io();
+	stdx::desync_IO();
 
 	int count = 0;
 

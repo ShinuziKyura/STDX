@@ -1,5 +1,5 @@
+*.vcxproj.user
 Debug/
 x64/
 Release/
 FileTemplates/
-*.vcxproj.user

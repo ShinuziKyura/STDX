@@ -8,7 +8,12 @@
 
 #include "meta.hpp"
 
-namespace stdx::mutex
+namespace stdx
+{
+#if !(defined(STDX_NAMESPACE_THREAD) || defined(STDX_NAMESPACE_ALL))
+inline
+#endif
+namespace thread
 {	
 	class ranked_mutex // Underlying type: std::mutex
 	{
@@ -130,7 +135,7 @@ namespace stdx::mutex
 				std::atomic_int_least8_t
 			>::else_then<
 				std::atomic_int_least64_t
-			>::endif;
+			>::end_if;
 		using _int_largest_lock_free_t =
 			_atomic_int_largest_lock_free_t::value_type;
 	public:
@@ -240,16 +245,6 @@ namespace stdx::mutex
 		spin_mutex _upgrade_mutex;
 	};
 }
-
-#endif
-
-//=====
-
-#if defined(STDX_USING_MUTEX) || defined(STDX_USING_ALL)
-
-namespace stdx
-{ 
-	using namespace mutex; 
 }
 
 #endif

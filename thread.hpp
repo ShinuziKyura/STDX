@@ -17,14 +17,3 @@ namespace stdx::thread
 }
 
 #endif
-
-//=====
-
-#if defined(STDX_USING_THREAD) || defined(STDX_USING_ALL)
-
-namespace stdx
-{ 
-	using namespace thread;
-}
-
-#endif

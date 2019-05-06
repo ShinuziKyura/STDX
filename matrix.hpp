@@ -9,8 +9,150 @@
 
 // See http://graphics.stanford.edu/~seander/bithacks.html
 
-namespace stdx::math
+namespace stdx
 {
+#if !(defined(STDX_NAMESPACE_MATH) || defined(STDX_NAMESPACE_ALL))
+inline
+#endif
+namespace math
+{
+	template <class>
+	class _matrix_expression;
+
+	namespace _implementation
+	{
+		template <class ValueType, std::size_t Size, std::size_t ... Index>
+		constexpr std::array<std::array<ValueType, Size>, Size> _identity(std::index_sequence<Index ...>)
+		{
+			return { ValueType(Index % (Size + 1) == 0) ... };
+		}
+
+		template <class ValueType, std::size_t Size>
+		constexpr auto _identity()
+		{
+			return _identity<ValueType, Size>(meta::make_index_sequence<0, Size * Size - 1>());
+		}
+
+		template <class MatrixType, std::size_t Size = MatrixType::rows, std::size_t Index = Size - MatrixType::rows>
+		constexpr auto _partial_pivoting(_matrix_expression<MatrixType> const & expression, std::array<std::size_t, Size> permutation = {}, std::size_t sign = Size)
+		{
+			if constexpr (Index < Size - 1)
+			{
+				auto max_element = std::numeric_limits<typename MatrixType::value_type>::lowest();
+				std::size_t max_i = 0;
+
+				for (std::size_t i = 1; i <= MatrixType::rows; ++i)
+				{
+					if (const auto element = static_cast<MatrixType const &>(expression)(i, 1); element > max_element)
+					{
+						max_element = element;
+						max_i = i;
+					}
+				}
+
+				permutation[Index] = max_i;
+				sign ^= max_i;
+
+				return _partial_pivoting(expression.submatrix(max_i, 1), permutation, sign);
+			}
+			else
+			{
+				permutation[Index] = 1;
+				sign ^= sign | 1;
+
+				for (std::size_t index_1 = Index; index_1 > 0; --index_1)
+				{
+					for (std::size_t index_2 = index_1; index_2 > 0; --index_2)
+					{
+						permutation[index_1] += std::size_t(permutation[index_2 - 1] <= permutation[index_1]);
+					}
+				}
+
+				return std::make_tuple(permutation, sign);
+			}
+		}
+
+		template <class MatrixType, std::size_t ... K>
+		constexpr auto _LUP_upper_element(_matrix_expression<MatrixType> const &,
+										  std::array<std::array<typename MatrixType::value_type, MatrixType::columns>, MatrixType::rows> const &,
+										  std::array<std::array<typename MatrixType::value_type, MatrixType::columns>, MatrixType::rows> const &,
+										  std::size_t,
+										  std::size_t,
+										  std::index_sequence<K ...>);
+
+		template <class MatrixType, std::size_t ... K>
+		constexpr auto _LUP_lower_element(_matrix_expression<MatrixType> const & matrix,
+										  std::array<std::array<typename MatrixType::value_type, MatrixType::columns>, MatrixType::rows> const & lower,
+										  std::array<std::array<typename MatrixType::value_type, MatrixType::columns>, MatrixType::rows> const & upper,
+										  std::size_t i,
+										  std::size_t j,
+										  std::index_sequence<K ...> k)
+		{
+			return _LUP_upper_element(matrix, lower, upper, i, j, k) / upper[j][j];
+		}
+
+		template <class MatrixType, std::size_t ... K>
+		constexpr auto _LUP_upper_element(_matrix_expression<MatrixType> const & matrix,
+										  [[maybe_unused]] std::array<std::array<typename MatrixType::value_type, MatrixType::columns>, MatrixType::rows> const & lower,
+										  [[maybe_unused]] std::array<std::array<typename MatrixType::value_type, MatrixType::columns>, MatrixType::rows> const & upper,
+										  std::size_t i,
+										  std::size_t j,
+										  std::index_sequence<K ...>)
+		{
+			return static_cast<MatrixType const &>(matrix)(i + 1, j + 1) - (typename MatrixType::value_type(0) + ... + (lower[i][K] * upper[K][j]));
+		}
+
+		template <class MatrixType, std::size_t I, std::size_t J>
+		constexpr auto _LUP_upper_row(_matrix_expression<MatrixType> const &,
+									  std::array<std::array<typename MatrixType::value_type, MatrixType::columns>, MatrixType::rows>,
+									  std::array<std::array<typename MatrixType::value_type, MatrixType::columns>, MatrixType::rows>,
+									  std::integral_constant<std::size_t, I>,
+									  std::integral_constant<std::size_t, J>);
+
+		template <class MatrixType, std::size_t I, std::size_t J>
+		constexpr auto _LUP_lower_column(_matrix_expression<MatrixType> const & matrix,
+										 std::array<std::array<typename MatrixType::value_type, MatrixType::columns>, MatrixType::rows> lower,
+										 std::array<std::array<typename MatrixType::value_type, MatrixType::columns>, MatrixType::rows> upper,
+										 std::integral_constant<std::size_t, I>,
+										 std::integral_constant<std::size_t, J>)
+		{
+			for (std::size_t i = I; i < MatrixType::rows; ++i)
+			{
+				lower[i][J] = _LUP_lower_element(matrix, lower, upper, i, J, std::make_index_sequence<J>());
+			}
+
+			return _LUP_upper_row(matrix, lower, upper, std::integral_constant<std::size_t, I>(), std::integral_constant<std::size_t, J + 1>());
+		}
+
+		template <class MatrixType, std::size_t I, std::size_t J>
+		constexpr auto _LUP_upper_row(_matrix_expression<MatrixType> const & matrix,
+									  std::array<std::array<typename MatrixType::value_type, MatrixType::columns>, MatrixType::rows> lower,
+									  std::array<std::array<typename MatrixType::value_type, MatrixType::columns>, MatrixType::rows> upper,
+									  std::integral_constant<std::size_t, I>,
+									  std::integral_constant<std::size_t, J>)
+		{
+			for (std::size_t j = J; j < MatrixType::columns; ++j)
+			{
+				upper[I][j] = _LUP_upper_element(matrix, lower, upper, I, j, std::make_index_sequence<I>());
+			}
+
+			if constexpr (I < MatrixType::rows - 1)
+			{
+				return _LUP_lower_column(matrix, lower, upper, std::integral_constant<std::size_t, I + 1>(), std::integral_constant<std::size_t, J>());
+			}
+			else
+			{
+				return std::make_tuple(lower, upper);
+			}
+		}
+
+		template <class MatrixType>
+		constexpr auto _LUP_decomposition(_matrix_expression<MatrixType> const & matrix)
+		{
+			return _LUP_upper_row(matrix, _identity<typename MatrixType::value_type, MatrixType::rows>(), {}, std::integral_constant<std::size_t, 0>(), std::integral_constant<std::size_t, 0>());
+		}
+	}
+
 	enum matrix_type
 	{
 		/*	Identity matrix, i.e.:
@@ -71,9 +213,6 @@ namespace stdx::math
 		lehmer_matrix,
 	};
 
-	template <class>
-	class _matrix_expression;
-
 	////////////////////////////////////////////////////////////////////////////////
 	// Matrix
 	////////////////////////////////////////////////////////////////////////////////
@@ -123,7 +262,7 @@ namespace stdx::math
 		}
 		value_type & operator()(std::size_t const & i, std::size_t const & j)
 		{
-			return const_cast<value_type &>(stdx::meta::add_const_through_ref_t<decltype(*this)>(*this)(i, j));
+			return const_cast<value_type &>(meta::add_const_through_ref_t<decltype(*this)>(*this)(i, j));
 		}
 	private:
 		static constexpr auto _initialize_matrix(value_type value)
@@ -314,7 +453,7 @@ namespace stdx::math
 
 		constexpr value_type operator()(std::size_t const & i, std::size_t const & j) const
 		{
-			return _dot_product(i, j, stdx::meta::make_index_sequence<1, MatrixType1::columns>());
+			return _dot_product(i, j, meta::make_index_sequence<1, MatrixType1::columns>());
 		}
 	private:
 		template <std::size_t ... K>
@@ -431,7 +570,7 @@ namespace stdx::math
 			return _a(_p[i - 1], j);
 		}
 
-		constexpr std::array<std::size_t, rows> const & permutation() const // TODO ensure these names are unique
+		constexpr std::array<std::size_t, rows> const & permutation() const
 		{
 			return _p;
 		}
@@ -449,13 +588,13 @@ namespace stdx::math
 	};
 
 	template <class ValueType, std::size_t Size>
-	class _LUP_matrix : public _matrix_expression<_LUP_matrix<ValueType, Size>>
+	class _LUP_matrix : public _matrix_expression<_LUP_matrix<ValueType, Size>> // TODO probably make this a top-level entity, alongside matrix
 	{
-		constexpr _LUP_matrix(matrix<ValueType, Size> const & m, std::array<std::array<ValueType, Size>, Size> const & l, std::array<std::array<ValueType, Size>, Size> const & u, std::array<std::size_t, Size> const & p) :
-			matrix<ValueType, Size>(m),
+		constexpr _LUP_matrix(std::array<std::array<ValueType, Size>, Size> const & l, std::array<std::array<ValueType, Size>, Size> const & u, std::array<std::size_t, Size> const & p, bool const n) :
 			_l(l),
 			_u(u),
-			_p(p)
+			_p(p),
+			_n(n)
 		{
 		}
 	public:
@@ -463,118 +602,81 @@ namespace stdx::math
 		static constexpr std::size_t rows = Size;
 		static constexpr std::size_t columns = Size;
 
-		// TODO rest of implementation
+		struct // TODO review this for conformation and const validity
+		{
+			constexpr value_type const & operator()(std::size_t const & i, std::size_t const & j) const
+			{
+				if (i == 0 || j == 0 || i > Size || j > Size)
+				{
+					throw std::invalid_argument("'stdx::math::_LUP_matrix<ValueType, Size>::operator()(i, j)': i and j must be in the range of [1, Size] and [1, Size], respectively"); // TODO
+				}
+				return _this->_l[i - 1][j - 1];
+			}
+			value_type & operator()(std::size_t const & i, std::size_t const & j)
+			{
+				return const_cast<value_type &>(meta::add_const_through_ref_t<decltype(*this)>(*this)(i, j));
+			}
 
+			_LUP_matrix const * const _this;
+		}
+		lower{ this };
+
+		struct
+		{
+			constexpr value_type const & operator()(std::size_t const & i, std::size_t const & j) const
+			{
+				if (i == 0 || j == 0 || i > Size || j > Size)
+				{
+					throw std::invalid_argument("'stdx::math::_LUP_matrix<ValueType, Size>::operator()(i, j)': i and j must be in the range of [1, Size] and [1, Size], respectively"); // TODO
+				}
+				return _this->_u[i - 1][j - 1];
+			}
+			value_type & operator()(std::size_t const & i, std::size_t const & j)
+			{
+				return const_cast<value_type &>(meta::add_const_through_ref_t<decltype(*this)>(*this)(i, j));
+			}
+
+			_LUP_matrix const * const _this;
+		}
+		upper{ this };
+
+		constexpr value_type operator()(std::size_t const & i, std::size_t const & j) const
+		{
+			if (i == 0 || j == 0 || i > Size || j > Size)
+			{
+				throw std::invalid_argument("'stdx::math::_LUP_matrix<ValueType, Size>::operator()(i, j)': i and j must be in the range of [1, Size] and [1, Size], respectively"); // TODO
+			}
+			return _dot_product(_p[i - 1], j, meta::make_index_sequence<1, columns>());
+		}
+
+		constexpr value_type determinant() const
+		{
+			return _determinant(meta::make_index_sequence<1, rows>());
+		}
 	private:
+		template <std::size_t ... K>
+		constexpr value_type _dot_product(std::size_t const & i, std::size_t const & j, std::index_sequence<K ...>) const
+		{
+			return (value_type(0) + ... + (_l[i - 1][K - 1] * _u[K - 1][j - 1]));
+		}
+		template <std::size_t ... K>
+		constexpr value_type _determinant(std::index_sequence<K ...>) const
+		{
+			return (value_type(_n ? -1 : 1) * ... * _u[K - 1][K - 1]);
+		}
+
 		std::array<std::array<value_type, columns>, rows> _l;
 		std::array<std::array<value_type, columns>, rows> _u;
 		std::array<std::size_t, rows> _p;
+		bool const _n;
+
+		template <class>
+		friend class _matrix_expression;
 	};
 
 	////////////////////////////////////////////////////////////////////////////////
 	// Matrix expression
 	////////////////////////////////////////////////////////////////////////////////
-
-	namespace _math
-	{
-		template <class MatrixType, std::size_t Size = MatrixType::rows, std::size_t Index = Size - MatrixType::rows>
-		constexpr auto _pivot(_matrix_expression<MatrixType> const & expression, std::array<std::size_t, Size> permutation = {}, std::size_t sign = Size)
-		{
-			if constexpr (Index < Size - 1)
-			{
-				auto max_element = std::numeric_limits<typename MatrixType::value_type>::lowest();
-				std::size_t max_i = 0;
-
-				for (std::size_t i = 1; i <= MatrixType::rows; ++i)
-				{
-					if (const auto element = static_cast<MatrixType const &>(expression)(i, 1); element > max_element)
-					{
-						max_element = element;
-						max_i = i;
-					}
-				}
-
-				permutation[Index] = max_i;
-				sign ^= max_i;
-
-				return _pivot(expression.submatrix(max_i, 1), permutation, sign);
-			}
-			else
-			{
-				permutation[Index] = 1;
-				sign ^= sign | 1;
-
-				for (std::size_t index_1 = Index; index_1 > 0; --index_1)
-				{
-					for (std::size_t index_2 = index_1; index_2 > 0; --index_2)
-					{
-						permutation[index_1] += std::size_t(permutation[index_2 - 1] <= permutation[index_1]);
-					}
-				}
-
-				return std::make_tuple(permutation, sign);
-			}
-		}
-
-		template <class ValueType, std::size_t Size, std::size_t ... Index>
-		constexpr std::array<std::array<ValueType, Size>, Size> _identity(std::index_sequence<Index ...>)
-		{
-			return { ValueType(Index % (Size + 1) == 0) ... };
-		}
-		template <class ValueType, std::size_t Size>
-		constexpr auto _identity()
-		{
-			return _identity<ValueType, Size>(stdx::meta::make_index_sequence<0, Size * Size - 1>());
-		}
-		
-		template <class MatrixType, std::size_t ... K>
-		constexpr auto _upper_element(_matrix_expression<MatrixType> const & expression,
-									  std::array<std::array<typename MatrixType::value_type, MatrixType::columns>, MatrixType::rows> const & lower,
-									  std::array<std::array<typename MatrixType::value_type, MatrixType::columns>, MatrixType::rows> const & upper,
-									  std::size_t i,
-									  std::size_t j,
-									  std::index_sequence<K ...>)
-		{
-			return expression(i + 1, j + 1) - (typename MatrixType::value_type(0) + ... + (lower[i][K] * upper[K][j]));
-		}
-
-		template <class MatrixType, std::size_t ... K>
-		constexpr auto _lower_element(_matrix_expression<MatrixType> const & expression,
-									  std::array<std::array<typename MatrixType::value_type, MatrixType::columns>, MatrixType::rows> const & lower,
-									  std::array<std::array<typename MatrixType::value_type, MatrixType::columns>, MatrixType::rows> const & upper,
-									  std::size_t i,
-									  std::size_t j,
-									  std::index_sequence<K ...> k)
-		{
-			return _upper_element(expression, lower, upper, i, j, k) / upper[j][j];
-		}
-
-		template <class MatrixType, std::size_t Index = 0>
-		constexpr auto _LUP_decomposition(_matrix_expression<MatrixType> const & expression, 
-										  std::array<std::array<typename MatrixType::value_type, MatrixType::columns>, MatrixType::rows> lower = _identity<typename MatrixType::value_type, MatrixType::rows>(),
-										  std::array<std::array<typename MatrixType::value_type, MatrixType::columns>, MatrixType::rows> upper = {})
-		{
-			// TODO separate this further into methods
-			if constexpr (Index/* < MatrixType::rows*/)
-			{
-				for (std::size_t j = Index; j < upper.size(); ++j)
-				{
-					upper[Index][j] = _upper_element(expression, lower, upper, Index, j, stdx::meta::make_index_sequence<0, Index>());
-				}
-				for (std::size_t i = Index; i < lower.size(); ++i)
-				{
-					lower[i][Index] = _lower_element(expression, lower, upper, i, Index, stdx::meta::make_index_sequence<0, Index>());
-				}
-
-				return _LUP_decomposition(expression, lower, upper);
-			}
-			else
-			{
-				(void) expression;
-				return std::make_tuple(lower, upper);
-			}
-		}
-	}
 
 	template <class MatrixType>
 	class _matrix_expression
@@ -597,7 +699,7 @@ namespace stdx::math
 			return _matrix_multiplication(static_cast<MatrixType const &>(*this), static_cast<OtherMatrixType const &>(other));
 		}
 		template <class OtherMatrixType>
-		constexpr auto operator%(_matrix_expression<OtherMatrixType> const & other) const
+		constexpr auto operator^(_matrix_expression<OtherMatrixType> const & other) const
 		{
 			return _matrix_entrywise_multiplication(static_cast<MatrixType const &>(*this), static_cast<OtherMatrixType const &>(other));
 		}
@@ -609,7 +711,7 @@ namespace stdx::math
 		// Alternate operations
 		constexpr auto transpose() const
 		{
-			return this->operator*();
+			return this->operator+();
 		}
 
 		// Transformations
@@ -620,16 +722,18 @@ namespace stdx::math
 		// TODO
 	/*	constexpr auto permutate(std::array<std::size_t, MatrixType::rows> const & permutation) const
 		{
-			return _permutated_matrix(static_cast<MatrixType const &>(*this), permutation, _math::_is_negated(permutation));
+			return _permutated_matrix(static_cast<MatrixType const &>(*this), permutation, _implementation::_is_negated(permutation));
 		} */
-		constexpr auto pivot() const // TODO should this be renamed to 'partial_pivot'?
+		constexpr auto partial_pivoting() const
 		{
-			const auto & [permutation, sign] = _math::_pivot(*this);
+			auto const & [permutation, sign] = _implementation::_partial_pivoting(*this);
 			return _permutated_matrix(static_cast<MatrixType const &>(*this), permutation, bool(sign));
 		}
 		constexpr auto LUP_decomposition() const
 		{
-			return _math::_LUP_decomposition(pivot());
+			auto const pivot = partial_pivoting();
+			auto const & [lower, upper] = _implementation::_LUP_decomposition(pivot);
+			return _LUP_matrix(lower, upper, pivot.permutation(), pivot.is_negated());
 		}
 
 		// Utilities
@@ -637,13 +741,13 @@ namespace stdx::math
 		{
 			static_assert(MatrixType::rows == MatrixType::columns,
 						  "'stdx::math::_matrix_expression<MatrixType>': MatrixType::rows must be equal to MatrixType::columns");
-			return _is_upper_triangular(stdx::meta::make_index_sequence<1, MatrixType::rows>());
+			return _is_upper_triangular(meta::make_index_sequence<1, MatrixType::rows>());
 		}
 		constexpr bool is_lower_triangular() const
 		{
 			static_assert(MatrixType::rows == MatrixType::columns,
 						  "'stdx::math::_matrix_expression<MatrixType>': MatrixType::rows must be equal to MatrixType::columns");
-			return _is_lower_triangular(stdx::meta::make_index_sequence<1, MatrixType::columns>());
+			return _is_lower_triangular(meta::make_index_sequence<1, MatrixType::columns>());
 		}
 		constexpr bool is_triangular() const
 		{
@@ -657,9 +761,10 @@ namespace stdx::math
 			// Applying ri  -> ri + a*rj has no effect on det(A).
 			// Applying ri <-> rj has the effect of multiplying det(A) by -1.
 
-			return _determinant(stdx::meta::make_index_sequence<1, MatrixType::columns>());
+			return LUP_decomposition().determinant();
+//			return _determinant(meta::make_index_sequence<1, MatrixType::columns>());
 		}
-	protected: // TODO RS eventually move these to _math
+	protected: // TODO RS eventually move these to _implementation
 		template <std::size_t J, std::size_t ... I>
 		constexpr bool _is_upper_triangular(std::index_sequence<J, I ...>) const
 		{
@@ -692,16 +797,6 @@ namespace stdx::math
 		}
 	};
 }
-
-#endif
-
-//=====
-
-#if defined(STDX_USING_MATH) || defined(STDX_USING_ALL)
-
-namespace stdx
-{
-	using namespace math;
 }
 
 #endif

@@ -2,23 +2,24 @@
 #include <mutex>
 #include <shared_mutex>
 
-#define STDX_USING_ALL
 #include "utility.hpp"
 #include "mutex.hpp"
 #include "stopwatch.hpp"
 
 int example_6()
 {
-	stdx::desync_io();
+	stdx::desync_IO();
 
-	STDX_DEFINE_STOPWATCH(std::chrono::nanoseconds);
+	STDX_DEFINE_STOPWATCH(stdx::chrono::nanoseconds);
 
 	std::mutex mtx;
 	std::shared_mutex sh_mtx;
 	stdx::spin_mutex sp_mtx;
 	stdx::shared_spin_mutex sh_sp_mtx;
-	stopwatch::rep_type elapsed = 0;
-	stopwatch::rep_type sp_elapsed = 0;
+	stopwatch::rep_type elapsed;
+	stopwatch::rep_type sp_elapsed;
+
+	// TODO test these with multiple threads
 
 	// ==============================
 	//             Mutexes

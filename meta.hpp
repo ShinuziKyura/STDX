@@ -55,6 +55,40 @@ namespace stdx::meta
 		using _20 = _implementation::_placeholder<20>;
 	}
 
+	namespace literals
+	{
+		constexpr auto operator "" _constexpr_string(const char * string, std::size_t)
+		{
+			return string;
+		}
+		constexpr auto operator "" _constexpr_string(const wchar_t * string, std::size_t)
+		{
+			return string;
+		}
+#if _HAS_CXX2A
+		constexpr auto operator "" _constexpr_string(const char8_t * string, std::size_t)
+		{
+			return string;
+		}
+#endif
+		constexpr auto operator "" _constexpr_string(const char16_t * string, std::size_t)
+		{
+			return string;
+		}
+		constexpr auto operator "" _constexpr_string(const char32_t * string, std::size_t)
+		{
+			return string;
+		}
+	}
+	
+		// Type_identity trait, provides type alias for the type with which it was instantiated (remove in C++2a)
+
+	template <class Type>
+	struct type_identity
+	{
+		using type = Type;
+	};
+
 	// Container types
 
 		// Vals
@@ -264,14 +298,6 @@ namespace stdx::meta
 
 	// Type traits
 
-		// Identity trait, provides type alias for the type with which it was instantiated
-
-	template <class Type>
-	struct identity
-	{
-		using type = Type;
-	};
-
 		// Check if a type is an instantiation of a class template
 
 	template <class, template <class ...> class>
@@ -413,10 +439,16 @@ namespace stdx::meta
 
 	// Logic traits
 
-		// Type if statement, endif is an alias of the first type for which corresponding condition is true, or non-defined if all are false
+		// Type if statement, end_if is an alias of the first type for which corresponding condition is true, or non-defined if all are false
 
 	template <bool, class>
 	struct _type_if;
+
+	template <class Type>
+	struct _type_end_if
+	{
+		using end_if = Type;
+	};
 
 	template <class Type>
 	struct _type_then
@@ -425,9 +457,9 @@ namespace stdx::meta
 		using else_if = _type_if<false, Type>;
 
 		template <class>
-		using else_then = _type_then<Type>;
+		using else_then = _type_end_if<Type>;
 
-		using endif = Type;
+		using end_if = Type;
 	};
 
 	template <>
@@ -437,7 +469,7 @@ namespace stdx::meta
 		using else_if = _type_if<Condition, _implementation::_undefined>;
 
 		template <class Type>
-		using else_then = _type_then<Type>;
+		using else_then = _type_end_if<Type>;
 	};
 
 	template <bool, class Type>
@@ -464,10 +496,16 @@ namespace stdx::meta
 	template <bool Condition>
 	using type_if = _type_if<Condition, _implementation::_undefined>;
 	
-		// Value if statement, endif is an alias of the first value for which corresponding condition is true, or non-defined if all are false
+		// Value if statement, end_if is an alias of the first value for which corresponding condition is true, or non-defined if all are false
 
 	template <bool, class>
 	struct _value_if;
+
+	template <class Val>
+	struct _value_end_if
+	{
+		static constexpr auto end_if = Val::value;
+	};
 
 	template <class Val>
 	struct _value_then
@@ -476,9 +514,9 @@ namespace stdx::meta
 		using else_if = _value_if<false, Val>;
 
 		template <auto>
-		using else_then = _value_then<Val>;
+		using else_then = _value_end_if<Val>;
 
-		static constexpr auto endif = Val::value;
+		static constexpr auto end_if = Val::value;
 	};
 
 	template <>
@@ -488,7 +526,7 @@ namespace stdx::meta
 		using else_if = _value_if<Condition, _implementation::_undefined>;
 
 		template <auto Value>
-		using else_then = _value_then<val<Value>>;
+		using else_then = _value_end_if<val<Value>>;
 	};
 
 	template <bool, class Val>
@@ -548,7 +586,7 @@ namespace stdx::meta
 			int
 		>::else_if<bool(sizeof(std::size_t) == sizeof(unsigned short))>::then<
 			short
-		>::endif;
+		>::end_if;
 
 	template <class ArithmeticType>
 	using half_t = 
@@ -562,7 +600,7 @@ namespace stdx::meta
 					unsigned short
 				>::else_if<bool(sizeof(unsigned char) < sizeof(unsigned long long))>::then<
 					unsigned char
-				>::endif
+				>::end_if
 			>::template else_if<bool(sizeof(ArithmeticType) == sizeof(unsigned long))>::template then<
 				type_if<bool(sizeof(unsigned int) < sizeof(unsigned long))>::then<
 					unsigned int
@@ -570,18 +608,18 @@ namespace stdx::meta
 					unsigned short
 				>::else_if<bool(sizeof(unsigned char) < sizeof(unsigned long))>::then<
 					unsigned char
-				>::endif
+				>::end_if
 			>::template else_if<bool(sizeof(ArithmeticType) == sizeof(unsigned int))>::template then<
 				type_if<bool(sizeof(unsigned short) < sizeof(unsigned int))>::then<
 					unsigned short
 				>::else_if<bool(sizeof(unsigned char) < sizeof(unsigned int))>::then<
 					unsigned char
-				>::endif
+				>::end_if
 			>::template else_if<bool(sizeof(ArithmeticType) == sizeof(unsigned short))>::template then<
 				type_if<bool(sizeof(unsigned char) < sizeof(unsigned short))>::then<
 					unsigned char
-				>::endif
-			>::endif
+				>::end_if
+			>::end_if
 		>::template else_if<std::is_integral_v<ArithmeticType>>::template then<
 			typename type_if<bool(sizeof(ArithmeticType) == sizeof(long long))>::template then<
 				type_if<bool(sizeof(long) < sizeof(long long))>::then<
@@ -592,7 +630,7 @@ namespace stdx::meta
 					short
 				>::else_if<bool(sizeof(char) < sizeof(long long))>::then<
 					char
-				>::endif
+				>::end_if
 			>::template else_if<bool(sizeof(ArithmeticType) == sizeof(long))>::template then<
 				type_if<bool(sizeof(int) < sizeof(long))>::then<
 					int
@@ -600,31 +638,31 @@ namespace stdx::meta
 					short
 				>::else_if<bool(sizeof(char) < sizeof(long))>::then<
 					char
-				>::endif
+				>::end_if
 			>::template else_if<bool(sizeof(ArithmeticType) == sizeof(int))>::template then<
 				type_if<bool(sizeof(short) < sizeof(int))>::then<
 					short
 				>::else_if<bool(sizeof(char) < sizeof(int))>::then<
 					char
-				>::endif
+				>::end_if
 			>::template else_if<bool(sizeof(ArithmeticType) == sizeof(short))>::template then<
 				type_if<bool(sizeof(char) < sizeof(short))>::then<
 					char
-				>::endif
-			>::endif
+				>::end_if
+			>::end_if
 		>::template else_if<std::is_floating_point_v<ArithmeticType>>::template then<
 			typename type_if<bool(sizeof(ArithmeticType) == sizeof(long double))>::template then<
 				type_if<bool(sizeof(double) < sizeof(long double))>::then<
 					double
 				>::else_if<bool(sizeof(float) < sizeof(long double))>::then<
 					float
-				>::endif
+				>::end_if
 			>::template else_if<bool(sizeof(ArithmeticType) == sizeof(double))>::template then<
 				type_if<bool(sizeof(float) < sizeof(double))>::then<
 					float
-				>::endif
-			>::endif
-		>::endif;
+				>::end_if
+			>::end_if
+		>::end_if;
 
 		// Boolean checks
 
@@ -792,42 +830,42 @@ namespace stdx::meta
 		// Merged pack, merges several packs of the same size into one pack of packs where the nth pack contains the nth elements of each original pack
 
 	template <std::size_t N, class OutPack, class ... InPack>
-	struct _merged_pack : _merged_pack<N - 1, typename OutPack::template push<pack<typename InPack::first ...>>, typename InPack::template pop<1> ...>
+	struct _transposed_pack : _transposed_pack<N - 1, typename OutPack::template push<pack<typename InPack::first ...>>, typename InPack::template pop<1> ...>
 	{
 	};
 
 	template <class OutPack, class ... InPack>
-	struct _merged_pack<0, OutPack, InPack ...>
+	struct _transposed_pack<0, OutPack, InPack ...>
 	{
 		using _type = OutPack;
 	};
 
 	template <class SizeType, class ... SizeTypes>
-	constexpr bool _assert_pack_sizes_merged_pack(SizeType size, SizeTypes ... sizes)
+	constexpr bool _assert_pack_sizes_transposed_pack(SizeType size, SizeTypes ... sizes)
 	{
 		return (... && (size == sizes));
 	};
 
 	template <class ... InPack>
-	struct _assert_merged_pack : _merged_pack<pack<InPack ...>::first::size, pack<>, InPack ...>
+	struct _assert_transposed_pack : _transposed_pack<pack<InPack ...>::first::size, pack<>, InPack ...>
 	{
-		static_assert(_assert_pack_sizes_merged_pack(InPack::size ...),
-					  "'stdx::meta::merged_pack<InPack ...>': "
+		static_assert(_assert_pack_sizes_transposed_pack(InPack::size ...),
+					  "'stdx::meta::transposed_pack<InPack ...>': "
 					  "InPack::size must be equal for all packs");
 	};
 
 	template <class ... InPack>
-	using merged_pack = typename _assert_merged_pack<InPack ...>::_type;
+	using transposed_pack = typename _assert_transposed_pack<InPack ...>::_type;
 
 	// Functional traits
 
 		// Function signature
 
 	template <class, class ...>
-	struct _function_signature;
+	struct _function_signature_base;
 
 	template <class RetType, class ... ParamTypes, class ... QSTypes>
-	struct _function_signature<RetType(ParamTypes ...), QSTypes ...>
+	struct _function_signature_base<RetType(ParamTypes ...), QSTypes ...>
 	{
 		// Return type
 		using return_type = RetType;
@@ -838,136 +876,141 @@ namespace stdx::meta
 	};
 
 	template <class>
-	struct function_signature;
+	struct _function_signature;
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...)> : _function_signature<RetType(ParamTypes ...)>
+	struct _function_signature<RetType(ParamTypes ...)> : _function_signature_base<RetType(ParamTypes ...)>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const> : _function_signature<RetType(ParamTypes ...), qualifiers::_const>
+	struct _function_signature<RetType(ParamTypes ...) const> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_const>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) volatile> : _function_signature<RetType(ParamTypes ...), qualifiers::_volatile>
+	struct _function_signature<RetType(ParamTypes ...) volatile> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_volatile>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const volatile> : _function_signature<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_volatile>
+	struct _function_signature<RetType(ParamTypes ...) const volatile> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_volatile>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) &> : _function_signature<RetType(ParamTypes ...), qualifiers::_lvalue_reference>
+	struct _function_signature<RetType(ParamTypes ...) &> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_lvalue_reference>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const &> : _function_signature<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_lvalue_reference>
+	struct _function_signature<RetType(ParamTypes ...) const &> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_lvalue_reference>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) volatile &> : _function_signature<RetType(ParamTypes ...), qualifiers::_volatile, qualifiers::_lvalue_reference>
+	struct _function_signature<RetType(ParamTypes ...) volatile &> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_volatile, qualifiers::_lvalue_reference>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const volatile &> : _function_signature<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_volatile, qualifiers::_lvalue_reference>
+	struct _function_signature<RetType(ParamTypes ...) const volatile &> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_volatile, qualifiers::_lvalue_reference>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) &&> : _function_signature<RetType(ParamTypes ...), qualifiers::_rvalue_reference>
+	struct _function_signature<RetType(ParamTypes ...) &&> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_rvalue_reference>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const &&> : _function_signature<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_rvalue_reference>
+	struct _function_signature<RetType(ParamTypes ...) const &&> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_rvalue_reference>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) volatile &&> : _function_signature<RetType(ParamTypes ...), qualifiers::_volatile, qualifiers::_rvalue_reference>
+	struct _function_signature<RetType(ParamTypes ...) volatile &&> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_volatile, qualifiers::_rvalue_reference>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const volatile &&> : _function_signature<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_volatile, qualifiers::_rvalue_reference>
+	struct _function_signature<RetType(ParamTypes ...) const volatile &&> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_volatile, qualifiers::_rvalue_reference>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) noexcept> : _function_signature<RetType(ParamTypes ...), specifiers::_noexcept>
+	struct _function_signature<RetType(ParamTypes ...) noexcept> : _function_signature_base<RetType(ParamTypes ...), specifiers::_noexcept>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers::_const, specifiers::_noexcept>
+	struct _function_signature<RetType(ParamTypes ...) const noexcept> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_const, specifiers::_noexcept>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) volatile noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers::_volatile, specifiers::_noexcept>
+	struct _function_signature<RetType(ParamTypes ...) volatile noexcept> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_volatile, specifiers::_noexcept>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const volatile noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_volatile, specifiers::_noexcept>
+	struct _function_signature<RetType(ParamTypes ...) const volatile noexcept> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_volatile, specifiers::_noexcept>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) & noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers::_lvalue_reference, specifiers::_noexcept>
+	struct _function_signature<RetType(ParamTypes ...) & noexcept> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_lvalue_reference, specifiers::_noexcept>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const & noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_lvalue_reference, specifiers::_noexcept>
+	struct _function_signature<RetType(ParamTypes ...) const & noexcept> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_lvalue_reference, specifiers::_noexcept>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) volatile & noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers::_volatile, qualifiers::_lvalue_reference, specifiers::_noexcept>
+	struct _function_signature<RetType(ParamTypes ...) volatile & noexcept> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_volatile, qualifiers::_lvalue_reference, specifiers::_noexcept>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const volatile & noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_volatile, qualifiers::_lvalue_reference, specifiers::_noexcept>
+	struct _function_signature<RetType(ParamTypes ...) const volatile & noexcept> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_volatile, qualifiers::_lvalue_reference, specifiers::_noexcept>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) && noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers::_rvalue_reference, specifiers::_noexcept>
+	struct _function_signature<RetType(ParamTypes ...) && noexcept> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_rvalue_reference, specifiers::_noexcept>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const && noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_rvalue_reference, specifiers::_noexcept>
+	struct _function_signature<RetType(ParamTypes ...) const && noexcept> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_rvalue_reference, specifiers::_noexcept>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) volatile && noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers::_volatile, qualifiers::_rvalue_reference, specifiers::_noexcept>
+	struct _function_signature<RetType(ParamTypes ...) volatile && noexcept> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_volatile, qualifiers::_rvalue_reference, specifiers::_noexcept>
 	{
 	};
 
 	template <class RetType, class ... ParamTypes>
-	struct function_signature<RetType(ParamTypes ...) const volatile && noexcept> : _function_signature<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_volatile, qualifiers::_rvalue_reference, specifiers::_noexcept>
+	struct _function_signature<RetType(ParamTypes ...) const volatile && noexcept> : _function_signature_base<RetType(ParamTypes ...), qualifiers::_const, qualifiers::_volatile, qualifiers::_rvalue_reference, specifiers::_noexcept>
 	{
 	};
 
 	template <class FuncType>
-	struct function_signature<FuncType *> : function_signature<FuncType>
+	struct function_signature : _function_signature<std::remove_pointer_t<std::remove_reference_t<FuncType>>>
 	{
+		static_assert(std::is_function_v<std::remove_pointer_t<std::remove_reference_t<FuncType>>>, ""); // TODO
+
+		using object_type = void;
 	};
 
 	template <class FuncType, class ObjType>
-	struct function_signature<FuncType ObjType::*> : function_signature<FuncType>
+	struct function_signature<FuncType ObjType::*> : _function_signature<FuncType>
 	{
+		static_assert(std::is_member_function_pointer_v<FuncType ObjType::*>, ""); // TODO
+
 		using object_type = ObjType;
 	};
 
@@ -1260,17 +1303,6 @@ namespace stdx::meta
 
 	template <class Type>
 	constexpr bool is_lock_free_v = is_lock_free<Type>::value;
-}
-
-#endif
-
-//=====
-
-#if defined(STDX_USING_META) || defined(STDX_USING_ALL)
-
-namespace stdx 
-{
-	using namespace meta; 
 }
 
 #endif

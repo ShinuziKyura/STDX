@@ -7,18 +7,32 @@ class MyClass
 {
 public:
 	int i;
+	bool print = true;
 
 	MyClass() : i(0)
 	{
 	};
-	MyClass(MyClass const & obj) : i(obj.i)
+	MyClass(MyClass const & other) : i(other.i)
 	{
 		std::cout << "\t\tCopy\n";
+		print = false;
 	}
-	MyClass(MyClass && obj) : i(std::move(obj.i))
+	MyClass(MyClass && other) : i(std::move(other.i))
 	{
 		std::cout << "\t\tMove\n";
+		print = false;
 	}
+
+	MyClass& operator=(MyClass other)
+	{
+		std::swap(*this, other);
+		return *this;
+	}
+
+	void operator()(){}
+//	void operator()(int){}
+	void func(int){}
+	int obj;
 };
 using MyClassC = MyClass const;
 using MyClassL = MyClass &;
@@ -28,32 +42,50 @@ using MyClassRC = MyClass const &&;
 
 int MyMethod(MyClass object)
 {
-	std::cout << "\t\t----\n";
+	if (object.print)
+	{
+		std::cout << "\t\t----\n";
+	}
 	return object.i += 1;
 }
 int MyMethodC(MyClass const object)
 {
-	std::cout << "\t\t----\n";
+	if (object.print)
+	{
+		std::cout << "\t\t----\n";
+	}
 	return object.i + 1;
 }
 int MyMethodL(MyClass & object)
 {
-	std::cout << "\t\t----\n";
+	if (object.print)
+	{
+		std::cout << "\t\t----\n";
+	}
 	return object.i += 1;
 }
 int MyMethodLC(MyClass const & object)
 {
-	std::cout << "\t\t----\n";
+	if (object.print)
+	{
+		std::cout << "\t\t----\n";
+	}
 	return object.i + 1;
 }
 int MyMethodR(MyClass && object)
 {
-	std::cout << "\t\t----\n";
+	if (object.print)
+	{
+		std::cout << "\t\t----\n";
+	}
 	return object.i += 1;
 }
 int MyMethodRC(MyClass const && object)
 {
-	std::cout << "\t\t----\n";
+	if (object.print)
+	{
+		std::cout << "\t\t----\n";
+	}
 	return object.i + 1;
 }
 
@@ -62,6 +94,9 @@ int example_4()
 	MyClass MyObject;
 	MyClassC MyObjectC;
 
+	auto xobj = stdx::bind_move(MyObject);
+	auto binder = stdx::xbind(MyMethod, stdx::bind_move(stdx::bind_move(xobj)));
+	
 	std::cout << "Call\n\tPRvalue\n";
 	
 	MyMethod(MyClass()); // Copy Elided

@@ -6,15 +6,20 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#if _HAS_CXX20
+#if _HAS_CXX2A
 #include <syncstream>
 #endif
 
 #include "meta.hpp"
 
-namespace stdx::stream
+namespace stdx
 {
-#if _HAS_CXX20
+#if !(defined(STDX_NAMESPACE_STREAM) || defined(STDX_NAMESPACE_ALL))
+inline
+#endif
+namespace stream
+{
+#if _HAS_CXX2A
 	template <class CharType, class Traits>
 	inline auto _initialize_osyncstream(std::basic_ostream<CharType, Traits> & stream)
 	{
@@ -268,16 +273,6 @@ namespace stdx::stream
 		streambuf_type * _buffer;
 	};
 }
-
-#endif
-
-//=====
-
-#if defined(STDX_USING_STREAM) || defined(STDX_USING_ALL)
-
-namespace stdx 
-{ 
-	using namespace stream;
 }
 
 #endif
