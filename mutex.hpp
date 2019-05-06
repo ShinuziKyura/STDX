@@ -10,7 +10,7 @@
 
 namespace stdx::mutex
 {	
-	class ranked_mutex
+	class ranked_mutex // Underlying type: std::mutex
 	{
 	public:
 		ranked_mutex(std::size_t rank) noexcept :
@@ -63,7 +63,7 @@ namespace stdx::mutex
 			if (_current_mutex && _current_mutex->_rank >= _rank) // Only allow totally ordered mutexes
 			{
 				_unlock_previous_mutexes();
-				std::logic_error("Thread rank invariant violated on lock / try_lock!");
+				throw std::logic_error("Thread rank invariant violated on lock / try_lock!");
 			}
 		}
 		void _check_current_mutex()
@@ -71,7 +71,7 @@ namespace stdx::mutex
 			if (_current_mutex != this)
 			{
 				_unlock_previous_mutexes();
-				std::logic_error("Thread rank invariant violated on unlock!");
+				throw std::logic_error("Thread rank invariant violated on unlock!");
 			}
 		}
 		void _unlock_previous_mutexes()
