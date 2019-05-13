@@ -79,6 +79,7 @@ namespace event
 				: _exception(std::move(exception))
 			{
 			}
+
 			operator std::exception_ptr() const noexcept
 			{
 				return _exception;
@@ -306,7 +307,7 @@ namespace event
 			using result_type = std::invoke_result_t<FuncType std::decay_t<ObjType>::*, ObjType *, ParamTypes ...>;
 
 		public:
-			_event_handler_data(ObjType * obj, FuncType std::decay_t<ObjType>::* func) noexcept
+			_event_handler_data(ObjType * obj, FuncType std::decay_t<ObjType>::* func)
 				: _object(obj)
 				, _function(func)
 			{
@@ -358,9 +359,9 @@ namespace event
 		auto bind(ObjType * obj, FuncType std::decay_t<ObjType>::* func) 
 			-> event_future<std::invoke_result_t<FuncType std::decay_t<ObjType>::*, ObjType *, ParamTypes ...>>
 		{
-			static_assert(std::is_base_of_v<_event_handler_base, std::decay_t<ObjType>>,
+			static_assert(std::is_base_of_v<_event_handler_base, ObjType>,
 						  "'stdx::event::_event_dispatcher<ParamTypes ...>::bind(ObjType*, FuncType std::decay_t<ObjType>::*)': "
-						  "'std::decay_t<ObjType>' must derive from 'stdx::event::_event_handler_base'");
+						  "'ObjType' must derive from 'stdx::event::_event_handler_base'");
 
 			auto handler = std::make_unique<_event_handler_data<ObjType, FuncType>>(obj, func);
 

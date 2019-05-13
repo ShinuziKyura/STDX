@@ -726,8 +726,8 @@ namespace math
 		} */
 		constexpr auto partial_pivoting() const
 		{
-			auto const & [permutation, sign] = _implementation::_partial_pivoting(*this);
-			return _permutated_matrix(static_cast<MatrixType const &>(*this), permutation, bool(sign));
+			auto const & [permutation, is_negated] = _implementation::_partial_pivoting(*this);
+			return _permutated_matrix(static_cast<MatrixType const &>(*this), permutation, is_negated);
 		}
 		constexpr auto LUP_decomposition() const
 		{
