@@ -94,8 +94,8 @@ int example_4()
 	MyClass MyObject;
 	MyClassC MyObjectC;
 
-	auto xobj = stdx::bind_move(MyObject);
-	auto binder = stdx::xbind(MyMethod, stdx::bind_move(stdx::bind_move(xobj)));
+	auto xobj = stdx::wrap_move(MyObject);
+	auto binder = stdx::xbind(MyMethod, stdx::wrap_move(stdx::wrap_move(xobj)));
 	
 	std::cout << "Call\n\tPRvalue\n";
 	

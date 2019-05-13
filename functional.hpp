@@ -13,16 +13,16 @@ inline
 namespace functional
 {
 	template <class>
-	class _lvalue_binder;
+	class _lvalue_wrapper;
 
 	template <class>
-	class _xvalue_binder;
+	class _xvalue_wrapper;
 
 	namespace _implementation
 	{
 		namespace _value_category
 		{
-			struct _rvalue;
+			struct _prvalue;
 			struct _lvalue;
 			struct _xvalue;
 		}
@@ -36,22 +36,22 @@ namespace functional
 			using category = Category;
 		};
 
-			// _value_category_binder
+			// _value_category_wrapper
 
 		template <class Type>
-		class _value_category_binder
+		class _value_category_wrapper
 		{
 		public:
-			_value_category_binder(Type & object) noexcept
+			_value_category_wrapper(Type & object) noexcept
 				: _object(object)
 			{
 			}
-			_value_category_binder(_value_category_binder const &) = delete;
-			_value_category_binder(_value_category_binder && other) noexcept
+			_value_category_wrapper(_value_category_wrapper const &) = delete;
+			_value_category_wrapper(_value_category_wrapper && other) noexcept
 				: _object(other._object)
 			{
 			}
-			_value_category_binder & operator=(_value_category_binder) = delete;
+			_value_category_wrapper & operator=(_value_category_wrapper) = delete;
 
 			operator Type &()
 			{
@@ -63,35 +63,35 @@ namespace functional
 
 		};
 
-			// _bind_value_category
+			// _make_value // TODO rethink this method, we may only need the type component
 
 		template <class Type>
-		struct _bind_value_category : _value<Type, _value_category::_rvalue>
+		struct _make_value : _value<Type, _value_category::_prvalue>
 		{
 		};
 
 		template <class Type>
-		struct _bind_value_category<Type &> : _value<Type &, _value_category::_lvalue>
+		struct _make_value<Type &> : _value<Type &, _value_category::_lvalue>
 		{
 		};
 
 		template <class Type>
-		struct _bind_value_category<_lvalue_binder<Type>> : _value<Type, _value_category::_lvalue>
+		struct _make_value<_lvalue_wrapper<Type>> : _value<Type, _value_category::_lvalue>
 		{
 		};
 
 		template <class Type>
-		struct _bind_value_category<_lvalue_binder<Type> &> : _value<Type, _value_category::_lvalue>
+		struct _make_value<_lvalue_wrapper<Type> &> : _value<Type, _value_category::_lvalue>
 		{
 		};
 
 		template <class Type>
-		struct _bind_value_category<_xvalue_binder<Type>> : _value<Type &&, _value_category::_xvalue>
+		struct _make_value<_xvalue_wrapper<Type>> : _value<Type &&, _value_category::_xvalue>
 		{
 		};
 
 		template <class Type>
-		struct _bind_value_category<_xvalue_binder<Type> &> : _value<Type &&, _value_category::_xvalue>
+		struct _make_value<_xvalue_wrapper<Type> &> : _value<Type &&, _value_category::_xvalue>
 		{
 		};
 
@@ -229,42 +229,59 @@ namespace functional
 	//	TODO: implement own bind - ideas:
 	//		- try to provide an interface similar to std::bind so it can be used with other standard types (function, packaged_task, etc...)
 	//		- allow usage of tag types to optimize argument passing within binder object
-	//			- if ArgType is of non-reference type, move/copy it to object, and move/copy it to function
-	//			- if ArgType is of lvalue-reference type, store reference inside object by default, copy it to object if tagged, and pass it to function
-	//			- if ArgType is of rvalue-reference type, move it to object by default, store reference inside object if tagged, and move it to function
+	//			- if ArgType is a prvalue, move/copy it to object, and move/copy it to function
+	//			- if ArgType is a lvalue, store reference inside object by default, copy it to object if tagged, and pass it to function
+	//			- if ArgType is an xvalue, move it to object by default, store reference inside object if tagged, and move it to function
 	//		- use internal block to store arguments
 	//		- provide semantics for nested/curried bind calls
 	//		- provide better defined semantics for std::placeholders
 	//		- provide re-bind/re-invoke semantics
 
-		// _lvalue_binder
+		// _lvalue_wrapper
 
 	template <class Type>
-	class _lvalue_binder final : public _implementation::_value_category_binder<Type>
+	class _lvalue_wrapper final : public _implementation::_value_category_wrapper<Type>
 	{
 	public:
-		_lvalue_binder(Type & object) noexcept
-			: _implementation::_value_category_binder<Type>(object)
+		_lvalue_wrapper(Type & object) noexcept
+			: _implementation::_value_category_wrapper<Type>(object)
 		{
 		}
 	};
 
-		// _xvalue_binder
+		// _xvalue_wrapper
 
 	template <class Type>
-	class _xvalue_binder final : public _implementation::_value_category_binder<Type>
+	class _xvalue_wrapper final : public _implementation::_value_category_wrapper<Type>
 	{
 	public:
-		_xvalue_binder(Type & object) noexcept
-			: _implementation::_value_category_binder<Type>(object)
+		_xvalue_wrapper(Type & object) noexcept
+			: _implementation::_value_category_wrapper<Type>(object)
 		{
 		}
 	};
 
-	template <class FuncType, class ... ValTypes>
+	class _binder_internal
+	{
+
+	};
+
+	template <class FuncType, class ... ArgTypes>
+	class _binder_internal_argument : public _binder_internal_argument<ArgTypes ...>
+	{
+		
+	};
+
+	template <class FuncType, class ... ArgTypes>
+	class _binder_internal_function : public _binder_internal_argument<ArgTypes ...>
+	{
+		
+	};
+
+	template <class RetType, class ... ValTypes>
 	class _binder
 	{
-		using signature = meta::function_signature<FuncType>;
+	/*	using signature = meta::function_signature<FuncType>;
 		using function_type =
 			meta::make_function_signature<
 				typename signature::return_type, 
@@ -279,51 +296,58 @@ namespace functional
 					>
 				>, 
 				meta::pack<>
-			>; // TODO permutate arguments (chance for better defined semantics)
+			>; */
+
 	public:
-		template <class ... ArgTypes>
+		template <class FuncType, class ... ArgTypes>
 		_binder(FuncType && func, ArgTypes && ... args)
-			: _function(std::forward<FuncType>(func))
 		{
 			func, void();
 			((args, void()), ...);
 		}
 
-		FuncType _function;
+		template <class ... ParamTypes>
+		RetType operator()(ParamTypes && ... params)
+		{
+			((params, void()), ...);
+			return RetType(); // TODO remove this
+		}
+
+		std::shared_ptr<_binder_internal> _binder_ptr;
 	};
 
 	template <class Type>
-	_lvalue_binder<Type> bind_copy(Type & object)
+	_lvalue_wrapper<Type> wrap_copy(Type & object)
 	{
-		return _lvalue_binder<Type>(object);
+		return _lvalue_wrapper<Type>(object);
 	}
 
 	template <class Type>
-	_lvalue_binder<Type> & bind_copy(_lvalue_binder<Type> & object)
+	_lvalue_wrapper<Type> & wrap_copy(_lvalue_wrapper<Type> & object)
 	{
 		return object;
 	}
 
 	template <class Type>
-	_lvalue_binder<Type> bind_copy(_lvalue_binder<Type> && object)
+	_lvalue_wrapper<Type> wrap_copy(_lvalue_wrapper<Type> && object)
 	{
 		return std::move(object);
 	}
 
 	template <class Type>
-	_xvalue_binder<Type> bind_move(Type & object)
+	_xvalue_wrapper<Type> wrap_move(Type & object)
 	{
-		return _xvalue_binder<Type>(object);
+		return _xvalue_wrapper<Type>(object);
 	}
 
 	template <class Type>
-	_xvalue_binder<Type> & bind_move(_xvalue_binder<Type> & object)
+	_xvalue_wrapper<Type> & wrap_move(_xvalue_wrapper<Type> & object)
 	{
 		return object;
 	}
 
 	template <class Type>
-	_xvalue_binder<Type> bind_move(_xvalue_binder<Type> && object)
+	_xvalue_wrapper<Type> wrap_move(_xvalue_wrapper<Type> && object)
 	{
 		return std::move(object);
 	}
@@ -333,8 +357,8 @@ namespace functional
 	{
 		func, void();
 		((args, void()), ...);
-	//	static_assert(_implementation::_is_invocable<FuncType, typename _implementation::_bind_value_category<ArgTypes>::type ...>::value, ""); // TODO enable this and create error message
-		return _binder<FuncType, _implementation::_bind_value_category<ArgTypes> ...>(std::forward<FuncType>(func), std::forward<typename _implementation::_bind_value_category<ArgTypes>::type>(args) ...);
+	//	static_assert(_implementation::_is_invocable<FuncType, typename _implementation::_make_value<ArgTypes>::type ...>::value, ""); // TODO enable this and create error message
+		return _binder<typename meta::function_signature<FuncType>::return_type, _implementation::_make_value<ArgTypes> ...>(std::forward<FuncType>(func), std::forward<typename _implementation::_make_value<ArgTypes>::type>(args) ...);
 	//	return 0;
 	}
 
@@ -388,6 +412,14 @@ namespace functional
 		return std::bind(func, obj, stdx::functional::forward<ArgTypes>(args) ...);
 	}
 }
+}
+
+namespace std
+{
+	template <class RetType, class ... ValTypes>
+	struct is_bind_expression<stdx::functional::_binder<RetType, ValTypes ...>> : std::true_type
+	{
+	};
 }
 
 #endif
