@@ -48,9 +48,6 @@ namespace event
 	template <class Type>
 	class _event_result final
 	{
-		static_assert(!(std::is_array_v<Type> || std::is_rvalue_reference_v<Type>),
-					  "'stdx::event::_event_result<Type>': 'Type' must be of non-array, non-rvalue-reference type");
-
 		class _any_type
 		{
 		public:
@@ -66,7 +63,7 @@ namespace event
 				std::is_void_v<Type>, 
 				_any_type, 
 				std::conditional_t<
-					std::is_lvalue_reference_v<Type>, 
+					std::is_reference_v<Type>, 
 					std::reference_wrapper<std::remove_reference_t<Type>>, 
 					Type
 				>
@@ -90,6 +87,7 @@ namespace event
 
 		};
 
+		static constexpr std::size_t _empty_index = 0;
 		static constexpr std::size_t _value_index = 1;
 		static constexpr std::size_t _exception_index = 2;
 
@@ -98,11 +96,19 @@ namespace event
 
 		auto get_value() const -> Type
 		{
-			return Type(std::get<_value_index>(_result));
+			_value_type value(std::get<_value_index>(_result));
+
+			_result.emplace<_empty_index>();
+
+			return Type(value);
 		}
 		auto get_exception() const -> std::exception_ptr
 		{
-			return std::get<_exception_index>(_result);
+			_exception_type exception(std::get<_exception_index>(_result));
+
+			_result.emplace<_empty_index>();
+
+			return exception;
 		}
 		auto get_type() const noexcept -> _event_result_type
 		{
@@ -257,7 +263,7 @@ namespace event
 	private:
 		auto _this() const noexcept -> _event_handler_base const *
 		{
-			// We need to register each _event_handler_base through its 'this' pointer, because it will be different from the derived class one
+			// We need to register each _event_handler_base through its 'this' pointer, because it will be different from the derived class one (due to virtual inheritance)
 			return this;
 		}
 		void _bind(_event_dispatcher_base * dispatcher) const
@@ -270,7 +276,7 @@ namespace event
 		}
 		void _unbind() const noexcept
 		{
-			for (auto const dispatcher : _dispatcher_set)
+			for (auto const & dispatcher : _dispatcher_set)
 			{
 				dispatcher->_unbind(this);
 			}
@@ -325,6 +331,7 @@ namespace event
 					if constexpr (std::is_void_v<result_type>)
 					{
 						std::invoke(_function, _object, std::forward<ParamTypes>(params) ...);
+						_promise.set_value(0);
 					}
 					else
 					{
@@ -390,15 +397,24 @@ namespace event
 
 			_handler_map.clear();
 		}
-		bool is_bound(_event_handler_base const * handler) const noexcept
+		bool is_bound(_event_handler_base const * handler) noexcept
 		{
 			return _handler_map.count(handler);
 		}
 		void broadcast(ParamTypes && ... params) noexcept
 		{
-			for (auto const & handler : _handler_map)
+			if (!_is_broadcasting)
 			{
-				handler.second->invoke(std::forward<ParamTypes>(params) ...);
+				_is_broadcasting = true;
+
+				auto handler_map_image = _handler_map;
+
+				for (auto const & handler : handler_map_image)
+				{
+					handler.second->invoke(std::forward<ParamTypes>(params) ...);
+				}
+
+				_is_broadcasting = false;
 			}
 		}
 
@@ -408,7 +424,8 @@ namespace event
 			return _handler_map.erase(handler);
 		}
 
-		std::unordered_map<_event_handler_base const *, std::unique_ptr<_event_handler_data_base>> _handler_map;
+		std::unordered_map<_event_handler_base const *, std::shared_ptr<_event_handler_data_base>> _handler_map;
+		bool _is_broadcasting = false;
 
 	};
 }
