@@ -5,6 +5,64 @@
 
 #include "meta.hpp"
 
+/* Informative error messages
+template <class T>
+struct AlwaysFalse
+{
+	static constexpr bool Value = false;
+};
+
+template <class T, class U = T>
+struct ILikeIntsAndBools_WhyFail // Need at least one dependent name throughout the chain (aka no explicit / always partial specializations)
+{
+	static_assert(AlwaysFalse<U>::Value, "'You didn't give me an int or a bool'");
+	static constexpr bool Value = false;
+};
+
+template <class U>
+struct ILikeIntsAndBools_WhyFail<int, U>
+{
+	static_assert(AlwaysFalse<U>::Value, "'You only gave me an int'");
+	static constexpr bool Value = false;
+};
+
+template <class U>
+struct ILikeIntsAndBools_WhyFail<bool, U>
+{
+	static_assert(AlwaysFalse<U>::Value, "'You only gave me a bool'");
+	static constexpr bool Value = false;
+};
+
+template <class T, class U = T>
+struct ILikeIntsAndBools
+{
+	static constexpr bool HasInt = ILikeIntsAndBools_WhyFail<U>::Value;
+	static constexpr bool HasBool = ILikeIntsAndBools_WhyFail<U>::Value;
+};
+
+template <class U>
+struct ILikeIntsAndBools<int, U>
+{
+	static constexpr bool HasInt = true;
+	static constexpr bool HasBool = ILikeIntsAndBools_WhyFail<int, U>::Value;
+};
+
+template <class U>
+struct ILikeIntsAndBools<bool, U>
+{
+	static constexpr bool HasInt = ILikeIntsAndBools_WhyFail<bool, U>::Value;
+	static constexpr bool HasBool = true;
+};
+
+int main()
+{
+	using IHaveInt = ILikeIntsAndBools<int>;
+	static_assert(IHaveInt::HasInt, "'You should give it an int'");
+//	static_assert(IHaveInt::HasBool, "'You should give it a bool'"); // Will show both assertions
+	return 0;
+}
+*/
+
 namespace stdx
 {
 #if !(defined(STDX_NAMESPACE_FUNCTIONAL) || defined(STDX_NAMESPACE_ALL))
@@ -39,27 +97,25 @@ namespace functional
 			// _value_category_wrapper
 
 		template <class Type>
-		class _value_category_wrapper
+		class _value_category_wrapper // TODO possibly rename this
 		{
 		public:
 			_value_category_wrapper(Type & object) noexcept
-				: _object(object)
+				: _object(std::addressof(object))
 			{
 			}
-			_value_category_wrapper(_value_category_wrapper const &) = delete;
-			_value_category_wrapper(_value_category_wrapper && other) noexcept
-				: _object(other._object)
-			{
-			}
-			_value_category_wrapper & operator=(_value_category_wrapper) = delete;
+			_value_category_wrapper(_value_category_wrapper const &) = default;
+			_value_category_wrapper(_value_category_wrapper &&) noexcept = default;
+			_value_category_wrapper & operator=(_value_category_wrapper const &) = default;
+			_value_category_wrapper & operator=(_value_category_wrapper &&) noexcept = default;
 
 			operator Type &()
 			{
-				return _object;
+				return *_object;
 			}
 
 		private:
-			Type & _object;
+			Type * _object;
 
 		};
 
@@ -95,7 +151,7 @@ namespace functional
 		{
 		};
 
-			// _is_bindable
+			// _is_bindable // TODO review this
 
 		template <class Param1Type>
 		void _function_one_param(Param1Type);
@@ -228,11 +284,8 @@ namespace functional
 
 	//	TODO: implement own bind - ideas:
 	//		- try to provide an interface similar to std::bind so it can be used with other standard types (function, packaged_task, etc...)
-	//		- allow usage of tag types to optimize argument passing within binder object
-	//			- if ArgType is a prvalue, move/copy it to object, and move/copy it to function
-	//			- if ArgType is a lvalue, store reference inside object by default, copy it to object if tagged, and pass it to function
-	//			- if ArgType is an xvalue, move it to object by default, store reference inside object if tagged, and move it to function
-	//		- use internal block to store arguments
+	//		- allow usage of tag types to change argument passing within binder object (see functional_bind_semantics.txt)
+	//		- use internal block to store arguments (store arguments with special type that abstracts reference or actual object, as well as function call semantics)
 	//		- provide semantics for nested/curried bind calls
 	//		- provide better defined semantics for std::placeholders
 	//		- provide re-bind/re-invoke semantics
@@ -278,7 +331,9 @@ namespace functional
 		
 	};
 
-	template <class RetType, class ... ValTypes>
+	// TODO
+//	template <class InvokeType, class FuncType, class ArgTypes ...> // this may be an non-instantiable class template type
+	template <class RetType, class ... ValTypes> // TODO old idea, remove it
 	class _binder
 	{
 	/*	using signature = meta::function_signature<FuncType>;
@@ -317,8 +372,9 @@ namespace functional
 	};
 
 	template <class Type>
-	_lvalue_wrapper<Type> wrap_copy(Type & object)
+	_lvalue_wrapper<Type> wrap_copy(Type & object) // TODO unsure if final name (alternative: bind_copy)
 	{
+	//	static_assert(!is_value_category_wrapper);
 		return _lvalue_wrapper<Type>(object);
 	}
 
@@ -329,14 +385,9 @@ namespace functional
 	}
 
 	template <class Type>
-	_lvalue_wrapper<Type> wrap_copy(_lvalue_wrapper<Type> && object)
+	_xvalue_wrapper<Type> wrap_move(Type & object) // TODO unsure if final name (alternative: bind_move)
 	{
-		return std::move(object);
-	}
-
-	template <class Type>
-	_xvalue_wrapper<Type> wrap_move(Type & object)
-	{
+	//	static_assert(!is_value_category_wrapper);
 		return _xvalue_wrapper<Type>(object);
 	}
 
@@ -346,17 +397,18 @@ namespace functional
 		return object;
 	}
 
-	template <class Type>
-	_xvalue_wrapper<Type> wrap_move(_xvalue_wrapper<Type> && object)
-	{
-		return std::move(object);
-	}
-
 	template <class FuncType, class ... ArgTypes>
 	auto xbind(FuncType && func, ArgTypes && ... args) // TODO temporary name, replace with "bind" once done
 	{
 		func, void();
 		((args, void()), ...);
+		// TODO 
+	//	using semantics = _implementation::_bind_semantics<FuncType, ArgTypes...>; // This type will have a big part of the metaprogramming implementation
+	//	static_assert(semantics::is_invocable, "TODO"); // Check example above for how to produce 'Informative error messages'
+	//	static_assert(semantics::is_bindable, "TODO");
+	//	return _binder<semantics::invocation_semantics>(_implementation::_bind_function<semantics::function_semantics>(std::forward<FuncType>(func)), _implementation::_bind_argument<semantics::argument_semantics>(std::forward<ArgTypes>(args)) ...);
+
+		// TODO old idea, remove it
 	//	static_assert(_implementation::_is_invocable<FuncType, typename _implementation::_make_value<ArgTypes>::type ...>::value, ""); // TODO enable this and create error message
 		return _binder<typename meta::function_signature<FuncType>::return_type, _implementation::_make_value<ArgTypes> ...>(std::forward<FuncType>(func), std::forward<typename _implementation::_make_value<ArgTypes>::type>(args) ...);
 	//	return 0;
@@ -365,6 +417,7 @@ namespace functional
 	///////////////////////////////////////////////////////////////////////////////////////////////
 
 	template <class Type>
+//	[[deprecated("Will be superseded by stdx::functional::xbind")]]
 	auto forward(std::remove_reference_t<Type> & value) // Forwarding functions used with std::bind to pass stored arguments to the stored function with the correct semantics
 	{
 		if constexpr (std::is_placeholder_v<std::remove_cv_t<std::remove_reference_t<Type>>>)
@@ -381,6 +434,7 @@ namespace functional
 		}
 	}
 	template <class Type>
+//	[[deprecated("Will be superseded by stdx::functional::xbind")]]
 	auto forward(std::remove_reference_t<Type> && value)
 	{
 		if constexpr (std::is_placeholder_v<std::remove_cv_t<std::remove_reference_t<Type>>>)

@@ -1,0 +1,21 @@
+			+ lvalue 	-> ref to store (def) / copy to store (tag); copy to func / move or copy to func
+			+ xvalue 	-> ref to store; move to func
+			+ prvalue 	-> move or copy to store; move or copy to func
+const		+ lvalue 	-> same as above
+const		+ xvalue 	-> same as above
+const		+ prvalue 	-> same as above
+&			+ lvalue 	-> ref to store (def) / copy to store (tag); ref to func / ref to func; error if const
+&			+ xvalue 	-> error
+&			+ prvalue 	-> error
+const &		+ lvalue 	-> ref to store (def) / copy to store (tag); ref to func / ref to func
+const &		+ xvalue 	-> ref to store; ref to func (see: https://stackoverflow.com/questions/40909095/why-both-const-nonconst-lvalue-references-bind-to-a-rvalue-reference)
+const &		+ prvalue 	-> move or copy to store; ref to func
+&&			+ lvalue 	-> error
+&&			+ xvalue 	-> ref to store; ref to func; error if const
+&&			+ prvalue 	-> move or copy to store; ref to func (tip: attempt to discard cv qualifiers when binding and cast with std::move)
+const &&	+ lvalue 	-> error
+const &&	+ xvalue 	-> ref to stroe; ref to func
+const &&	+ prvalue 	-> move or copy to store; ref to func
+
+NOTE: lvalues can be tagged for copying to store (stdx::bind_copy)
+NOTE: lvalues can be tagged to be moved to func (stdx::bind_move); we refer to these above as xvalues
