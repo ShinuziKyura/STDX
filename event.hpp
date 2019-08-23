@@ -370,7 +370,7 @@ namespace event
 						  "'stdx::event::_event_dispatcher<ParamTypes ...>::bind(ObjType*, FuncType std::decay_t<ObjType>::*)': "
 						  "'ObjType' must derive from 'stdx::event::_event_handler_base'");
 
-			auto handler = std::make_unique<_event_handler_data<ObjType, FuncType>>(obj, func);
+			auto handler = std::make_shared<_event_handler_data<ObjType, FuncType>>(obj, func);
 
 			auto future = handler->get_future();
 
@@ -407,6 +407,7 @@ namespace event
 			{
 				_is_broadcasting = true;
 
+				// Allows binding and unbinding to dispatcher inside handlers without affecting this invocation
 				auto handler_map_image = _handler_map;
 
 				for (auto const & handler : handler_map_image)

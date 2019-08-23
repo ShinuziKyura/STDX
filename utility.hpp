@@ -15,7 +15,8 @@
 #define STDX_POLYMORPHIC_CLASS protected virtual ::stdx::_polymorphic
 
 // Function that returns true on first invocation at a particular callsite, and false on next invocations at the same callsite; invocation is thread-safe and only the first invocation among multiple threads will return true (threads will not synchronize)
-#define STDX_ONCE() ::stdx::_once([]{})
+#define STDX_EXECUTE_ONCE() ::stdx::_execute_once([]{})
+#define STDX_EXECUTE_SCOPE_ONCE if (!STDX_EXECUTE_ONCE()); else
 
 #define STDX_UNUSED_PARAM(arg) do{ (arg, void()); }while(0)
 #define STDX_UNUSED_PARAM_PACK(args) do{ ((args, void()), ...); }while(0)
@@ -43,7 +44,8 @@ namespace stdx
 	};
 
 	template <class Type>
-	[[nodiscard]] bool _once(Type const &) noexcept
+	[[nodiscard]] 
+	bool _execute_once(Type const &) noexcept
 	{
 		static std::atomic_flag flag = ATOMIC_FLAG_INIT;
 		return !flag.test_and_set(std::memory_order_relaxed);
