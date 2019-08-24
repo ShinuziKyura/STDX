@@ -1,6 +1,8 @@
 #ifndef STDX_header_CORE
 #define STDX_header_CORE
 
+// TODO rebuild file structure and project include search directories
+
 #define STDX_implementation_ENQUOTE(token) #token
 #define	STDX_ENQUOTE(token) STDX_implementation_ENQUOTE(token)
 

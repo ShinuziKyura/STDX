@@ -18,6 +18,9 @@
 #define STDX_EXECUTE_ONCE() ::stdx::_execute_once([]{})
 #define STDX_EXECUTE_SCOPE_ONCE if (!STDX_EXECUTE_ONCE()); else
 
+#define STDX_ON_SCOPE_EXIT STDX_MACRO_FUNCTION_0_ARY(ON_SCOPE_EXIT)
+#define STDX_implementation_ON_SCOPE_EXIT(context) ::stdx::_on_scope_exit STDX_MACRO_VARIABLE(on_scope_exit, context) = [&] () -> void
+
 #define STDX_UNUSED_PARAM(arg) do{ (arg, void()); }while(0)
 #define STDX_UNUSED_PARAM_PACK(args) do{ ((args, void()), ...); }while(0)
 
@@ -28,6 +31,24 @@ namespace stdx
 	protected:
 		_polymorphic() noexcept = default;
 		virtual ~_polymorphic() noexcept = default;
+
+	};
+
+	template <class FuncType>
+	class _on_scope_exit
+	{
+	public:
+		_on_scope_exit(FuncType && func)
+			: _func(func)
+		{
+		}
+		~_on_scope_exit()
+		{
+			_func();
+		}
+
+	private:
+		FuncType _func;
 
 	};
 
