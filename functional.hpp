@@ -70,28 +70,22 @@ inline
 #endif
 namespace functional
 {
-	template <class>
-	class _lvalue_wrapper;
-
-	template <class>
-	class _xvalue_wrapper;
-
 	namespace _implementation
 	{
 		namespace _value_category
 		{
-			struct _prvalue;
 			struct _lvalue;
 			struct _xvalue;
+			struct _prvalue;
 		}
 
-			// _value
+			// _expression
 
 		template <class Type, class Category>
-		struct _value
+		struct _expression // TODO unsure if necessary
 		{
 			using type = Type;
-			using category = Category;
+			using value_category = Category;
 		};
 
 			// _value_category_wrapper
@@ -119,42 +113,13 @@ namespace functional
 
 		};
 
-			// _make_value // TODO rethink this method, we may only need the type component
-
-		template <class Type>
-		struct _make_value : _value<Type, _value_category::_prvalue>
-		{
-		};
-
-		template <class Type>
-		struct _make_value<Type &> : _value<Type &, _value_category::_lvalue>
-		{
-		};
-
-		template <class Type>
-		struct _make_value<_lvalue_wrapper<Type>> : _value<Type, _value_category::_lvalue>
-		{
-		};
-
-		template <class Type>
-		struct _make_value<_lvalue_wrapper<Type> &> : _value<Type, _value_category::_lvalue>
-		{
-		};
-
-		template <class Type>
-		struct _make_value<_xvalue_wrapper<Type>> : _value<Type &&, _value_category::_xvalue>
-		{
-		};
-
-		template <class Type>
-		struct _make_value<_xvalue_wrapper<Type> &> : _value<Type &&, _value_category::_xvalue>
-		{
-		};
-
 			// _is_bindable // TODO review this
 
-		template <class Param1Type>
-		void _function_one_param(Param1Type);
+		template <class ParamType>
+		void _bindable_test_param(ParamType) noexcept;
+
+		template <class ArgType>
+		std::conditional_t<std::is_destructible_v<ArgType>, ArgType, std::add_rvalue_reference_t<ArgType>> _bindable_test_arg() noexcept;
 		
 		template <class ParamType, class ArgType, class = void>
 		struct _is_bindable : std::false_type
@@ -167,7 +132,7 @@ namespace functional
 		};
 
 		template <class ParamType, class ArgType>
-		struct _is_bindable<ParamType, ArgType, std::void_t<decltype(_function_one_param<ParamType>(ArgType()))>> : std::true_type
+		struct _is_bindable<ParamType, ArgType, std::void_t<decltype(_bindable_test_param<ParamType>(_bindable_test_arg<ArgType>()))>> : std::true_type
 		{
 		};
 
@@ -176,110 +141,177 @@ namespace functional
 		{
 		};
 
-			// _is_invocable_function_ptr_or_ref
+			// _invoke_semantics_class_object
 
-		template <class FuncType, class = void>
-		struct _is_invocable_function_ptr_or_ref_base : std::false_type
+		template <class, class T = void>
+		struct _invoke_semantics_class_object
 		{
-			using parameter_types = meta::_implementation::_undefined;
-		};
+			static_assert(meta::always_false<T>, "'stdx::bind(FuncType, ArgTypes ...)': "
+												 "When FuncType is a reference or pointer to class object or a pointer to member class object, "
+												 "it must have an accessible non-overloaded operator().");
 
-		template <class FuncType>
-		struct _is_invocable_function_ptr_or_ref_base<FuncType, std::enable_if_t<std::is_function_v<FuncType>>> : std::true_type
-		{
-			using parameter_types = typename meta::function_signature<FuncType>::parameter_types;
-		};
+			using _function_signature = void;
 
-		template <class FuncType>
-		struct _is_invocable_function_ptr_or_ref : _is_invocable_function_ptr_or_ref_base<std::remove_pointer_t<std::decay_t<FuncType>>>
-		{
-		};
-
-			// _is_invocable_member_function_or_member_object_ptr
-
-		template <class, class = void>
-		struct _is_invocable_member_function_or_member_object_ptr_base : std::false_type
-		{
-			using parameter_types = meta::_implementation::_undefined;
+			static constexpr bool _is_invocable = false;
 		};
 
 		template <class ObjType>
-		struct _is_invocable_member_function_or_member_object_ptr_base<ObjType, std::enable_if_t<std::is_member_object_pointer_v<ObjType>>> : std::true_type
+		struct _invoke_semantics_class_object<ObjType, std::void_t<decltype(&ObjType::operator())>>
 		{
-			using parameter_types = meta::pack<>;
+			using _function_signature = meta::function_signature<decltype(&ObjType::operator())>;
+
+			static constexpr bool _is_invocable = true;
+		};
+
+			// _invoke_semantics
+
+		template <class, class T = void>
+		struct _invoke_semantics
+		{
+			static_assert(meta::always_false<T>, "'stdx::bind(FuncType, ArgTypes ...)': "
+												 "FuncType must be either "
+												 "a reference or pointer to function, "
+												 "a pointer to member function, "
+												 "a reference or pointer to class object with an accessible non-overloaded operator(), "
+												 "or a pointer to member class object with an accessible non-overloaded operator().");
+
+			using object_type = void;
+
+			using function_signature = void;
+
+			static constexpr bool is_invocable = false;
 		};
 
 		template <class FuncType>
-		struct _is_invocable_member_function_or_member_object_ptr_base<FuncType, std::enable_if_t<std::is_member_function_pointer_v<FuncType>>> : std::true_type
+		struct _invoke_semantics<FuncType, std::enable_if_t<std::is_function_v<std::remove_reference_t<FuncType>>>>
 		{
-			using parameter_types = typename meta::function_signature<FuncType>::parameter_types;
+			using object_type = void; // Doesn't need object
+
+			using function_signature = meta::function_signature<std::remove_reference_t<FuncType>>;
+
+			static constexpr bool is_invocable = true;
 		};
 
-		template <class, class>
-		struct _is_invocable_member_function_or_member_object_ptr : std::false_type
+		template <class FuncType>
+		struct _invoke_semantics<FuncType, std::enable_if_t<std::is_class_v<std::remove_reference_t<FuncType>>>>
 		{
-			using parameter_types = meta::_implementation::_undefined;
+			using object_type = void;
+
+			using function_signature = typename _invoke_semantics_class_object<std::remove_reference_t<FuncType>>::_function_signature;
+
+			static constexpr bool is_invocable = _invoke_semantics_class_object<std::remove_reference_t<FuncType>>::_is_invocable;
 		};
 
-		template <class FuncObjType, class ClassType>
-		struct _is_invocable_member_function_or_member_object_ptr<FuncObjType std::remove_pointer_t<std::decay_t<ClassType>>::*, ClassType> : _is_invocable_member_function_or_member_object_ptr_base<FuncObjType std::remove_pointer_t<std::decay_t<ClassType>>::*>
+		template <class FuncType>
+		struct _invoke_semantics<FuncType *, std::enable_if_t<std::is_function_v<FuncType>>>
 		{
+			using object_type = void;
+
+			using function_signature = meta::function_signature<FuncType>;
+
+			static constexpr bool is_invocable = true;
 		};
 
-			// _is_invocable_function_object
-
-		template <class, class = void>
-		struct _is_invocable_function_object_base : std::false_type
+		template <class FuncType>
+		struct _invoke_semantics<FuncType *, std::enable_if_t<std::is_class_v<FuncType>>>
 		{
-			using parameter_types = meta::_implementation::_undefined;
+			using object_type = void;
+
+			using function_signature = typename _invoke_semantics_class_object<FuncType>::_function_signature;
+
+			static constexpr bool is_invocable = _invoke_semantics_class_object<FuncType>::_is_invocable;
 		};
 
-		template <class ObjType>
-		struct _is_invocable_function_object_base<ObjType, std::void_t<std::enable_if_t<std::is_object_v<ObjType>>, decltype(&ObjType::operator())>> : std::true_type
+		template <class FuncType, class ObjType>
+		struct _invoke_semantics<FuncType ObjType::*, std::enable_if_t<std::is_function_v<std::remove_reference_t<FuncType>>>>
 		{
-			using parameter_types = typename meta::function_signature<decltype(&ObjType::operator())>::parameter_types;
+			using object_type = ObjType; // Needs object (tip: static_assert(std::is_base_of_v<invoke_semantics::object_type, FirstArgType>))
+
+			using function_signature = meta::function_signature<std::remove_reference_t<FuncType>>;
+
+			static constexpr bool is_invocable = true;
 		};
 
-		template <class ObjType>
-		struct _is_invocable_function_object : _is_invocable_function_object_base<std::remove_pointer_t<std::decay_t<ObjType>>>
+		template <class FuncType, class ObjType>
+		struct _invoke_semantics<FuncType ObjType::*, std::enable_if_t<std::is_class_v<std::remove_reference_t<FuncType>>>>
 		{
+			using object_type = ObjType;
+
+			using function_signature = typename _invoke_semantics_class_object<std::remove_reference_t<FuncType>>::_function_signature;
+
+			static constexpr bool is_invocable = _invoke_semantics_class_object<std::remove_reference_t<FuncType>>::_is_invocable;
 		};
 
-			// _is_invocable
+		template <class FuncType, class ObjType>
+		struct _invoke_semantics<FuncType * ObjType::*, std::enable_if_t<std::is_function_v<FuncType>>>
+		{
+			using object_type = ObjType;
+
+			using function_signature = meta::function_signature<FuncType>;
+
+			static constexpr bool is_invocable = true;
+		};
+
+		template <class FuncType, class ObjType>
+		struct _invoke_semantics<FuncType * ObjType::*, std::enable_if_t<std::is_class_v<FuncType>>>
+		{
+			using object_type = ObjType;
+
+			using function_signature = typename _invoke_semantics_class_object<FuncType>::_function_signature;
+
+			static constexpr bool is_invocable = _invoke_semantics_class_object<FuncType>::_is_invocable;
+		};
+
+/*		// TODO test invoke_semantics with these cases
+		void func(){}
+
+		struct Obj
+		{
+			void operator()(){}
+		};
+
+		struct Test
+		{
+			void memfunc(){};
+
+			void (Test::* mf1)() = &Test::memfunc;
+
+			void (& f1)() = func;
+			void (&& f2)() = func;
+			void (* f3)() = func;
+
+			Obj o1;
+			Obj& o2;
+			Obj&& o3;
+			Obj* o4;
+		};
+
+		int main()
+		{
+			void (& f1)() = func;
+			void (&& f2)() = func;
+			void (* f3)() = func;
+
+			Obj o1;
+			Obj& o2;
+			Obj&& o3;
+			Obj* o4;
+			
+			return 0;
+		}
+*/
+
+		// _bind_semantics
 
 		template <class FuncType, class ... ArgTypes>
-		struct _is_invocable_base
+		struct _bind_semantics
 		{
-			using is_invocable_function_ptr_or_ref = _is_invocable_function_ptr_or_ref<FuncType>;
-			using is_invocable_member_function_or_member_object_ptr = _is_invocable_member_function_or_member_object_ptr<FuncType, typename meta::pack<ArgTypes ...>::template push<void>::first>;
-			using is_invocable_function_object = _is_invocable_function_object<FuncType>;
+			using invoke_semantics = _invoke_semantics<FuncType>;
 
-			using parameter_types = 
-				typename meta::type_if<is_invocable_function_ptr_or_ref::value>::template then<
-					typename is_invocable_function_ptr_or_ref::parameter_types
-				>::template else_if<is_invocable_member_function_or_member_object_ptr::value>::template then<
-					typename is_invocable_member_function_or_member_object_ptr::parameter_types
-				>::template else_if<is_invocable_function_object::value>::template then<
-					typename is_invocable_function_object::parameter_types
-				>::template else_then<
-					meta::_implementation::_undefined
-				>::end_if;
-			using argument_types =
-				typename meta::type_if<is_invocable_function_ptr_or_ref::value || is_invocable_function_object::value>::template then<
-					meta::pack<ArgTypes ...>
-				>::template else_if<is_invocable_member_function_or_member_object_ptr::value>::template then<
-					meta::pack<ArgTypes ...>::template pop<1>
-				>::template else_then<
-					meta::_implementation::_undefined
-				>::end_if;
-
-			using _value_type = typename _is_bindable<parameter_types, argument_types>::value_type;
+			static constexpr bool is_invocable = invoke_semantics::is_invocable;  // TODO WIP
+//			static constexpr bool is_bindable = 
 		};
 
-		template <class FuncType, class ... ArgTypes>
-		struct _is_invocable : _is_invocable_base<FuncType, ArgTypes ...>::_value_type
-		{	
-		};
 	}
 
 	//	TODO: implement own bind - ideas:
@@ -290,96 +322,55 @@ namespace functional
 	//		- provide better defined semantics for std::placeholders
 	//		- provide re-bind/re-invoke semantics
 
-		// _lvalue_wrapper
+		// _binder
 
-	template <class Type>
-	class _lvalue_wrapper final : public _implementation::_value_category_wrapper<Type>
-	{
-	public:
-		_lvalue_wrapper(Type & object) noexcept
-			: _implementation::_value_category_wrapper<Type>(object)
-		{
-		}
-	};
-
-		// _xvalue_wrapper
-
-	template <class Type>
-	class _xvalue_wrapper final : public _implementation::_value_category_wrapper<Type>
-	{
-	public:
-		_xvalue_wrapper(Type & object) noexcept
-			: _implementation::_value_category_wrapper<Type>(object)
-		{
-		}
-	};
-
-	class _binder_internal
-	{
-
-	};
-
-	template <class FuncType, class ... ArgTypes>
-	class _binder_internal_argument : public _binder_internal_argument<ArgTypes ...>
-	{
-		
-	};
-
-	template <class FuncType, class ... ArgTypes>
-	class _binder_internal_function : public _binder_internal_argument<ArgTypes ...>
-	{
-		
-	};
-
-	// TODO
-//	template <class InvokeType, class FuncType, class ArgTypes ...> // this may be an non-instantiable class template type
-	template <class RetType, class ... ValTypes> // TODO old idea, remove it
+	// TODO this will hold most of the implementation
+	template <class InvokeType, class FuncType, class ... ArgTypes> // this may be an non-instantiable class template type
 	class _binder
 	{
-	/*	using signature = meta::function_signature<FuncType>;
-		using function_type =
-			meta::make_function_signature<
-				typename signature::return_type, 
-				meta::transformed_pack<
-					meta::apply_to_pack_element<meta::type_identity>::last, 
-					meta::constrained_pack<
-						meta::apply_to_pack_element<std::is_placeholder>::first, 
-						meta::transposed_pack<
-							meta::pack<typename ValTypes::type ...>, 
-							typename signature::parameter_types
+		/*	using signature = meta::function_signature<FuncType>;
+			using function_type =
+				meta::make_function_signature<
+					typename signature::return_type,
+					meta::transformed_pack<
+						meta::apply_to_pack_element<meta::type_identity>::last,
+						meta::constrained_pack<
+							meta::apply_to_pack_element<std::is_placeholder>::first,
+							meta::transposed_pack<
+								meta::pack<typename ValTypes::type ...>,
+								typename signature::parameter_types
+							>
 						>
-					>
-				>, 
-				meta::pack<>
-			>; */
-
-	public:
-		template <class FuncType, class ... ArgTypes>
-		_binder(FuncType && func, ArgTypes && ... args)
-		{
-			func, void();
-			((args, void()), ...);
-		}
-
-		template <class ... ParamTypes>
-		RetType operator()(ParamTypes && ... params)
-		{
-			((params, void()), ...);
-			return RetType(); // TODO remove this
-		}
-
-		std::shared_ptr<_binder_internal> _binder_ptr;
+					>,
+					meta::pack<>
+				>; */
 	};
 
-	template <class Type>
-	_lvalue_wrapper<Type> wrap_copy(Type & object) // TODO unsure if final name (alternative: bind_copy)
+	template <class FuncType, class ... ArgTypes>
+	auto xbind(FuncType && func, ArgTypes && ... args) // TODO temporary name, replace with "bind" once done
+	{
+		func, void();
+		((args, void()), ...);
+		// TODO 
+		using semantics = _implementation::_bind_semantics<FuncType, ArgTypes...>; // This type will have a big part of the metaprogramming implementation
+		static_assert(semantics::is_invocable, "TODO is_invocable"); // Check example above for how to produce 'Informative error messages'
+	//	static_assert(semantics::is_bindable, "TODO");
+	//	return _binder<semantics::invoke_semantics>(_implementation::_bind_function<semantics::function_semantics>(std::forward<FuncType>(func)), _implementation::_bind_argument<semantics::argument_semantics>(std::forward<ArgTypes>(args)) ...); // Smth like this
+
+		return 0;
+	}
+
+	// TODO get better names
+
+/*	template <class Type>
+	_prvalue_wrapper<Type> wrap_copy(Type & object) // TODO unsure if final name (alternative: bind_copy)
 	{
 	//	static_assert(!is_value_category_wrapper);
-		return _lvalue_wrapper<Type>(object);
+		return _prvalue_wrapper<Type>(object);
 	}
 
 	template <class Type>
-	_lvalue_wrapper<Type> & wrap_copy(_lvalue_wrapper<Type> & object)
+	_prvalue_wrapper<Type> & wrap_copy(_prvalue_wrapper<Type> & object)
 	{
 		return object;
 	}
@@ -395,24 +386,7 @@ namespace functional
 	_xvalue_wrapper<Type> & wrap_move(_xvalue_wrapper<Type> & object)
 	{
 		return object;
-	}
-
-	template <class FuncType, class ... ArgTypes>
-	auto xbind(FuncType && func, ArgTypes && ... args) // TODO temporary name, replace with "bind" once done
-	{
-		func, void();
-		((args, void()), ...);
-		// TODO 
-	//	using semantics = _implementation::_bind_semantics<FuncType, ArgTypes...>; // This type will have a big part of the metaprogramming implementation
-	//	static_assert(semantics::is_invocable, "TODO"); // Check example above for how to produce 'Informative error messages'
-	//	static_assert(semantics::is_bindable, "TODO");
-	//	return _binder<semantics::invocation_semantics>(_implementation::_bind_function<semantics::function_semantics>(std::forward<FuncType>(func)), _implementation::_bind_argument<semantics::argument_semantics>(std::forward<ArgTypes>(args)) ...);
-
-		// TODO old idea, remove it
-	//	static_assert(_implementation::_is_invocable<FuncType, typename _implementation::_make_value<ArgTypes>::type ...>::value, ""); // TODO enable this and create error message
-		return _binder<typename meta::function_signature<FuncType>::return_type, _implementation::_make_value<ArgTypes> ...>(std::forward<FuncType>(func), std::forward<typename _implementation::_make_value<ArgTypes>::type>(args) ...);
-	//	return 0;
-	}
+	} */
 
 	///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -470,10 +444,11 @@ namespace functional
 
 namespace std
 {
-	template <class RetType, class ... ValTypes>
+	// TODO FIXME once implementation is finished
+/*	template <class RetType, class ... ValTypes>
 	struct is_bind_expression<stdx::functional::_binder<RetType, ValTypes ...>> : std::true_type
 	{
-	};
+	}; */
 }
 
 #endif

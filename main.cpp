@@ -4,5 +4,5 @@ return function()
 
 int main()
 {
-	INVOKE(example_9);
+	INVOKE(example_4);
 }

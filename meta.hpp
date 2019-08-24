@@ -667,6 +667,9 @@ namespace stdx::meta
 		// Boolean checks
 
 	template <class Type>
+	constexpr bool always_false = false;
+
+	template <class Type>
 	struct is_complex : std::false_type
 	{
 	};
@@ -1007,9 +1010,9 @@ namespace stdx::meta
 	};
 
 	template <class FuncType, class ObjType>
-	struct function_signature<FuncType ObjType::*> : _function_signature<FuncType>
+	struct function_signature<FuncType ObjType::*> : _function_signature<std::remove_pointer_t<std::remove_reference_t<FuncType>>>
 	{
-		static_assert(std::is_member_function_pointer_v<FuncType ObjType::*>, ""); // TODO
+		static_assert(std::is_function_v<std::remove_pointer_t<std::remove_reference_t<FuncType>>>, ""); // TODO
 
 		using object_type = ObjType;
 	};
