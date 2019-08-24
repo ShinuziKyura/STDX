@@ -10,7 +10,7 @@
 #include <unordered_set>
 #include <unordered_map>
 
-// Types that are intended to be event handlers must derive from this
+// Event handler classes must derive from this
 #define STDX_EVENT_HANDLER_BASE	public virtual ::stdx::event::_event_handler_base
 
 #define STDX_EVENT_HANDLER_BASE_COPY_CONSTRUCT(object) ::stdx::event::_event_handler_base(object)
@@ -38,11 +38,14 @@ namespace event
 
 	};
 
-	enum class _event_result_type
+	struct _event_result_type
 	{
-		value,
-		exception,
-		empty
+		enum : std::size_t
+		{
+			empty = 0,
+			value = 1,
+			exception = 2,
+		};
 	};
 
 	template <class Type>
@@ -58,13 +61,13 @@ namespace event
 
 		};
 
-		using _value_type = 
+		using _value_type =
 			std::conditional_t<
-				std::is_void_v<Type>, 
-				_any_type, 
+				std::is_void_v<Type>,
+				_any_type,
 				std::conditional_t<
-					std::is_reference_v<Type>, 
-					std::reference_wrapper<std::remove_reference_t<Type>>, 
+					std::is_reference_v<Type>,
+					std::reference_wrapper<std::remove_reference_t<Type>>,
 					Type
 				>
 			>;
@@ -87,49 +90,37 @@ namespace event
 
 		};
 
-		static constexpr std::size_t _empty_index = 0;
-		static constexpr std::size_t _value_index = 1;
-		static constexpr std::size_t _exception_index = 2;
-
 	public:
 		_event_result() noexcept = default;
 
-		auto get_value() const -> Type
+		auto get_value() -> Type
 		{
-			_value_type value(std::get<_value_index>(_result));
+			_value_type value(std::move(std::get<_event_result_type::value>(_result)));
+			
+			_result.template emplace<_event_result_type::empty>();
 
-			_result.emplace<_empty_index>();
-
-			return Type(value);
+			return std::conditional_t<std::is_void_v<Type>, void, Type&&>(value);
 		}
-		auto get_exception() const -> std::exception_ptr
+		auto get_exception() -> std::exception_ptr
 		{
-			_exception_type exception(std::get<_exception_index>(_result));
+			_exception_type exception(std::move(std::get<_event_result_type::exception>(_result)));
 
-			_result.emplace<_empty_index>();
+			_result.template emplace<_event_result_type::empty>();
 
 			return exception;
 		}
-		auto get_type() const noexcept -> _event_result_type
+		auto get_type() const noexcept -> std::size_t
 		{
-			switch (_result.index())
-			{
-				case _value_index:
-					return _event_result_type::value;
-				case _exception_index:
-					return _event_result_type::exception;
-				default:
-					return _event_result_type::empty;
-			}
+			return _result.index();
 		}
 		template <class ValueType>
 		void set_value(ValueType && value)
 		{
-			_result.emplace<_value_index>(std::forward<ValueType>(value));
+			_result.template emplace<_event_result_type::value>(std::forward<ValueType>(value));
 		}
 		void set_exception(std::exception_ptr && exception) noexcept
 		{
-			_result.emplace<_exception_index>(std::move(exception));
+			_result.template emplace<_event_result_type::exception>(std::move(exception));
 		}
 		
 	private:
@@ -307,13 +298,13 @@ namespace event
 
 		};
 
-		template <class ObjType, class FuncType>
+		template <class ObjType, class FuncType, class ClassType>
 		class _event_handler_data : public _event_handler_data_base
 		{
-			using result_type = std::invoke_result_t<FuncType std::decay_t<ObjType>::*, ObjType *, ParamTypes ...>;
+			using result_type = std::invoke_result_t<FuncType ClassType::*, ObjType *, ParamTypes ...>;
 
 		public:
-			_event_handler_data(ObjType * obj, FuncType std::decay_t<ObjType>::* func)
+			_event_handler_data(ObjType * obj, FuncType ClassType::* func)
 				: _object(obj)
 				, _function(func)
 			{
@@ -346,7 +337,7 @@ namespace event
 
 		private:
 			ObjType * _object;
-			FuncType std::decay_t<ObjType>::* _function;
+			FuncType ClassType::* _function;
 			event_promise<result_type> _promise;
 
 		};
@@ -362,15 +353,18 @@ namespace event
 			unbind();
 		}
 
-		template <class ObjType, class FuncType>
-		auto bind(ObjType * obj, FuncType std::decay_t<ObjType>::* func) 
-			-> event_future<std::invoke_result_t<FuncType std::decay_t<ObjType>::*, ObjType *, ParamTypes ...>>
+		template <class ObjType, class FuncType, class ClassType>
+		auto bind(ObjType * obj, FuncType ClassType::* func)
+			-> event_future<std::invoke_result_t<FuncType ClassType::*, ObjType *, ParamTypes ...>>
 		{
 			static_assert(std::is_base_of_v<_event_handler_base, ObjType>,
-						  "'stdx::event::_event_dispatcher<ParamTypes ...>::bind(ObjType*, FuncType std::decay_t<ObjType>::*)': "
+						  "'stdx::event::_event_dispatcher<ParamTypes ...>::bind(ObjType*, FuncType ClassType::*)': "
 						  "'ObjType' must derive from 'stdx::event::_event_handler_base'");
+			static_assert(std::is_base_of_v<ClassType, ObjType>,
+						  "'stdx::event::_event_dispatcher<ParamTypes ...>::bind(ObjType*, FuncType ClassType::*)': "
+						  "'ObjType' must derive from 'ClassType'");
 
-			auto handler = std::make_shared<_event_handler_data<ObjType, FuncType>>(obj, func);
+			auto handler = std::make_shared<_event_handler_data<ObjType, FuncType, ClassType>>(obj, func);
 
 			auto future = handler->get_future();
 
