@@ -15,7 +15,11 @@
 #define STDX_POLYMORPHIC_CLASS protected virtual ::stdx::_polymorphic
 
 // Function that returns true on first invocation at a particular callsite, and false on next invocations at the same callsite; invocation is thread-safe and only the first invocation among multiple threads will return true (threads will not synchronize)
-#define STDX_ONCE() ::stdx::_once([]{})
+#define STDX_EXECUTE_ONCE() ::stdx::_execute_once([]{})
+#define STDX_EXECUTE_SCOPE_ONCE if (!STDX_EXECUTE_ONCE()); else
+
+#define STDX_ON_SCOPE_EXIT STDX_MACRO_FUNCTION_0_ARY(ON_SCOPE_EXIT)
+#define STDX_implementation_ON_SCOPE_EXIT(context) ::stdx::_on_scope_exit STDX_MACRO_VARIABLE(on_scope_exit, context) = [&] () -> void
 
 #define STDX_UNUSED_PARAM(arg) do{ (arg, void()); }while(0)
 #define STDX_UNUSED_PARAM_PACK(args) do{ ((args, void()), ...); }while(0)
@@ -27,6 +31,24 @@ namespace stdx
 	protected:
 		_polymorphic() noexcept = default;
 		virtual ~_polymorphic() noexcept = default;
+
+	};
+
+	template <class FuncType>
+	class _on_scope_exit
+	{
+	public:
+		_on_scope_exit(FuncType && func)
+			: _func(func)
+		{
+		}
+		~_on_scope_exit()
+		{
+			_func();
+		}
+
+	private:
+		FuncType _func;
 
 	};
 
@@ -43,7 +65,8 @@ namespace stdx
 	};
 
 	template <class Type>
-	[[nodiscard]] bool _once(Type const &) noexcept
+	[[nodiscard]] 
+	bool _execute_once(Type const &) noexcept
 	{
 		static std::atomic_flag flag = ATOMIC_FLAG_INIT;
 		return !flag.test_and_set(std::memory_order_relaxed);

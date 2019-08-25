@@ -38,14 +38,14 @@ struct derived_type : base_type, STDX_EVENT_HANDLER_BASE
 	}
 
 	derived_type(derived_type const & other)
-		: base_type(other)
-		, STDX_EVENT_HANDLER_BASE_COPY_CONSTRUCT(other)
+		: STDX_EVENT_HANDLER_BASE_COPY_CONSTRUCT(other)
+		, base_type(other)
 	{
 	}
 
 	derived_type(derived_type && other) noexcept
-		: base_type(other)
-		, STDX_EVENT_HANDLER_BASE_MOVE_CONSTRUCT(other)
+		: STDX_EVENT_HANDLER_BASE_MOVE_CONSTRUCT(other)
+		, base_type(std::move(other))
 	{
 	}
 

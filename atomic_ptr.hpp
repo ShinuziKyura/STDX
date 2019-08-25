@@ -34,7 +34,7 @@ namespace stdx
 			>
 		>::template push<
 			std::atomic_uint_least64_t
-		>::first::value_type;
+		>::front::value_type;
 
 	// Reference counter abstract class
 
