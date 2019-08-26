@@ -264,7 +264,7 @@ namespace functional
 	template <class FuncType, class ... ValTypes>
 	class _binder
 	{
-		using signature = meta::function_signature<FuncType>;
+	/*	using signature = meta::function_signature<FuncType>;
 		using function_type =
 			meta::make_function_signature<
 				typename signature::return_type, 
@@ -279,7 +279,7 @@ namespace functional
 					>
 				>, 
 				meta::pack<>
-			>; // TODO permutate arguments (chance for better defined semantics)
+			>; // TODO permutate arguments (chance for better defined semantics)*/
 	public:
 		template <class ... ArgTypes>
 		_binder(FuncType && func, ArgTypes && ... args)

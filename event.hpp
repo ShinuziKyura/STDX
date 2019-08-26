@@ -51,11 +51,11 @@ namespace event
 	template <class Type>
 	class _event_result final
 	{
-		class _any_type
+		class _empty_type
 		{
 		public:
 			template <class ... Types>
-			_any_type(Types && ...) noexcept
+			_empty_type(Types && ...) noexcept
 			{
 			}
 
@@ -64,7 +64,7 @@ namespace event
 		using _value_type =
 			std::conditional_t<
 				std::is_void_v<Type>,
-				_any_type,
+				_empty_type,
 				std::conditional_t<
 					std::is_reference_v<Type>,
 					std::reference_wrapper<std::remove_reference_t<Type>>,
@@ -99,7 +99,7 @@ namespace event
 			
 			_result.template emplace<_event_result_type::empty>();
 
-			return std::conditional_t<std::is_void_v<Type>, void, Type&&>(value);
+			return std::conditional_t<std::is_void_v<Type>, void, std::add_rvalue_reference_t<Type>>(value);
 		}
 		auto get_exception() -> std::exception_ptr
 		{
@@ -124,7 +124,7 @@ namespace event
 		}
 		
 	private:
-		std::variant<std::monostate, _value_type, _exception_type> _result;
+		std::variant<_empty_type, _value_type, _exception_type> _result;
 
 	};
 
