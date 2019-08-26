@@ -420,6 +420,47 @@ namespace stdx::meta
 		using trait = Trait<Type::value>;
 	};
 
+		// Fundamental type, returns the fundamental type that serves as base for a 'compound' T type; functions, classes, unions, and enumerations are not considered compound types; additionally, ignores cv qualifiers at the bottommost level
+
+	template <class Type>
+	struct _fundamental_type
+	{
+		using _type = Type;
+	};
+
+	template <class Type>
+	struct _fundamental_type<Type[]>
+	{
+		using _type = typename _fundamental_type<Type>::_type;
+	};
+
+	template <class Type>
+	struct _fundamental_type<Type &>
+	{
+		using _type = typename _fundamental_type<Type>::_type;
+	};
+
+	template <class Type>
+	struct _fundamental_type<Type &&>
+	{
+		using _type = typename _fundamental_type<Type>::_type;
+	};
+
+	template <class Type>
+	struct _fundamental_type<Type *>
+	{
+		using _type = typename _fundamental_type<Type>::_type;
+	};
+
+	template <class Type, class ClassType>
+	struct _fundamental_type<Type ClassType::*>
+	{
+		using _type = typename _fundamental_type<Type>::_type;
+	};
+
+	template <class Type>
+	using fundamental_type = typename _fundamental_type<Type>::_type;
+
 		// Add cv through ref, provides type alias for Type, where if Type is a reference to a possibly cv-qualified type T, the type alias is of reference to that type T with added cv-qualifiers
 
 	template <class Type>
@@ -756,6 +797,9 @@ namespace stdx::meta
 		// Boolean checks
 
 	template <class Type>
+	constexpr bool always_false = false;
+
+	template <class Type>
 	struct is_complex : std::false_type
 	{
 	};
@@ -955,9 +999,11 @@ namespace stdx::meta
 	{
 		static constexpr auto is_const		= bool(QualSpecValue & qualifiers::_const);
 		static constexpr auto is_volatile	= bool(QualSpecValue & qualifiers::_volatile);
-		static constexpr auto is_lval_ref	= bool(QualSpecValue & qualifiers::_lvalue_ref);
-		static constexpr auto is_rval_ref	= bool(QualSpecValue & qualifiers::_rvalue_ref);
+		static constexpr auto is_lvalue_ref	= bool(QualSpecValue & qualifiers::_lvalue_ref);
+		static constexpr auto is_rvalue_ref	= bool(QualSpecValue & qualifiers::_rvalue_ref);
 		static constexpr auto is_noexcept	= bool(QualSpecValue & specifiers::_noexcept);
+
+		static_assert(!(is_lvalue_ref && is_rvalue_ref), "'stdx::meta::qual_spec_sequence<QualSpecValue>': The 'lvalue_ref' and 'rvalue_ref' qualifiers are mutually exclusive.");
 	};
 
 		// Function signature

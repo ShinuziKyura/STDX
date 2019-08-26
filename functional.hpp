@@ -5,64 +5,6 @@
 
 #include "meta.hpp"
 
-/* Informative error messages
-template <class T>
-struct AlwaysFalse
-{
-	static constexpr bool Value = false;
-};
-
-template <class T, class U = T>
-struct ILikeIntsAndBools_WhyFail // Need at least one dependent name throughout the chain (aka no explicit / always partial specializations)
-{
-	static_assert(AlwaysFalse<U>::Value, "'You didn't give me an int or a bool'");
-	static constexpr bool Value = false;
-};
-
-template <class U>
-struct ILikeIntsAndBools_WhyFail<int, U>
-{
-	static_assert(AlwaysFalse<U>::Value, "'You only gave me an int'");
-	static constexpr bool Value = false;
-};
-
-template <class U>
-struct ILikeIntsAndBools_WhyFail<bool, U>
-{
-	static_assert(AlwaysFalse<U>::Value, "'You only gave me a bool'");
-	static constexpr bool Value = false;
-};
-
-template <class T, class U = T>
-struct ILikeIntsAndBools
-{
-	static constexpr bool HasInt = ILikeIntsAndBools_WhyFail<U>::Value;
-	static constexpr bool HasBool = ILikeIntsAndBools_WhyFail<U>::Value;
-};
-
-template <class U>
-struct ILikeIntsAndBools<int, U>
-{
-	static constexpr bool HasInt = true;
-	static constexpr bool HasBool = ILikeIntsAndBools_WhyFail<int, U>::Value;
-};
-
-template <class U>
-struct ILikeIntsAndBools<bool, U>
-{
-	static constexpr bool HasInt = ILikeIntsAndBools_WhyFail<bool, U>::Value;
-	static constexpr bool HasBool = true;
-};
-
-int main()
-{
-	using IHaveInt = ILikeIntsAndBools<int>;
-	static_assert(IHaveInt::HasInt, "'You should give it an int'");
-//	static_assert(IHaveInt::HasBool, "'You should give it a bool'"); // Will show both assertions
-	return 0;
-}
-*/
-
 namespace stdx
 {
 #if !(defined(STDX_NAMESPACE_FUNCTIONAL) || defined(STDX_NAMESPACE_ALL))
@@ -72,6 +14,11 @@ namespace functional
 {
 	namespace _implementation
 	{
+	
+	///////////////////////
+	/// _value_category
+	///////////////////////
+		
 		namespace _value_category
 		{
 			struct _lvalue;
@@ -79,7 +26,9 @@ namespace functional
 			struct _prvalue;
 		}
 
-			// _expression
+	///////////////////
+	/// _expression
+	///////////////////
 
 		template <class Type, class Category>
 		struct _expression // TODO unsure if necessary
@@ -88,7 +37,9 @@ namespace functional
 			using value_category = Category;
 		};
 
-			// _value_category_wrapper
+	///////////////////////////////
+	/// _value_category_wrapper
+	///////////////////////////////
 
 		template <class Type>
 		class _value_category_wrapper // TODO possibly rename this
@@ -113,15 +64,106 @@ namespace functional
 
 		};
 
-			// _is_bindable // TODO review this
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// _invoke_semantics
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	//////////////////////////////////////
+	/// _invoke_semantics_class_object
+	//////////////////////////////////////
+
+		template <class, class T = void>
+		struct _invoke_semantics_class_object
+		{
+			static_assert(meta::always_false<T>, "'stdx::bind(FuncType, ArgTypes ...)': "
+												 "When FuncType is a reference or pointer to class object or a pointer to member class object, "
+												 "it must have an accessible non-overloaded operator().");
+
+			using _function_type = void;
+
+			static constexpr bool _is_invocable = false;
+		};
+
+		template <class ClassType>
+		struct _invoke_semantics_class_object<ClassType, std::void_t<decltype(&ClassType::operator())>>
+		{
+			using _function_type = meta::function_signature<decltype(&ClassType::operator())>;
+
+			static constexpr bool _is_invocable = true;
+		};
+
+	/////////////////////////
+	/// _invoke_semantics
+	/////////////////////////
+
+		template <class FuncType, class T = void>
+		struct _invoke_semantics
+		{
+			static_assert(meta::always_false<T>, "'stdx::bind(FuncType, ArgTypes ...)': "
+												 "FuncType must be either "
+												 "a reference or pointer to function, "
+												 "a pointer to member function, "
+												 "a reference or pointer to class object with an accessible non-overloaded operator(), "
+												 "or a pointer to member class object with an accessible non-overloaded operator().");
+
+			using class_type = void;
+
+			using function_type = void;
+
+			static constexpr bool is_invocable = false;
+		};
+
+		template <class FuncType>
+		struct _invoke_semantics<FuncType, std::enable_if_t<std::is_function_v<std::remove_pointer_t<std::remove_reference_t<FuncType>>>>>
+		{
+			using class_type = void; // Doesn't need object
+
+			using function_type = meta::function_signature<std::remove_pointer_t<std::remove_reference_t<FuncType>>>;
+
+			static constexpr bool is_invocable = true;
+		};
+
+		template <class FuncType>
+		struct _invoke_semantics<FuncType, std::enable_if_t<std::is_class_v<std::remove_pointer_t<std::remove_reference_t<FuncType>>>>>
+		{
+			using class_type = void;
+
+			using function_type = typename _invoke_semantics_class_object<std::remove_pointer_t<std::remove_reference_t<FuncType>>>::_function_type;
+
+			static constexpr bool is_invocable = _invoke_semantics_class_object<std::remove_pointer_t<std::remove_reference_t<FuncType>>>::_is_invocable;
+		};
+
+		template <class FuncType, class ClassType>
+		struct _invoke_semantics<FuncType ClassType::*, std::enable_if_t<std::is_function_v<FuncType>>>
+		{
+			using class_type = ClassType; // Needs object (tip: static_assert(std::is_base_of_v<invoke_semantics::class_type, FirstArgType>))
+
+			using function_type = meta::function_signature<FuncType>;
+
+			static constexpr bool is_invocable = true;
+		};
+
+		template <class FuncType, class ClassType>
+		struct _invoke_semantics<FuncType ClassType::*, std::enable_if_t<std::is_class_v<FuncType>>>
+		{
+			using class_type = ClassType;
+
+			using function_type = typename _invoke_semantics_class_object<FuncType>::_function_type;
+
+			static constexpr bool is_invocable = _invoke_semantics_class_object<FuncType>::_is_invocable;
+		};
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// _bind_semantics
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		template <class ParamType>
 		void _bindable_test_param(ParamType) noexcept;
 
 		template <class ArgType>
 		std::conditional_t<std::is_destructible_v<ArgType>, ArgType, std::add_rvalue_reference_t<ArgType>> _bindable_test_arg() noexcept;
-		
-		template <class ParamType, class ArgType, class = void>
+
+/*		template <class ParamType, class ArgType, class = void>  // TODO use this for _is_bindable_arguments
 		struct _is_bindable : std::false_type
 		{
 		};
@@ -139,177 +181,177 @@ namespace functional
 		template <class ... ParamTypes, class ... ArgTypes>
 		struct _is_bindable<meta::pack<ParamTypes ...>, meta::pack<ArgTypes ...>, void> : std::conjunction<_is_bindable<ParamTypes, ArgTypes> ...>
 		{
+		}; */
+
+	//////////////////////////////
+	/// _is_bindable_arguments
+	//////////////////////////////
+
+		template <class ParametersType, class ArgumentsType>
+		struct _is_bindable_arguments
+		{
+			// TODO
 		};
 
-			// _invoke_semantics_class_object
+	//////////////////////////////////////
+	/// _is_bindable_object_rvalue_ref
+	//////////////////////////////////////
 
-		template <class, class T = void>
-		struct _invoke_semantics_class_object
+		template <class ObjType, class QualSpecSeqType, class ParamPackType, class ArgPackType, class T = void>
+		struct _is_bindable_object_rvalue_ref
 		{
-			static_assert(meta::always_false<T>, "'stdx::bind(FuncType, ArgTypes ...)': "
-												 "When FuncType is a reference or pointer to class object or a pointer to member class object, "
-												 "it must have an accessible non-overloaded operator().");
+			static_assert(meta::always_false<T>, "'stdx::bind(FuncType, ArgTypes ...)': "); // TODO
 
-			using _function_signature = void;
+			static constexpr bool _value = false;
 
-			static constexpr bool _is_invocable = false;
 		};
 
-		template <class ObjType>
-		struct _invoke_semantics_class_object<ObjType, std::void_t<decltype(&ObjType::operator())>>
+		template <class ObjType, class QualSpecSeqType, class ParamPackType, class ArgPackType>
+		struct _is_bindable_object_rvalue_ref<ObjType, QualSpecSeqType, ParamPackType, ArgPackType, std::enable_if_t<!QualSpecSeqType::is_rvalue_ref || (std::is_rvalue_reference_v<ObjType> && !std::is_pointer_v<std::remove_reference_t<ObjType>>)>>
 		{
-			using _function_signature = meta::function_signature<decltype(&ObjType::operator())>;
-
-			static constexpr bool _is_invocable = true;
+			static constexpr bool _value = _is_bindable_arguments<ParamPackType, ArgPackType>::_value;
 		};
 
-			// _invoke_semantics
+	//////////////////////////////////////
+	/// _is_bindable_object_lvalue_ref
+	//////////////////////////////////////
 
-		template <class, class T = void>
-		struct _invoke_semantics
+		template <class ObjType, class QualSpecSeqType, class ParamPackType, class ArgPackType, class T = void>
+		struct _is_bindable_object_lvalue_ref
 		{
-			static_assert(meta::always_false<T>, "'stdx::bind(FuncType, ArgTypes ...)': "
-												 "FuncType must be either "
-												 "a reference or pointer to function, "
-												 "a pointer to member function, "
-												 "a reference or pointer to class object with an accessible non-overloaded operator(), "
-												 "or a pointer to member class object with an accessible non-overloaded operator().");
+			static_assert(meta::always_false<T>, "'stdx::bind(FuncType, ArgTypes ...)': "); // TODO
 
-			using object_type = void;
+			static constexpr bool _value = false;
 
-			using function_signature = void;
-
-			static constexpr bool is_invocable = false;
 		};
 
-		template <class FuncType>
-		struct _invoke_semantics<FuncType, std::enable_if_t<std::is_function_v<std::remove_reference_t<FuncType>>>>
+		template <class ObjType, class QualSpecSeqType, class ParamPackType, class ArgPackType>
+		struct _is_bindable_object_lvalue_ref<ObjType, QualSpecSeqType, ParamPackType, ArgPackType, std::enable_if_t<!QualSpecSeqType::is_lvalue_ref || (std::is_lvalue_reference_v<ObjType> || std::is_pointer_v<std::remove_reference_t<ObjType>>)>>
 		{
-			using object_type = void; // Doesn't need object
-
-			using function_signature = meta::function_signature<std::remove_reference_t<FuncType>>;
-
-			static constexpr bool is_invocable = true;
+			static constexpr bool _value = _is_bindable_object_rvalue_ref<ObjType, QualSpecSeqType, ParamPackType, ArgPackType>::_value;
 		};
 
-		template <class FuncType>
-		struct _invoke_semantics<FuncType, std::enable_if_t<std::is_class_v<std::remove_reference_t<FuncType>>>>
+	////////////////////////////////////
+	/// _is_bindable_object_volatile
+	////////////////////////////////////
+
+		template <class ObjType, class QualSpecSeqType, class ParamPackType, class ArgPackType, class T = void>
+		struct _is_bindable_object_volatile
 		{
-			using object_type = void;
+			static_assert(meta::always_false<T>, "'stdx::bind(FuncType, ArgTypes ...)': "); // TODO
 
-			using function_signature = typename _invoke_semantics_class_object<std::remove_reference_t<FuncType>>::_function_signature;
+			static constexpr bool _value = false;
 
-			static constexpr bool is_invocable = _invoke_semantics_class_object<std::remove_reference_t<FuncType>>::_is_invocable;
 		};
 
-		template <class FuncType>
-		struct _invoke_semantics<FuncType *, std::enable_if_t<std::is_function_v<FuncType>>>
+		template <class ObjType, class QualSpecSeqType, class ParamPackType, class ArgPackType>
+		struct _is_bindable_object_volatile<ObjType, QualSpecSeqType, ParamPackType, ArgPackType, std::enable_if_t<!std::is_volatile_v<meta::fundamental_type<ObjType>> || QualSpecSeqType::is_volatile>>
 		{
-			using object_type = void;
-
-			using function_signature = meta::function_signature<FuncType>;
-
-			static constexpr bool is_invocable = true;
+			static constexpr bool _value = _is_bindable_object_lvalue_ref<ObjType, QualSpecSeqType, ParamPackType, ArgPackType>::_value;
 		};
 
-		template <class FuncType>
-		struct _invoke_semantics<FuncType *, std::enable_if_t<std::is_class_v<FuncType>>>
+	/////////////////////////////////
+	/// _is_bindable_object_const
+	/////////////////////////////////
+
+		template <class ObjType, class QualSpecSeqType, class ParamPackType, class ArgPackType, class T = void>
+		struct _is_bindable_object_const
 		{
-			using object_type = void;
+			static_assert(meta::always_false<T>, "'stdx::bind(FuncType, ArgTypes ...)': "); // TODO
 
-			using function_signature = typename _invoke_semantics_class_object<FuncType>::_function_signature;
-
-			static constexpr bool is_invocable = _invoke_semantics_class_object<FuncType>::_is_invocable;
-		};
-
-		template <class FuncType, class ObjType>
-		struct _invoke_semantics<FuncType ObjType::*, std::enable_if_t<std::is_function_v<std::remove_reference_t<FuncType>>>>
-		{
-			using object_type = ObjType; // Needs object (tip: static_assert(std::is_base_of_v<invoke_semantics::object_type, FirstArgType>))
-
-			using function_signature = meta::function_signature<std::remove_reference_t<FuncType>>;
-
-			static constexpr bool is_invocable = true;
-		};
-
-		template <class FuncType, class ObjType>
-		struct _invoke_semantics<FuncType ObjType::*, std::enable_if_t<std::is_class_v<std::remove_reference_t<FuncType>>>>
-		{
-			using object_type = ObjType;
-
-			using function_signature = typename _invoke_semantics_class_object<std::remove_reference_t<FuncType>>::_function_signature;
-
-			static constexpr bool is_invocable = _invoke_semantics_class_object<std::remove_reference_t<FuncType>>::_is_invocable;
-		};
-
-		template <class FuncType, class ObjType>
-		struct _invoke_semantics<FuncType * ObjType::*, std::enable_if_t<std::is_function_v<FuncType>>>
-		{
-			using object_type = ObjType;
-
-			using function_signature = meta::function_signature<FuncType>;
-
-			static constexpr bool is_invocable = true;
-		};
-
-		template <class FuncType, class ObjType>
-		struct _invoke_semantics<FuncType * ObjType::*, std::enable_if_t<std::is_class_v<FuncType>>>
-		{
-			using object_type = ObjType;
-
-			using function_signature = typename _invoke_semantics_class_object<FuncType>::_function_signature;
-
-			static constexpr bool is_invocable = _invoke_semantics_class_object<FuncType>::_is_invocable;
-		};
-
-/*		// TODO test invoke_semantics with these cases
-		void func(){}
-
-		struct Obj
-		{
-			void operator()(){}
-		};
-
-		struct Test
-		{
-			void memfunc(){};
-
-			void (Test::* mf1)() = &Test::memfunc;
-
-			void (& f1)() = func;
-			void (&& f2)() = func;
-			void (* f3)() = func;
-
-			Obj o1;
-			Obj& o2;
-			Obj&& o3;
-			Obj* o4;
-		};
-
-		int main()
-		{
-			void (& f1)() = func;
-			void (&& f2)() = func;
-			void (* f3)() = func;
-
-			Obj o1;
-			Obj& o2;
-			Obj&& o3;
-			Obj* o4;
+			static constexpr bool _value = false;
 			
-			return 0;
-		}
-*/
+		};
 
-		// _bind_semantics
+		template <class ObjType, class QualSpecSeqType, class ParamPackType, class ArgPackType>
+		struct _is_bindable_object_const<ObjType, QualSpecSeqType, ParamPackType, ArgPackType, std::enable_if_t<!std::is_const_v<meta::fundamental_type<ObjType>> || QualSpecSeqType::is_const>>
+		{
+			static constexpr bool _value = _is_bindable_object_volatile<ObjType, QualSpecSeqType, ParamPackType, ArgPackType>::_value;
+		};
 
-		template <class FuncType, class ... ArgTypes>
+	/////////////////////////////////
+	/// _is_bindable_object_class
+	/////////////////////////////////
+
+		template <class ClassType, class ObjType, class QualSpecSeqType, class ParamPackType, class ArgPackType, class T = void>
+		struct _is_bindable_object_class
+		{
+			static_assert(meta::always_false<T>, "'stdx::bind(FuncType, ArgTypes ...)': "); // TODO
+
+			static constexpr bool _value = false;
+		};
+
+		template <class ClassType, class ObjType, class QualSpecSeqType, class ParamPackType, class ArgPackType>
+		struct _is_bindable_object_class<ClassType, ObjType, QualSpecSeqType, ParamPackType, ArgPackType, std::enable_if_t<std::is_base_of_v<ClassType, meta::fundamental_type<ObjType>>>>
+		{
+			static constexpr bool _value = _is_bindable_object_const<ObjType, QualSpecSeqType, ParamPackType, ArgPackType>::_value;
+		};
+
+	////////////////////
+	/// _is_bindable
+	////////////////////
+
+		template <class InvokeSemantics, class ArgPackType, class T = void>
+		struct _is_bindable
+		{
+			static_assert(meta::always_false<T>, "'stdx::bind(FuncType, ArgTypes ...)': "); // TODO non-matching num of args
+
+			static constexpr bool _value = false;
+		};
+
+		template <class InvokeSemantics, class ArgPackType>
+		struct _is_bindable<InvokeSemantics, ArgPackType, std::enable_if_t<std::is_void_v<typename InvokeSemantics::class_type> && InvokeSemantics::function_type::parameter_types::size == ArgPackType::size>>
+		{
+			static constexpr bool _value = _is_bindable_arguments<
+				typename InvokeSemantics::function_type::parameter_types,
+				ArgPackType
+			>::_value;
+		};
+
+		template <class InvokeSemantics, class ArgPackType>
+		struct _is_bindable<InvokeSemantics, ArgPackType, std::enable_if_t<std::is_class_v<typename InvokeSemantics::class_type> && InvokeSemantics::function_type::parameter_types::size + 1 == ArgPackType::size>>
+		{
+			static constexpr bool _value = _is_bindable_object_class<
+				typename InvokeSemantics::class_type,
+				typename ArgPackType::first,
+				typename InvokeSemantics::function_type::qss_type,
+				typename InvokeSemantics::function_type::parameter_types,
+				typename ArgPackType::template pop<1>
+			>::_value;
+		};
+
+		template <class InvokeSemantics, class ArgPackType>
+		struct _is_bindable<InvokeSemantics, ArgPackType, std::enable_if_t<!InvokeSemantics::is_invocable>>
+		{
+			static constexpr bool _value = true; // Special case to prevent triggering the is_bindable assertion when the failure happens at is_invocable
+		};
+
+	///////////////////////
+	/// _bind_semantics
+	///////////////////////
+
+		template <class InvokeSemantics, class ... ArgTypes>
 		struct _bind_semantics
 		{
-			using invoke_semantics = _invoke_semantics<FuncType>;
+			static constexpr bool is_bindable = _is_bindable<InvokeSemantics, meta::pack<ArgTypes ...>>::_value;
+		};
 
-			static constexpr bool is_invocable = invoke_semantics::is_invocable;  // TODO WIP
-//			static constexpr bool is_bindable = 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// _binder_semantics
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	/////////////////////////
+	/// _binder_semantics
+	/////////////////////////
+
+		template <class FuncType, class ... ArgTypes>
+		struct _binder_semantics
+		{
+			using invoke_semantics = _invoke_semantics<FuncType>;
+			using bind_semantics = _bind_semantics<invoke_semantics, ArgTypes ...>;
+
+			static constexpr bool is_invocable = invoke_semantics::is_invocable;
+			static constexpr bool is_bindable = bind_semantics::is_bindable; // TODO WIP
 		};
 
 	}
@@ -322,7 +364,9 @@ namespace functional
 	//		- provide better defined semantics for std::placeholders
 	//		- provide re-bind/re-invoke semantics
 
-		// _binder
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// _bind
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	// TODO this will hold most of the implementation
 	template <class InvokeType, class FuncType, class ... ArgTypes> // this may be an non-instantiable class template type
@@ -352,15 +396,15 @@ namespace functional
 		func, void();
 		((args, void()), ...);
 		// TODO 
-		using semantics = _implementation::_bind_semantics<FuncType, ArgTypes...>; // This type will have a big part of the metaprogramming implementation
-		static_assert(semantics::is_invocable, "TODO is_invocable"); // Check example above for how to produce 'Informative error messages'
-	//	static_assert(semantics::is_bindable, "TODO");
-	//	return _binder<semantics::invoke_semantics>(_implementation::_bind_function<semantics::function_semantics>(std::forward<FuncType>(func)), _implementation::_bind_argument<semantics::argument_semantics>(std::forward<ArgTypes>(args)) ...); // Smth like this
+		using semantics = _implementation::_binder_semantics<std::add_rvalue_reference_t<FuncType>, std::add_rvalue_reference_t<ArgTypes> ...>; // This type will have a big part of the metaprogramming implementation
+		static_assert(semantics::is_invocable, "'stdx::bind(FuncType, ArgTypes ...)': FuncType must be invocable.");
+		static_assert(semantics::is_bindable, "TODO is_bindable"); // TODO
+	//	return _binder<semantics::bind_semantics>(_implementation::_bind_function<semantics::function_semantics>(std::forward<FuncType>(func)), _implementation::_bind_argument<semantics::argument_semantics>(std::forward<ArgTypes>(args)) ...); // Smth like this
 
 		return 0;
 	}
 
-	// TODO get better names
+	// TODO update impl
 
 /*	template <class Type>
 	_prvalue_wrapper<Type> wrap_copy(Type & object) // TODO unsure if final name (alternative: bind_copy)

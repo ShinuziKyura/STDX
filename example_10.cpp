@@ -19,7 +19,7 @@ struct Test
 	{
 	}
 
-	void mf1() {};
+	void mf1() {}
 	
 	Obj mo1;
 	Obj& mo2;
@@ -49,8 +49,6 @@ int example_10()
 	std::cout << stdx::_implementation::_invoke_semantics<decltype(o4)>::is_invocable;
 	std::cout << stdx::_implementation::_invoke_semantics<decltype(&Test::mf1)>::is_invocable;
 	std::cout << stdx::_implementation::_invoke_semantics<decltype(&Test::mo1)>::is_invocable;
-
-//	stdx::xbind(0);
 
 //	std::cout << stdx::_implementation::_is_bindable<stdx::_implementation::_invoke_semantics<int>, stdx::meta::pack<>>::_value;
 
