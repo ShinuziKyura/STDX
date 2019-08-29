@@ -1,13 +1,13 @@
-T 			+ lvalue 	-> ref to store (def) / copy to store (tag); copy to func / move or copy to func
+T 			+ lvalue 	-> ref to store (def) / copy to store (tag); copy to func
 T 			+ xvalue 	-> ref to store; move to func
 T 			+ prvalue 	-> move or copy to store; move or copy to func (copy only if const or non-movable)
 T const		+ lvalue 	-> same as above
 T const		+ xvalue 	-> same as above
 T const		+ prvalue 	-> same as above
-T &			+ lvalue 	-> ref to store (def) / copy to store (tag); ref to func / ref to func; error if const
+T &			+ lvalue 	-> ref to store (def) / copy to store (tag); ref to func; error if const
 T &			+ xvalue 	-> error
 T &			+ prvalue 	-> error
-T const &	+ lvalue 	-> ref to store (def) / copy to store (tag); ref to func / ref to func
+T const &	+ lvalue 	-> ref to store (def) / copy to store (tag); ref to func
 T const &	+ xvalue 	-> ref to store; ref to func (see: https://stackoverflow.com/questions/40909095/why-both-const-nonconst-lvalue-references-bind-to-a-rvalue-reference)
 T const &	+ prvalue 	-> move or copy to store; ref to func
 T &&		+ lvalue 	-> error
