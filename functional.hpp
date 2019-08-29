@@ -76,7 +76,7 @@ namespace functional
 		struct _invoke_semantics_check_class_object
 		{
 			static_assert(meta::always_false<T>, "'stdx::bind(FuncType, ArgTypes ...)': "
-												 "When FuncType is a reference or pointer to class object or a pointer to member class object, "
+												 "When FuncType is either a class object or a pointer to class object or a pointer to member class object, "
 												 "it must have an accessible non-overloaded operator().");
 
 			using _function_signature = void;
@@ -101,10 +101,10 @@ namespace functional
 		{
 			static_assert(meta::always_false<T>, "'stdx::bind(FuncType, ArgTypes ...)': "
 												 "FuncType must be either "
-												 "a reference or pointer to function, "
+												 "a function or a pointer to function, "
 												 "a pointer to member function, "
-												 "a reference or pointer to class object with an accessible non-overloaded operator(), "
-												 "or a pointer to member class object with an accessible non-overloaded operator().");
+												 "a class object or a pointer to class object, "
+												 "or a pointer to member class object.");
 
 			using class_type = void;
 			using function_signature = void;
@@ -140,12 +140,12 @@ namespace functional
 		};
 
 		template <class FuncType, class ClassType>
-		struct _invoke_semantics<FuncType ClassType::*, std::enable_if_t<std::is_class_v<std::remove_pointer_t<std::remove_reference_t<FuncType>>>>>
+		struct _invoke_semantics<FuncType ClassType::*, std::enable_if_t<std::is_class_v<FuncType>>>
 		{
 			using class_type = ClassType;
-			using function_signature = typename _invoke_semantics_check_class_object<std::remove_pointer_t<std::remove_reference_t<FuncType>>>::_function_signature;
+			using function_signature = typename _invoke_semantics_check_class_object<FuncType>::_function_signature;
 
-			static constexpr bool is_invocable = _invoke_semantics_check_class_object<std::remove_pointer_t<std::remove_reference_t<FuncType>>>::_is_invocable;
+			static constexpr bool is_invocable = _invoke_semantics_check_class_object<FuncType>::_is_invocable;
 		};
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -298,7 +298,9 @@ namespace functional
 		template <class ObjType, class QualSpecSeqType, class ParamPackType, class ArgPackType, class T = void>
 		struct _bind_semantics_check_object_const
 		{
-			static_assert(meta::always_false<T>, "'stdx::bind(FuncType, ArgTypes ...)': "); // TODO
+			static_assert(meta::always_false<T>, "'stdx::bind(FuncType, ArgTypes ...)': "
+												 "If the first element of ArgTypes is const-qualified, "
+												 "then FuncType's signature must be const as well.");
 
 			static constexpr bool _is_bindable = false;
 			
@@ -317,7 +319,9 @@ namespace functional
 		template <class ClassType, class ObjType, class QualSpecSeqType, class ParamPackType, class ArgPackType, class T = void>
 		struct _bind_semantics_check_object_class
 		{
-			static_assert(meta::always_false<T>, "'stdx::bind(FuncType, ArgTypes ...)': "); // TODO
+			static_assert(meta::always_false<T>, "'stdx::bind(FuncType, ArgTypes ...)': "
+												 "When FuncType is either a pointer to member function or a pointer to member class object, "
+												 "the first element of ArgTypes must either be or derive from FuncType's class type.");
 
 			static constexpr bool _is_bindable = false;
 		};
@@ -335,7 +339,11 @@ namespace functional
 		template <class InvokeSemantics, class ArgPackType, class T = void>
 		struct _bind_semantics
 		{
-			static_assert(meta::always_false<T>, "'stdx::bind(FuncType, ArgTypes ...)': "); // TODO non-matching num of args
+			static_assert(meta::always_false<T>, "'stdx::bind(FuncType, ArgTypes ...)': "
+												 "The number of ArgTypes must either match the number of FuncType's parameters, "
+												 "when FuncType is either a function or a pointer to function, or a class object or a pointer to class object; "
+												 "or match the number of FuncType's parameters plus one, "
+												 "when FuncType is either a pointer to member function or a pointer to member class object.");
 
 			using return_type = void;
 			using object_type = void;
@@ -445,7 +453,7 @@ namespace functional
 		// TODO unsure if FuncType should/needs to be wrapped with add_rval_ref in semantics, as it may be an object for which we may want to preserve value category
 		using semantics = _implementation::_binder_semantics<FuncType, std::add_rvalue_reference_t<ArgTypes> ...>; // This type will have a big part of the metaprogramming implementation
 		static_assert(semantics::is_invocable, "'stdx::bind(FuncType, ArgTypes ...)': FuncType must be invocable.");
-		static_assert(semantics::is_bindable, "TODO is_bindable"); // TODO
+		static_assert(semantics::is_bindable, "'stdx::bind(FuncType, ArgTypes ...)': ArgTypes must be bindable to FuncType.");
 	//	return _binder<semantics::bind_semantics>(_implementation::_bind_function<semantics::function_semantics>(std::forward<FuncType>(func)), _implementation::_bind_argument<semantics::argument_semantics>(std::forward<ArgTypes>(args)) ...); // Smth like this
 
 		func, void();

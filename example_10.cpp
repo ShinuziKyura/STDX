@@ -13,10 +13,9 @@ struct Obj
 
 struct Test
 {
-	void mf1() {}
+	void mf() {}
 	
-	Obj mo1;
-	Obj* mo2;
+	Obj mo;
 };
 
 int example_10()
@@ -39,12 +38,10 @@ int example_10()
 	stdx::xbind(o2);
 	stdx::xbind(o3);
 	stdx::xbind(o4);
-	stdx::xbind(&Test::mf1, t);
-	stdx::xbind(&Test::mf1, &t);
-	stdx::xbind(&Test::mo1, t);
-	stdx::xbind(&Test::mo1, &t);
-	stdx::xbind(&Test::mo2, t);
-	stdx::xbind(&Test::mo2, &t);
+	stdx::xbind(&Test::mf, t);
+	stdx::xbind(&Test::mf, &t);
+	stdx::xbind(&Test::mo, t);
+	stdx::xbind(&Test::mo, &t);
 
 	stdx::await_input();
 
